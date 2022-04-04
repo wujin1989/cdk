@@ -17,6 +17,7 @@ Windows:
 
 Linux:
     cmake .. -G "Ninja Multi-Config";
+	
     cmake --build . --config Debug -j 8;
     cmake --build . --config Release -j 8;
 
