@@ -1,0 +1,200 @@
+<h3>extern void cdk_mtx_init(mtx_t* restrict m)</h3>
+<p>
+    create a mutex.
+    <br>
+    <br>
+    @param m [in/out].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_mtx_destroy(mtx_t* m)</h3>
+<p>
+    destroy a mutex.
+    <br>
+    <br>
+    @param m [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_mtx_lock(mtx_t* m)</h3>
+<p>
+    lock a mutex.
+    <br>
+    <br> 
+    @param m [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_mtx_unlock(mtx_t* m)</h3>
+<p>
+    unlock a mutex.
+    <br>
+    <br> 
+    @param m [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_rwlock_init(rwlock_t* restrict rw)</h3>
+<p>
+    create a read-write lock.
+    <br>
+    <br> 
+    @param rw [in/out].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_rwlock_destroy(rwlock_t* rw)</h3>
+<p>
+    destroy a read-write lock.
+    <br>
+    <br> 
+    @param rw [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_rwlock_rlock(rwlock_t* rw)</h3>
+<p>
+    lock a read-write lock object for reading.
+    <br>
+    <br> 
+    @param rw [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_rwlock_runlock(rwlock_t* rw)</h3>
+<p>
+    unlock a read-write lock object for reading.
+    <br>
+    <br> 
+    @param rw [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_rwlock_wlock(rwlock_t* rw)</h3>
+<p>
+    lock a read-write lock object for writing.
+    <br>
+    <br> 
+    @param rw [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_rwlock_wunlock(rwlock_t* rw)</h3>
+<p>
+    unlock a read-write lock object for writing.
+    <br>
+    <br> 
+    @param rw [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_cnd_init(cnd_t* restrict c)</h3>
+<p>
+    create a condition variable.
+    <br>
+    <br> 
+    @param c [in/out].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_cnd_destroy(cnd_t* c)</h3>
+<p>
+    destroy a condition variable.
+    <br>
+    <br> 
+    @param c [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_cnd_signal(cnd_t* c)</h3>
+<p>
+    unblocks one of the threads that are blocked on the condition variable.
+    <br>
+    <br> 
+    @param c [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_cnd_broadcast(cnd_t* c)</h3>
+<p>
+    unblocks all of the threads that are blocked on the condition variable.
+    <br>
+    <br> 
+    @param c [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_cnd_wait(cnd_t* restrict c, mtx_t* restrict m)</h3>
+<p>
+    the function atomically unlocks the mutex pointed to by m
+    <br>
+    and blocks until the condition variable pointed to by c is signaled by a call to cdk_cnd_signal or to cdk_cnd_broadcast.
+    <br>
+    when the calling thread becomes unblocked it locks the  mutex pointed to by m before it returns.
+    <br>
+    <br> 
+    @param c [in].
+    <br> 
+    @param m [in].
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>

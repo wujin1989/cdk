@@ -1,0 +1,70 @@
+<h3>extern void cdk_fopen(FILE** fp, const char* restrict f, const char* restrict m)</h3>
+<p>
+    encapsulates fopen, windows with fopen_s, unix with fopen.
+    <br>
+    note: the path separator is unified with '/'.
+    <br>
+    <br>
+    <br>
+    @param fp [in/out].
+    <br>
+    @param f  [in].
+    <br>
+    @param m  [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_fclose(FILE* s)</h3>
+<p>
+    encapsulates fclose.
+    <br>
+    <br>
+    @param s [in].
+    <br>
+    @return false means failure, true means success.
+    <br>
+</p>
+
+<br>
+
+<h3>extern int cdk_sprintf(char* s, size_t sz, const char* f, ...)</h3>
+<p>
+    safe sprintf, write formatted data to a string.
+    <br>
+    <br>
+    @param s   [in] buffer.
+    <br>
+    @param sz  [in] buffer size.
+    <br>
+    @param f   [in] specified format.
+    <br>
+    @param ... [in] variable parameter.
+    <br>
+    @return the number of bytes written to the buffer, not counting the terminating null character. a negative value if error occurs.
+    <br>
+</p>
+
+<br>
+
+<h3>extern int cdk_vsprintf(char* s, size_t sz, const char* f, va_list v)</h3>
+<p>
+    safe vsprintf.
+    <br>
+    <br>
+    @param s   [in] buffer.
+    <br>
+    @param sz  [in] buffer size.
+    <br>
+    @param f   [in] specified format.
+    <br>
+    @param v   [in] variable parameter.
+    <br>
+    @return the number of bytes written to the buffer, not counting the terminating null character. a negative value if error occurs.
+    <br>
+</p>
+
+<br>

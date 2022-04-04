@@ -1,0 +1,83 @@
+<h3>extern t* cdk_queue_data(fifo_node_t* x, t, m)</h3>
+<p>
+    get current node data.
+    <br>
+    <br>
+    @param x [in] current node.
+    <br>
+    @param t [in] type of the structure where the current node is located.
+    <br>
+    @param m [in] name of the member in the structure where the list node is located.
+    <br>
+    @return type pointer of the structure where the current node is located.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_queue_create(fifo_t* q)</h3>
+<p>
+    create a null queue.
+    <br>
+    <br>
+    @param q [in] current queue.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_queue_init_node(fifo_node_t* x)</h3>
+<p>
+    initialize a queue node.
+    <br>
+    <br>
+    @param x [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_queue_enqueue(fifo_t* q, fifo_node_t* x)</h3>
+<p>
+    enqueue a element.
+    <br>
+    <br>
+    @param q [in] current queue.
+    <br>
+    @param x [in] new node.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern fifo_node_t* cdk_queue_dequeue(fifo_t* q)</h3>
+<p>
+    dequeue a element.
+    <br>
+    <br>
+    @param q [in] current queue.
+    <br>
+    @return queue's first node.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_queue_empty(fifo_t* q)</h3>
+<p>
+    check if the queue is empty.
+    <br>
+    <br>
+    @param q [in] current queue.
+    <br>
+    @return if queue is empty return true, otherwis return false.
+    <br>
+</p>
+
+<br>

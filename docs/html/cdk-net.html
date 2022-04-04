@@ -1,0 +1,341 @@
+<h3>extern void cdk_net_rbuf(sock_t s, int v)</h3>
+<p>
+    set the socket's receive buffer size to the specified v value.
+    <br>
+    <br>
+    @param s [in].
+    <br>
+    @param v [in] recvive buffer size.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_net_sbuf(sock_t s, int v)</h3>
+<p>
+    set the socket's send buffer size to the specified v value.
+    <br>
+    <br>
+    @param s [in].
+    <br>
+    @param v [in] send buffer size.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_net_rtimeo(sock_t s, int t)</h3>
+<p>
+    set the receive timeout of the socket.
+    <br>
+    <br>
+    @param s [in].
+    <br>
+    @param t [in] timeout, the unit is ms.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_net_stimeo(sock_t s, int t)</h3>
+<p>
+    set the send timeout of the socket.
+    <br>
+    <br>
+    @param s [in].
+    <br>
+    @param t [in] timeout, the unit is ms.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_net_inet_ntop(struct sockaddr_storage* ss, addrinfo_t* ai)</h3>
+<p>
+    convert network address format to presentable address.
+    <br>
+    <br>
+    @param ss [in] ipv4 or ipv6 address.
+    <br>
+    @param ai [in/out].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_net_inet_pton(addrinfo_t* ai, struct sockaddr_storage* ss)</h3>
+<p>
+    convert presentable address format to network address.
+    <br>
+    <br>
+    @param ai [in].
+    <br>
+    @param ss [in/out]  ipv4 or ipv6 address.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_net_obtain_addr(sock_t s, addrinfo_t* ai, bool p)</h3>
+<p>
+    retrive local or peer address based on connected socket fd.
+    <br>
+    <br>
+    @param s  [in] .
+    <br>
+    @param ai [in/out].
+    <br>
+    @param p  [in] true means obtaining peer address, false means obtaining local address.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p)</h3>
+<p>
+    create a tcp blocking socket and listen.
+    <br>
+    <br>
+    @param h [in] host.
+    <br>
+    @param p [in] port.
+    <br>
+    @return tcp socket fd.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_tcp_netpoller(sock_t s, routine_t r, bool tp)</h3>
+<p>
+    looper to handle tcp client connections, one thread per connection.
+    <br>
+    <br>
+    @param s  [in].
+    <br>
+    @param r  [in] task callback.
+    <br>
+    @param tp [in] true means enabling threadpool, false means disabling threadpool.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_tcp_nodelay(sock_t s, bool on)</h3>
+<p>
+    enable tcp nodelay option.
+    <br>
+    <br>
+    @param s  [in].
+    <br>
+    @param on [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_tcp_keepalive(sock_t s)</h3>
+<p>
+    enable tcp keepalive option.
+    <br>
+    <br>
+    @param s  [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_tcp_close(sock_t s)</h3>
+<p>
+    close tcp socket.
+    <br>
+    <br>
+    @param s  [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern sock_t cdk_tcp_dial(const char* restrict h, const char* restrict p)</h3>
+<p>
+    create a tcp blocking socket and connect.
+    <br>
+    <br>
+    @param h [in] host.
+    <br>
+    @param p [in] port.
+    <br>
+    @return tcp socket fd.
+    <br>
+</p>
+
+<br>
+
+<h3>extern net_msg_t* cdk_tcp_marshaller(char* restrict b, int tp, int sz)</h3>
+<p>
+    marshalling a net_msg_t.
+    <br>
+    <br>
+    @param b  [in] payload.
+    <br>
+    @param tp [in] payload type.
+    <br>
+    @param sz [in] payload size.
+    <br>
+    @return net_msg_t pointer.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_tcp_demarshaller(net_msg_t* m, char* restrict b)</h3>
+<p>
+    demarshalling a net_msg_t.
+    <br>
+    <br>
+    @param m  [in].
+    <br>
+    @param b  [in] payload.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern int cdk_tcp_send(sock_t s, net_msg_t* restrict m)</h3>
+<p>
+    send a net_msg_t.
+    <br>
+    note: this function is mtu safe.
+    <br>
+    <br>
+    @param s [in].
+    <br>
+    @param m [in].
+    <br>
+    @return sended bytes.
+    <br>
+</p>
+
+<br>
+
+<h3>extern net_msg_t* cdk_tcp_recv(sock_t s)</h3>
+<p>
+    recv a net_msg_t.
+    <br>
+    <br>
+    @param s [in].
+    <br>
+    @return net_msg_t pointer.
+    <br>
+</p>
+
+<br>
+
+<h3>extern sock_t cdk_udp_listen(const char* restrict h, const char* restrict p)</h3>
+<p>
+    create a udp blocking socket and bind.
+    <br>
+    <br>
+    @param h [in] host.
+    <br>
+    @param p [in] port.
+    <br>
+    @return udp socket fd.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_udp_close(sock_t s)</h3>
+<p>
+    close udp socket.
+    <br>
+    <br>
+    @param s  [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern sock_t cdk_udp_dial(const char* restrict h, const char* restrict p)</h3>
+<p>
+    create a udp blocking socket and connect.
+    <br>
+    <br>
+    @param h [in] host.
+    <br>
+    @param p [in] port.
+    <br>
+    @return udp socket fd.
+    <br>
+</p>
+
+<br>
+
+<h3>extern int cdk_udp_send(sock_t s, char* restrict b, int sz, struct sockaddr_storage* restrict ss, socklen_t l)</h3>
+<p>
+    send a udp msg.
+    <br>
+    <br>
+    @param s  [in].
+    <br>
+    @param b  [in] buffer.
+    <br>
+    @param sz [in] buffer size.
+    <br>
+    @param ss [in] peer address(support ipv4 or ipv6).
+    <br>
+    @param l  [in] peer address length.
+    <br>
+    @return sended bytes.
+    <br>
+</p>
+
+<br>
+
+<h3>extern int cdk_udp_recv(sock_t s, char* restrict b, int sz, struct sockaddr_storage* restrict ss, socklen_t* restrict lp)</h3>
+<p>
+    recv a udp msg.
+    <br>
+    <br>
+    @param s  [in].
+    <br>
+    @param b  [in] buffer.
+    <br>
+    @param sz [in] buffer size.
+    <br>
+    @param ss [in] peer address(support ipv4 or ipv6).
+    <br>
+    @param lp [in] peer address length.
+    <br>
+    @return received bytes.
+    <br>
+</p>
+
+<br>

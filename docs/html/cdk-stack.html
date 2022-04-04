@@ -1,0 +1,83 @@
+<h3>extern t* cdk_stack_data(filo_node_t* x, t, m)</h3>
+<p>
+    get current node data.
+    <br>
+    <br>
+    @param x [in] current node.
+    <br>
+    @param t [in] type of the structure where the current node is located.
+    <br>
+    @param m [in] name of the member in the structure where the list node is located.
+    <br>
+    @return type pointer of the structure where the current node is located.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_stack_create(filo_t* s)</h3>
+<p>
+    create a null stack.
+    <br>
+    <br>
+    @param s [in] current stack.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_stack_init_node(filo_node_t* x)</h3>
+<p>
+    initialize a stack node.
+    <br>
+    <br>
+    @param x [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_stack_push(filo_t* s, filo_node_t* x)</h3>
+<p>
+    push a element into stack.
+    <br>
+    <br>
+    @param s [in] current stack.
+    <br>
+    @param x [in] new node.
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern filo_node_t* cdk_stack_pop(filo_t* s)</h3>
+<p>
+    pop a element.
+    <br>
+    <br>
+    @param s [in] current stack.
+    <br>
+    @return stack-top's node.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_stack_empty(filo_t* s)</h3>
+<p>
+    check if the stack is empty.
+    <br>
+    <br>
+    @param s [in] current stack.
+    <br>
+    @return if stack is empty return true, otherwis return false.
+    <br>
+</p>
+
+<br>

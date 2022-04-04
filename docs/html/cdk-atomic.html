@@ -1,0 +1,193 @@
+<h3>ATOMIC_FLAG_INIT</h3>
+<p>
+    initializing an atomic flag.
+    <br>
+</p>
+
+<br>
+
+<h3>ATOMIC_VAR_INIT</h3>
+<p>
+    initializing an atomic object with value.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_atomic_flag_test_and_set(volatile atomic_flag* f)</h3>
+<p>
+    atomically places the atomic flag pointed to by f in the set state.
+    <br>
+    <br> 
+    @param f [in/out]. 
+    <br> 
+    @return preceding state.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_flag_clear(volatile atomic_flag* f)</h3>
+<p>
+    atomically places the atomic flag pointed to by f into the clear state.
+    <br>
+    <br> 
+    @param f [in/out]. 
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern int64_t cdk_atomic_load(const volatile atomic_t* t)</h3>
+<p>
+    atomically load the value pointed to by t.
+    <br>
+    <br> 
+    @param t [in]. 
+    <br> 
+    @return the value pointed to by t.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_store(volatile atomic_t* t, int64_t d)</h3>
+<p>
+    atomically replace the value pointed to by t with the value of d.
+    <br>
+    <br> 
+    @param object [in/out].
+    <br> 
+    @param desired [in]. 
+    <br> 
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_add(volatile atomic_t* t, int64_t o)</h3>
+<p>
+    atomic addition.
+    <br>
+    <br>
+    @param t [in/out].
+    <br>
+    @param o [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_sub(volatile atomic_t* t, int64_t o)</h3>
+<p>
+    atomic subtraction.
+    <br>
+    <br>
+    @param t [in/out].
+    <br>
+    @param o [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_inc(volatile atomic_t* t)</h3>
+<p>
+    atomic increment.
+    <br>
+    <br>
+    @param t [in/out].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_dec(volatile atomic_t* t)</h3>
+<p>
+    atomic decrement.
+    <br>
+    <br>
+    @param t  [in/out].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_or(volatile atomic_t* t, int64_t o)</h3>
+<p>
+    atomic bitwise or.
+    <br>
+    <br>
+    @param t [in/out].
+    <br>
+    @param o [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_xor(volatile atomic_t* t, int64_t o)</h3>
+<p>
+    atomic bitwise xor.
+    <br>
+    <br>
+    @param t [in/out].
+    <br>
+    @param o [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern void cdk_atomic_and(volatile atomic_t* t, int64_t o)</h3>
+<p>
+    atomic bitwise and.
+    <br>
+    <br>
+    @param t [in/out].
+    <br>
+    @param o [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_atomic_cas(volatile atomic_t* t, int64_t* e, int64_t d)</h3>
+<p>
+    atomically, compares the contents of the memory pointed to by t for equality with that
+    <br>
+    pointed to by e, and if true, replaces the contents of the memory pointed to by t
+    <br>
+    with d, and if false, updates the contents of the memory pointed to by e with that
+    <br>
+    pointed to by t.
+    <br>
+    <br>
+    @param t [in/out].
+    <br>
+    @param e [in/out].
+    <br>
+    @param d [in].
+    <br>
+    @return if t is equals to e, return true. otherwise return fase.
+    <br>
+</p>
+
+<br>

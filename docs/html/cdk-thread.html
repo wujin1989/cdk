@@ -1,0 +1,88 @@
+<h3>thread_local</h3>
+<p>
+    thread-specific storage modifier.
+    <br>
+</p>
+
+<br>
+
+<h3>ONCE_FLAG_INIT</h3>
+<p>
+    used to initialize an object of type once_flag.
+    <br>
+</p>
+
+<br>
+
+<h3>extern tid_t cdk_gettid(void)</h3>
+<p>
+    get current thread-id in process.
+    <br>
+    <br> 
+    @param N/A. 
+    <br> 
+    @return thread-id.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_thrd_create(thrd_t* t, int (*h)(void*), void* restrict p)</h3>
+<p>
+    create a new thread.
+    <br>
+    <br>
+    @param t [in/out] thread identifier.
+    <br>
+    @param h [in].
+    <br>
+    @param p [in] thread's parameter.
+    <br>
+    @return success return true; failure return false.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_thrd_join(thrd_t t)</h3>
+<p>
+    waits for the thread specified by thread to terminate.
+    <br>
+    <br>
+    @param t [in] thread identifier.
+    <br>
+    @return success return true; failure return false.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_thrd_detach(thrd_t t)</h3>
+<p>
+    marks the thread identified by thread as detached. When a detached thread terminates,
+    <br>
+    its resources are automatically released back to the system.
+    <br>
+    <br>
+    @param t [in] thread identifier.
+    <br>
+    @return success return true; failure return false.
+    <br>
+</p>
+
+<br>
+
+<h3>extern bool cdk_thrd_once(once_flag* f, void (*h)(void))</h3>
+<p>
+    in the case of multiple threads, the specified function is executed only once.
+    <br>
+    <br>
+    @param f [in] once control flag, initialize with ONCE_FLAG_INIT.
+    <br>
+    @param h [in].
+    <br>
+    @return success return true; failure return false.
+    <br>
+</p>
+
+<br>
