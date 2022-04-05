@@ -56,10 +56,10 @@ static unsigned int __stdcall _thread_start(void* arg) {
 static BOOL __stdcall _once_start(PINIT_ONCE once, PVOID param, PVOID* context) {
 
 	once_ctx* ctxp;
-	once_ctx ctx;
+	once_ctx  ctx;
 
 	ctxp = param;
-	ctx = *ctxp;
+	ctx  = *ctxp;
 
 	cdk_free(ctxp);
 
