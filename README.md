@@ -8,6 +8,7 @@ Based on c11 standard.
 create a build directory under the cdk source directory, and cd build.
 
 Windows:
+
     cmake .. -G "Ninja Multi-Config";
     or
     cmake .. -G "Visual Studio 17 2022";
@@ -16,12 +17,14 @@ Windows:
     cmake --build . --config Release -j 8;
 
 Linux:
+
     cmake .. -G "Ninja Multi-Config";
 	
     cmake --build . --config Debug -j 8;
     cmake --build . --config Release -j 8;
 
 Mac:
+
     cmake .. -G "Ninja Multi-Config";
     or
     cmake .. -G "Xcode";
@@ -55,4 +58,5 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+
 ====
