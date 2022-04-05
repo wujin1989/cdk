@@ -71,7 +71,7 @@ static void _syncbase(int l, const char* restrict f, int n) {
 	if (!timespec_get(&tsc, TIME_UTC)) { return; }
 	cdk_localtime(&tsc.tv_sec, &tm);
 
-	fprintf(g.f, "%04d-%02d-%02d %02d:%02d:%02d.%03d %5s %s:%d ",       \
+	fprintf(g.f, "%04d-%02d-%02d %02d:%02d:%02d.%03d %5s %s:%d ",           \
 		tm.tm_year + 1900,                                              \
 		tm.tm_mon + 1,                                                  \
 		tm.tm_mday,                                                     \
@@ -95,7 +95,7 @@ static void _asyncbase(int l, const char* restrict f, int n, const char* restric
 	cdk_localtime(&tsc.tv_sec, &tm);
 
 	memset(b, 0, sizeof(b));
-	r = cdk_sprintf(b, sizeof(b),                                      \
+	r = cdk_sprintf(b, sizeof(b),                                          \
 		"%04d-%02d-%02d %02d:%02d:%02d.%03d %5s %s:%d ",               \
 		tm.tm_year + 1900,                                             \
 		tm.tm_mon + 1,                                                 \
