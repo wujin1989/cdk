@@ -36,9 +36,9 @@ Mac:
 Reference docs/cdk-docs.html.
 
 # Blog
-[cdk-zhihu](https://www.zhihu.com/column/c_1495125905027010560)
+[Zhihu](https://www.zhihu.com/column/c_1495125905027010560)
 
-[cdk-csdn](https://blog.csdn.net/u012675436/category_11738973.html)
+[Csdn](https://blog.csdn.net/u012675436/category_11738973.html)
 
 # License
 MIT License
