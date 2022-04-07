@@ -22,13 +22,14 @@
 #include "win-io.h"
 #include <stdarg.h>
 #include <stdlib.h>
+#include <share.h>
 
 void _cdk_fopen(FILE** fp, const char* restrict f, const char* restrict m) {
 
-	errno_t   r;
-
-	r = fopen_s(fp, f, m);
-	if (r) { abort(); }
+	*fp = _fsopen(f, m, _SH_DENYNO);
+	if (!*fp) {
+		abort();
+	}
 }
 
 int _cdk_sprintf(char* s, size_t sz, const char* f, va_list v) {
