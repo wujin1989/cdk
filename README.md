@@ -36,7 +36,9 @@ Mac:
 Reference docs/cdk-docs.html.
 
 # Blog
-[CSDN](https://blog.csdn.net/u012675436/category_11738973.html)
+[csdn](https://blog.csdn.net/u012675436/category_11738973.html)
+[juejin](https://juejin.cn/column/7083716684321652772)
+
 
 # License
 MIT License
