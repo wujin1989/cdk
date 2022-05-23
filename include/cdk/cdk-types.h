@@ -94,17 +94,17 @@ typedef struct _addrinfo_t {
 
 typedef void (*routine_t)(sock_t s);
 
-typedef struct _list_t {
-	struct _list_t* p;
-	struct _list_t* n;
-}list_t;
-typedef list_t    list_node_t;
+typedef struct _list_node_t {
+	struct _list_node_t* p;
+	struct _list_node_t* n;
+}list_node_t;
+typedef list_node_t    list_t;
 
-typedef list_t    fifo_t;
-typedef fifo_t    fifo_node_t;
+typedef list_t         fifo_t;
+typedef list_node_t    fifo_node_t;
 
-typedef list_t    filo_t;
-typedef filo_t    filo_node_t;
+typedef list_t         filo_t;
+typedef list_node_t    filo_node_t;
 
 typedef struct _thrdpool_job_t {
 	void          (*fn)(void*);
