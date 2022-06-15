@@ -17,8 +17,8 @@ set(CMAKE_C_STANDARD 11)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
-include_directories(cdk/include)
-link_directories(cdk/Debug)
+include_directories(../include)
+link_directories(../build/Debug)
 
 add_executable(chat-client chat-client.c chat-protocol.h)
 target_link_libraries(chat-client PUBLIC cdk Threads::Threads)

@@ -114,3 +114,5 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${HDRS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRCS})
 
 add_library(cdk STATIC ${SRCS} ${HDRS})
+
+add_subdirectory(examples)
