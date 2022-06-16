@@ -197,7 +197,6 @@ void routine(sock_t s) {
 
 	cdk_thrd_once(&once, handle_once);
 
-	cdk_tcp_nodelay(s, true);
 	cdk_tcp_keepalive(s);
 
 	while (true) {
@@ -215,7 +214,7 @@ void routine(sock_t s) {
 					cdk_free(u);
 				}
 			}
-			cdk_tcp_close(s);
+			cdk_net_close(s);
 			return;
 		}
 		switch (msg->h.p_t)
@@ -233,7 +232,7 @@ void routine(sock_t s) {
 		case TYPE_LOGOUT_REQ:
 		{
 			handle_logout(s, msg, &login_users);
-			cdk_tcp_close(s);
+			cdk_net_close(s);
 			return;
 		}
 		case TYPE_CHAT_MSG:

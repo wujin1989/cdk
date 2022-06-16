@@ -36,6 +36,15 @@
 #define TCPv6_MSS    1220
 
 /* ///////////////////////////////////////////  private  //////////////////////////////////////////////////////////// */
+
+static void _nodelay(sock_t s, bool on) {
+
+    int v;
+    if (on) { v = 1; }
+    else { v = 0; }
+    setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const void*)&v, sizeof(v));
+}
+
 static void _reuse_addr(sock_t s) {
 
     int r;
@@ -148,6 +157,8 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
             _maxseg(s);
         }
         if (connect(s, rp->ai_addr, rp->ai_addrlen) < 0) { close(s); continue; }
+
+        _nodelay(s, true);
         break;
     }
     if (rp == NULL) { return -1; }
@@ -156,6 +167,11 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
 }
 
 /* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
+
+void _cdk_net_close(sock_t s) {
+
+    close(s);
+}
 
 #if defined(__linux__)
 int _cdk_net_af(sock_t s) {
@@ -213,17 +229,13 @@ sock_t _cdk_tcp_accept(sock_t s) {
     sock_t c = accept(s, NULL, NULL);
     if (c < 0) { abort(); }
 
+    _nodelay(c, true);
     return c;
 }
 
 sock_t _cdk_tcp_listen(const char* restrict h, const char* restrict p) {
 	
     return _listen(h, p, SOCK_STREAM);
-}
-
-void _cdk_tcp_close(sock_t s) {
-
-    close(s);
 }
 
 sock_t _cdk_tcp_dial(const char* restrict h, const char* restrict p) {
@@ -276,11 +288,6 @@ void _cdk_tcp_keepalive(sock_t s) {
 sock_t _cdk_udp_listen(const char* restrict h, const char* restrict p) {
 
     return _listen(h, p, SOCK_DGRAM);
-}
-
-void _cdk_udp_close(sock_t s) {
-
-    close(s);
 }
 
 sock_t _cdk_udp_dial(const char* restrict h, const char* restrict p) {

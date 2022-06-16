@@ -167,7 +167,6 @@ int main(void) {
 
 	s = cdk_tcp_dial("127.0.0.1", "9999");
 
-	cdk_tcp_nodelay(s, true);
 	cdk_tcp_keepalive(s);
 
 	while (true) {
@@ -207,7 +206,7 @@ enter:
 		user_send(s);
 		break;
 	}
-	cdk_tcp_close(s);
+	cdk_net_close(s);
 	cdk_logger_destroy();
 
 	return 0;

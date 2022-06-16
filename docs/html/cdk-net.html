@@ -1,3 +1,16 @@
+<h3>extern void cdk_net_close(sock_t s)</h3>
+<p>
+    close socket.
+    <br>
+    <br>
+    @param s  [in].
+    <br>
+    @return N/A.
+    <br>
+</p>
+
+<br>
+
 <h3>extern void cdk_net_rbuf(sock_t s, int v)</h3>
 <p>
     set the socket's receive buffer size to the specified v value.
@@ -137,37 +150,9 @@
 
 <br>
 
-<h3>extern void cdk_tcp_nodelay(sock_t s, bool on)</h3>
-<p>
-    enable tcp nodelay option.
-    <br>
-    <br>
-    @param s  [in].
-    <br>
-    @param on [in].
-    <br>
-    @return N/A.
-    <br>
-</p>
-
-<br>
-
 <h3>extern void cdk_tcp_keepalive(sock_t s)</h3>
 <p>
     enable tcp keepalive option.
-    <br>
-    <br>
-    @param s  [in].
-    <br>
-    @return N/A.
-    <br>
-</p>
-
-<br>
-
-<h3>extern void cdk_tcp_close(sock_t s)</h3>
-<p>
-    close tcp socket.
     <br>
     <br>
     @param s  [in].
@@ -265,19 +250,6 @@
     @param p [in] port.
     <br>
     @return udp socket fd.
-    <br>
-</p>
-
-<br>
-
-<h3>extern void cdk_udp_close(sock_t s)</h3>
-<p>
-    close udp socket.
-    <br>
-    <br>
-    @param s  [in].
-    <br>
-    @return N/A.
     <br>
 </p>
 

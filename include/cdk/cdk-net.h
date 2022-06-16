@@ -26,6 +26,14 @@
 /* //////////////////////////////////////////common////////////////////////////////////////////// */
 
 /**
+ *  close socket.
+ *
+ *  @param s  [in].
+ *  @return N/A.
+ */
+extern void cdk_net_close(sock_t s);
+
+/**
  *  set the socket's receive buffer size to the specified v value.
  *
  *  @param s [in].
@@ -111,29 +119,12 @@ extern sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p);
 extern void cdk_tcp_netpoller(sock_t s, routine_t r, bool tp);
 
 /**
- *  enable tcp nodelay option.
- *
- *  @param s  [in].
- *  @param on [in].
- *  @return N/A.
- */
-extern void cdk_tcp_nodelay(sock_t s, bool on);
-
-/**
  *  enable tcp keepalive option.
  *
  *  @param s  [in].
  *  @return N/A.
  */
 extern void cdk_tcp_keepalive(sock_t s);
-
-/**
- *  close tcp socket.
- *
- *  @param s  [in].
- *  @return N/A.
- */
-extern void cdk_tcp_close(sock_t s);
 
 /**
  *  create a tcp blocking socket and connect.
@@ -191,14 +182,6 @@ extern net_msg_t* cdk_tcp_recv(sock_t s);
  *  @return udp socket fd.
  */
 extern sock_t cdk_udp_listen(const char* restrict h, const char* restrict p);
-
-/**
- *  close udp socket.
- *
- *  @param s  [in].
- *  @return N/A.
- */
-extern void cdk_udp_close(sock_t s);
 
 /**
  *  create a udp blocking socket and connect.

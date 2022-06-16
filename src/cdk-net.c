@@ -89,6 +89,11 @@ static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
 
 /* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
 
+void cdk_net_close(sock_t s) {
+
+    _cdk_net_close(s);
+}
+
 void cdk_net_rtimeo(sock_t s, int t) {
     
     _cdk_net_rtimeo(s, t);
@@ -230,28 +235,16 @@ void cdk_tcp_netpoller(sock_t s, routine_t r, bool tp) {
         }
     }
 
-    cdk_tcp_close(c);
-    cdk_tcp_close(s);
+    cdk_net_close(c);
+    cdk_net_close(s);
 
     cdk_free(c_p);
     cdk_thrdpool_destroy(p);
 }
 
-void cdk_tcp_nodelay(sock_t s, bool on) {
-    
-    int v;
-    if (on) { v = 1; } else { v = 0; }
-    setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const void*)&v, sizeof(v));
-}
-
 void cdk_tcp_keepalive(sock_t s) {
 
     _cdk_tcp_keepalive(s);
-}
-
-void cdk_tcp_close(sock_t s) {
-
-    _cdk_tcp_close(s);
 }
 
 sock_t cdk_tcp_dial(const char* restrict h, const char* restrict p) {
@@ -331,11 +324,6 @@ net_msg_t* cdk_tcp_recv(sock_t s) {
 sock_t cdk_udp_listen(const char* restrict h, const char* restrict p) {
 
     return _cdk_udp_listen(h, p);
-}
-
-void cdk_udp_close(sock_t s) {
-
-    _cdk_udp_close(s);
 }
 
 sock_t cdk_udp_dial(const char* restrict h, const char* restrict p) {
