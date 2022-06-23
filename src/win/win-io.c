@@ -55,5 +55,8 @@ char* _cdk_strdup(const char* s) {
 
 void _cdk_sscanf(const char* s, const char* f, va_list v) {
 
-	vsscanf_s(s, f, v);
+	/**
+	 * implementation of vsscanf_s has bugs and will crash, thus using vsscanf instead.
+	 */
+	vsscanf(s, f, v);
 }
