@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <share.h>
+#include <string.h>
 
 void _cdk_fopen(FILE** fp, const char* restrict f, const char* restrict m) {
 
@@ -35,4 +36,24 @@ void _cdk_fopen(FILE** fp, const char* restrict f, const char* restrict m) {
 int _cdk_sprintf(char* s, size_t sz, const char* f, va_list v) {
 
 	return vsprintf_s(s, sz, f, v);
+}
+
+char* _cdk_strtok(char* s, const char* d, char** c) {
+
+	return strtok_s(s, d, c);
+}
+
+void  _cdk_strcat(char* d, size_t n, const char* s) {
+
+	strcat_s(d, n, s);
+}
+
+char* _cdk_strdup(const char* s) {
+
+	return _strdup(s);
+}
+
+void _cdk_sscanf(const char* s, const char* f, va_list v) {
+
+	vsscanf_s(s, f, v);
 }

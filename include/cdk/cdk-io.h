@@ -65,5 +65,43 @@ extern int cdk_sprintf(char* s, size_t sz, const char* f, ...);
  */
 extern int cdk_vsprintf(char* s, size_t sz, const char* f, va_list v);
 
+/**
+ *  safe strtok, extract sub-string from strings.
+ *
+ *  @param s   [in] buffer.
+ *  @param d   [in] delim.
+ *  @param c   [in] saved delim-strings.
+ *  @return a pointer to the next sub-string, or NULL if there are no more sub-strings.
+ */
+extern char* cdk_strtok(char* s, const char* d, char** c);
+
+/**
+ *  concatenate two strings.
+ *
+ *  @param d   [in] dest string buffer.
+ *  @param n   [in] dest string buffer size.
+ *  @param s   [in] src string buffer.
+ *  @return N/A.
+ */
+extern void cdk_strcat(char* d, size_t n, const char* s);
+
+/**
+ *  duplicate a string.
+ *
+ *  @param s   [in] src string buffer.
+ *  @return a pointer to the duplicated string.
+ */
+extern char* cdk_strdup(const char* s);
+
+/**
+ *  reads formatted data from a string.
+ *
+ *  @param s   [in] buffer.
+ *  @param f   [in] specified format.
+ *  @param ... [in] variable parameter.
+ *  @return N/A.
+ */
+extern void cdk_sscanf(const char* s, const char* f, ...);
+
 #endif /* __CDK_IO_H__ */
 

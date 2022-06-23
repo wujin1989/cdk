@@ -195,6 +195,11 @@ void cdk_net_obtain_addr(sock_t s, addrinfo_t* ai, bool p) {
     cdk_net_inet_ntop(&ss, ai);
 }
 
+int cdk_net_af(sock_t s) {
+
+    return _cdk_net_af(s);
+}
+
 /* ///////////////////////////////////////////  tcp  //////////////////////////////////////////////////////////// */
 sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p) {
 	
@@ -274,7 +279,7 @@ int cdk_tcp_send(sock_t s, net_msg_t* restrict m) {
     uint32_t st;    /* sent bytes */
     uint32_t sz;    /* msg size */
 
-    mss = (_cdk_net_af(s) == AF_INET) ? TCPv4_SAFE_MSS : TCPv6_SAFE_MSS;
+    mss = (cdk_net_af(s) == AF_INET) ? TCPv4_SAFE_MSS : TCPv6_SAFE_MSS;
     st  = 0;
     sz  = sizeof(net_msg_t) + ntohl(m->h.p_s);
 

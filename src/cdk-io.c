@@ -61,3 +61,26 @@ int cdk_vsprintf(char* s, size_t sz, const char* f, va_list v) {
 
 	return _cdk_sprintf(s, sz, f, v);
 }
+
+char* cdk_strtok(char* s, const char* d, char** c) {
+
+	return _cdk_strtok(s, d, c);
+}
+
+void cdk_strcat(char* d, size_t n, const char* s) {
+
+	_cdk_strcat(d, n, s);
+}
+
+char* cdk_strdup(const char* s) {
+
+	return _cdk_strdup(s);
+}
+
+void cdk_sscanf(const char* s, const char* f, ...) {
+
+	va_list v;
+	va_start(v, f);
+	_cdk_sscanf(s, f, v);
+	va_end(v);
+}

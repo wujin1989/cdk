@@ -97,6 +97,14 @@ extern void cdk_net_inet_pton(addrinfo_t* ai, struct sockaddr_storage* ss);
  */
 extern void cdk_net_obtain_addr(sock_t s, addrinfo_t* ai, bool p);
 
+/**
+ *  retrive address family by socket fd, AF_INET and AF_INET6 supported.
+ *
+ *  @param s  [in].
+ *  @return address family.
+ */
+extern int cdk_net_af(sock_t s);
+
 /* //////////////////////////////////////////tcp////////////////////////////////////////////// */
 
 /**

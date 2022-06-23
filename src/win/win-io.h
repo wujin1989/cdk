@@ -25,5 +25,9 @@
 
 extern void  _cdk_fopen(FILE** fp, const char* restrict f, const char* restrict m);
 extern int   _cdk_sprintf(char* s, size_t sz, const char* f, va_list v);
+extern char* _cdk_strtok(char* s, const char* d, char** c);
+extern void  _cdk_strcat(char* d, size_t n, const char* s);
+extern char* _cdk_strdup(const char* s);
+extern void  _cdk_sscanf(const char* s, const char* f, va_list v);
 
 #endif /* __WIN_IO_H__ */
