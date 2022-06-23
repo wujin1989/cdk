@@ -46,7 +46,7 @@ extern bool cdk_fclose(FILE* s);
 /**
  *  safe sprintf, write formatted data to a string.
  *
- *  @param s   [in] buffer.
+ *  @param s   [in/out] buffer.
  *  @param sz  [in] buffer size.
  *  @param f   [in] specified format.
  *  @param ... [in] variable parameter.
@@ -57,7 +57,7 @@ extern int cdk_sprintf(char* s, size_t sz, const char* f, ...);
 /**
  *  safe vsprintf.
  *
- *  @param s   [in] buffer.
+ *  @param s   [in/out] buffer.
  *  @param sz  [in] buffer size.
  *  @param f   [in] specified format.
  *  @param v   [in] variable parameter.
@@ -70,7 +70,7 @@ extern int cdk_vsprintf(char* s, size_t sz, const char* f, va_list v);
  *
  *  @param s   [in] buffer.
  *  @param d   [in] delim.
- *  @param c   [in] saved delim-strings.
+ *  @param c   [in/out] saved delim-strings.
  *  @return a pointer to the next sub-string, or NULL if there are no more sub-strings.
  */
 extern char* cdk_strtok(char* s, const char* d, char** c);
@@ -78,7 +78,7 @@ extern char* cdk_strtok(char* s, const char* d, char** c);
 /**
  *  concatenate two strings.
  *
- *  @param d   [in] dest string buffer.
+ *  @param d   [in/out] dest string buffer.
  *  @param n   [in] dest string buffer size.
  *  @param s   [in] src string buffer.
  *  @return N/A.
@@ -98,7 +98,7 @@ extern char* cdk_strdup(const char* s);
  *
  *  @param s   [in] buffer.
  *  @param f   [in] specified format.
- *  @param ... [in] variable parameter.
+ *  @param ... [in/out] variable parameter.
  *  @return N/A.
  */
 extern void cdk_sscanf(const char* s, const char* f, ...);

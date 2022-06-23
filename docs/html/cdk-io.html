@@ -36,7 +36,7 @@
     safe sprintf, write formatted data to a string.
     <br>
     <br>
-    @param s   [in] buffer.
+    @param s   [in/out] buffer.
     <br>
     @param sz  [in] buffer size.
     <br>
@@ -55,7 +55,7 @@
     safe vsprintf.
     <br>
     <br>
-    @param s   [in] buffer.
+    @param s   [in/out] buffer.
     <br>
     @param sz  [in] buffer size.
     <br>
@@ -78,7 +78,7 @@
     <br>
     @param d   [in] delim.
     <br>
-    @param c   [in] saved delim-strings.
+    @param c   [in/out] saved delim-strings.
     <br>
     @return a pointer to the next sub-string, or NULL if there are no more sub-strings.
     <br>
@@ -91,7 +91,7 @@
     concatenate two strings.
     <br>
     <br>
-    @param d   [in] dest string buffer.
+    @param d   [in/out] dest string buffer.
     <br>
     @param n   [in] dest string buffer size.
     <br>
@@ -125,7 +125,7 @@
     <br>
     @param f   [in] specified format.
     <br>
-    @param ... [in] variable parameter.
+    @param ... [in/out] variable parameter.
     <br>
     @return N/A.
     <br>
