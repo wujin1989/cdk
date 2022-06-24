@@ -131,10 +131,11 @@ static int _printer(void* p) {
 		}
 		e_p = cdk_queue_data(cdk_queue_dequeue(&g.q), entry, n);
 		cdk_mtx_unlock(&g.q_m);
-
-		fprintf(g.f, "%s", e_p->d);
-		fflush(g.f);
-		cdk_free(e_p);
+		if (e_p) {
+			fprintf(g.f, "%s", e_p->d);
+			fflush(g.f);
+			cdk_free(e_p);
+		}
 	}
 
 	return 0;

@@ -39,9 +39,12 @@ void cdk_queue_enqueue(fifo_t* q, fifo_node_t* x) {
 
 fifo_node_t* cdk_queue_dequeue(fifo_t* q) {
 
+	if (cdk_queue_empty(q)) {
+		return NULL;
+	}
 	fifo_node_t* n = cdk_list_head(q);
-	cdk_list_remove(n);
 
+	cdk_list_remove(n);
 	return n;
 }
 
