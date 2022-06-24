@@ -70,7 +70,7 @@ extern int cdk_vsprintf(char* s, size_t sz, const char* f, va_list v);
  *
  *  @param s   [in] buffer.
  *  @param d   [in] delim.
- *  @param c   [in/out] saved delim-strings.
+ *  @param c   [in/out] saved remaining substrings.
  *  @return a pointer to the next sub-string, or NULL if there are no more sub-strings.
  */
 extern char* cdk_strtok(char* s, const char* d, char** c);
