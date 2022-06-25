@@ -144,18 +144,14 @@
 
 <br>
 
-<h3>extern void cdk_tcp_netpoller(sock_t s, routine_t r, bool tp)</h3>
+<h3>extern sock_t cdk_tcp_accept(sock_t s)</h3>
 <p>
-    looper to handle tcp client connections, one thread per connection.
+    accept tcp connection.
     <br>
     <br>
-    @param s  [in].
+    @param s  [in] listen fd.
     <br>
-    @param r  [in] task callback.
-    <br>
-    @param tp [in] true means enabling threadpool, false means disabling threadpool.
-    <br>
-    @return N/A.
+    @return connect fd.
     <br>
 </p>
 

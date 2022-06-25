@@ -206,45 +206,9 @@ sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p) {
 	return _cdk_tcp_listen(h, p);
 }
 
-void cdk_tcp_netpoller(sock_t s, routine_t r, bool tp) {
+sock_t cdk_tcp_accept(sock_t s) {
 
-    thrdpool_t*    p;
-    thrd_ctx*      c_p;
-    sock_t         c;
-
-    if (tp) { p = cdk_thrdpool_create(); }
-    if (!tp) { p = NULL; }
-	
-    while (true) {
-        c = _cdk_tcp_accept(s);
-
-        c_p = cdk_malloc(sizeof(thrd_ctx));
-
-        c_p->entry = r;
-        c_p->arg   = c;
-
-        if (!p) {
-            thrd_t t;
-            if (!cdk_thrd_create(&t, _thrd_routine, c_p)) { break; }
-            cdk_thrd_detach(t);
-        }
-        if (p) {
-            thrdpool_job_t* j;
-            j = cdk_malloc(sizeof(thrdpool_job_t));
-
-            j->fn = _thrdpool_job_cb;
-            j->p  = c_p;
-            cdk_queue_init_node(&j->q_n);
-
-            cdk_thrdpool_post(p, j);
-        }
-    }
-
-    cdk_net_close(c);
-    cdk_net_close(s);
-
-    cdk_free(c_p);
-    cdk_thrdpool_destroy(p);
+    return _cdk_tcp_accept(s);
 }
 
 void cdk_tcp_keepalive(sock_t s) {

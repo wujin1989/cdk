@@ -117,14 +117,12 @@ extern int cdk_net_af(sock_t s);
 extern sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p);
 
 /**
- *  looper to handle tcp client connections, one thread per connection.
+ *  accept tcp connection.
  *
- *  @param s  [in].
- *  @param r  [in] task callback.
- *  @param tp [in] true means enabling threadpool, false means disabling threadpool.
- *  @return N/A.
+ *  @param s [in] listen fd.
+ *  @return connect fd.
  */
-extern void cdk_tcp_netpoller(sock_t s, routine_t r, bool tp);
+extern sock_t cdk_tcp_accept(sock_t s);
 
 /**
  *  enable tcp keepalive option.

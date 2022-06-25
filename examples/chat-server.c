@@ -193,7 +193,9 @@ static void handle_once(void) {
 	//cdk_thrd_detach(t);
 }
 
-void routine(sock_t s) {
+int routine(void* p) {
+	sock_t* sp = p;
+	sock_t s   = *sp;
 
 	cdk_thrd_once(&once, handle_once);
 
@@ -215,7 +217,7 @@ void routine(sock_t s) {
 				}
 			}
 			cdk_net_close(s);
-			return;
+			return -1;
 		}
 		switch (msg->h.p_t)
 		{
@@ -233,7 +235,7 @@ void routine(sock_t s) {
 		{
 			handle_logout(s, msg, &login_users);
 			cdk_net_close(s);
-			return;
+			return 0;
 		}
 		case TYPE_CHAT_MSG:
 		{
@@ -243,17 +245,26 @@ void routine(sock_t s) {
 			break;
 		}
 	}
+	return 0;
 }
 
 int main(void) {
-	sock_t s;
+	sock_t c, s;
 
 	cdk_logger_init(NULL, true);
 
 	printf("******************************** CHAT ROOM ***************************************\n");
 
 	s = cdk_tcp_listen("0.0.0.0", "9999");
-	cdk_tcp_netpoller(s, routine, false);
+	while (true) {
+		c = cdk_tcp_accept(s);
+
+		thrd_t t;
+		if (!cdk_thrd_create(&t, routine, &c)) { break; }
+		cdk_thrd_detach(t);
+	}
+	cdk_net_close(c);
+	cdk_net_close(s);
 
 	cdk_logger_destroy();
 	return 0;
