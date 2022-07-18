@@ -47,35 +47,6 @@
 #define SNDRCV_BUFFER_SIZE_STEP 16384
 
 /* ///////////////////////////////////////////  private  //////////////////////////////////////////////////////////// */
-typedef struct _thrd_ctx {
-    void          (*entry)(sock_t);
-    sock_t        arg;
-}thrd_ctx;
-
-static int _thrd_routine(void* arg) {
-
-    thrd_ctx* c_p;
-    thrd_ctx  c;
-
-    c_p = arg; 
-    c   = *c_p;
-    cdk_free(c_p);
-
-    c.entry(c.arg);
-    return 0;
-}
-
-static void _thrdpool_job_cb(void* arg) {
-
-    thrd_ctx* c_p;
-    thrd_ctx  c;
-
-    c_p = arg;
-    c   = *c_p;
-    cdk_free(c_p);
-
-    c.entry(c.arg);
-}
 
 static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
 
