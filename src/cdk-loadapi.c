@@ -19,26 +19,27 @@
  *  IN THE SOFTWARE.
  */
 
-#ifndef __CDK_H__
-#define __CDK_H__
-
-/* include cdk header files */
-#include "cdk/cdk-process.h"
-#include "cdk/cdk-prng.h"
-#include "cdk/cdk-time.h"
-#include "cdk/cdk-logger.h"
-#include "cdk/cdk-thread.h"
-#include "cdk/cdk-types.h"
-#include "cdk/cdk-sync.h"
-#include "cdk/cdk-atomic.h"
-#include "cdk/cdk-net.h"
-#include "cdk/cdk-queue.h"
-#include "cdk/cdk-stack.h"
-#include "cdk/cdk-threadpool.h"
-#include "cdk/cdk-systeminfo.h"
-#include "cdk/cdk-list.h"
-#include "cdk/cdk-io.h"
-#include "cdk/cdk-memory.h"
 #include "cdk/cdk-loadapi.h"
 
-#endif /* __CDK_H__ */
+#if defined(__linux__) || defined(__APPLE__)
+#include "unix/unix-loadapi.h"
+#endif
+
+#if defined(_WIN32)
+#include "win/win-loadapi.h"
+#endif
+
+void* cdk_loadmodule(const char* m) {
+
+	return _cdk_loadmodule(m);
+}
+
+void* cdk_loadapi(void* m, const char* restrict f) {
+
+	return _cdk_loadapi(m, f);
+}
+
+void cdk_freemodule(void* m) {
+
+	_cdk_freemodule(m);
+}

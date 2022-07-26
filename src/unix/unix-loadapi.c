@@ -19,26 +19,20 @@
  *  IN THE SOFTWARE.
  */
 
-#ifndef __CDK_H__
-#define __CDK_H__
+#include "unix-loadapi.h"
+#include <dlfcn.h>
 
-/* include cdk header files */
-#include "cdk/cdk-process.h"
-#include "cdk/cdk-prng.h"
-#include "cdk/cdk-time.h"
-#include "cdk/cdk-logger.h"
-#include "cdk/cdk-thread.h"
-#include "cdk/cdk-types.h"
-#include "cdk/cdk-sync.h"
-#include "cdk/cdk-atomic.h"
-#include "cdk/cdk-net.h"
-#include "cdk/cdk-queue.h"
-#include "cdk/cdk-stack.h"
-#include "cdk/cdk-threadpool.h"
-#include "cdk/cdk-systeminfo.h"
-#include "cdk/cdk-list.h"
-#include "cdk/cdk-io.h"
-#include "cdk/cdk-memory.h"
-#include "cdk/cdk-loadapi.h"
+void* _cdk_loadmodule(const char* m) {
 
-#endif /* __CDK_H__ */
+	return dlopen(m, RTLD_LAZY);
+}
+
+void* _cdk_loadapi(void* m, const char* restrict f) {
+
+	return dlsym(m, f);
+}
+
+void _cdk_freemodule(void* m) {
+
+	dlclose(m);
+}

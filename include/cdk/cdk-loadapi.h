@@ -19,26 +19,32 @@
  *  IN THE SOFTWARE.
  */
 
-#ifndef __CDK_H__
-#define __CDK_H__
+#ifndef __CDK_LOADAPI_H__
+#define __CDK_LOADAPI_H__
 
-/* include cdk header files */
-#include "cdk/cdk-process.h"
-#include "cdk/cdk-prng.h"
-#include "cdk/cdk-time.h"
-#include "cdk/cdk-logger.h"
-#include "cdk/cdk-thread.h"
-#include "cdk/cdk-types.h"
-#include "cdk/cdk-sync.h"
-#include "cdk/cdk-atomic.h"
-#include "cdk/cdk-net.h"
-#include "cdk/cdk-queue.h"
-#include "cdk/cdk-stack.h"
-#include "cdk/cdk-threadpool.h"
-#include "cdk/cdk-systeminfo.h"
-#include "cdk/cdk-list.h"
-#include "cdk/cdk-io.h"
-#include "cdk/cdk-memory.h"
-#include "cdk/cdk-loadapi.h"
+/**
+ *  load the specified module.
+ *
+ *  @param m [in] module.
+ *  @return module pointer.
+ */
+extern void* cdk_loadmodule(const char* m);
 
-#endif /* __CDK_H__ */
+/**
+ *  load the specified function.
+ *
+ *  @param m [in] module.
+ *  @param f [in] function.
+ *  @return function pointer.
+ */
+extern void* cdk_loadapi(void* m, const char* restrict f);
+
+/**
+ *  free the specified module.
+ *
+ *  @param m [in] module.
+ *  @return N/A.
+ */
+extern void cdk_freemodule(void* m);
+
+#endif /* __CDK_LOADAPI_H__ */

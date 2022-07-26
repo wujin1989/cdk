@@ -49,7 +49,8 @@ set(HDRS
 	include/cdk/cdk-threadpool.h
 	include/cdk/cdk-systeminfo.h
 	include/cdk/cdk-io.h
-	include/cdk/cdk-memory.h)
+	include/cdk/cdk-memory.h
+	include/cdk/cdk-loadapi.h)
 	
 set(SRCS 
 	src/cdk-logger.c
@@ -66,7 +67,8 @@ set(SRCS
 	src/cdk-threadpool.c
 	src/cdk-systeminfo.c
 	src/cdk-io.c
-	src/cdk-memory.c)
+	src/cdk-memory.c
+	src/cdk-loadapi.c)
 	
 if(WIN32)
 	
@@ -79,6 +81,7 @@ if(WIN32)
 		src/win/win-net.c
 		src/win/win-systeminfo.c
 		src/win/win-io.c
+		src/win/win-loadapi.c
 		src/win/win-process.h
 		src/win/win-thread.h
 		src/win/win-time.h
@@ -86,7 +89,8 @@ if(WIN32)
 		src/win/win-atomic.h
 		src/win/win-net.h
 		src/win/win-systeminfo.h
-		src/win/win-io.h)
+		src/win/win-io.h
+		src/win/win-loadapi.h)
 endif()
 
 if(UNIX)
@@ -100,6 +104,7 @@ if(UNIX)
 		src/unix/unix-net.c
 		src/unix/unix-systeminfo.c
 		src/unix/unix-io.c
+		src/unix/unix-loadapi.c
 		src/unix/unix-process.h
 		src/unix/unix-thread.h
 		src/unix/unix-time.h
@@ -107,7 +112,8 @@ if(UNIX)
 		src/unix/unix-atomic.h
 		src/unix/unix-net.h
 		src/unix/unix-systeminfo.h
-		src/unix/unix-io.h)
+		src/unix/unix-io.h
+		src/unix/unix-loadapi.h)
 endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${HDRS})

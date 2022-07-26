@@ -18,27 +18,11 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
+#ifndef __WIN_LOADAPI_H__
+#define __WIN_LOADAPI_H__
 
-#ifndef __CDK_H__
-#define __CDK_H__
+extern void* _cdk_loadmodule(const char* m);
+extern void* _cdk_loadapi(void* m, const char* restrict f);
+extern void  _cdk_freemodule(void* m);
 
-/* include cdk header files */
-#include "cdk/cdk-process.h"
-#include "cdk/cdk-prng.h"
-#include "cdk/cdk-time.h"
-#include "cdk/cdk-logger.h"
-#include "cdk/cdk-thread.h"
-#include "cdk/cdk-types.h"
-#include "cdk/cdk-sync.h"
-#include "cdk/cdk-atomic.h"
-#include "cdk/cdk-net.h"
-#include "cdk/cdk-queue.h"
-#include "cdk/cdk-stack.h"
-#include "cdk/cdk-threadpool.h"
-#include "cdk/cdk-systeminfo.h"
-#include "cdk/cdk-list.h"
-#include "cdk/cdk-io.h"
-#include "cdk/cdk-memory.h"
-#include "cdk/cdk-loadapi.h"
-
-#endif /* __CDK_H__ */
+#endif /* __WIN_LOADAPI_H__ */
