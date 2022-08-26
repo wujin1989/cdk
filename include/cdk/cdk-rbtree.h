@@ -18,28 +18,29 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
+#ifndef __CDK_RBTREE_H__
+#define __CDK_RBTREE_H__
 
-#ifndef __CDK_H__
-#define __CDK_H__
+#include <stdio.h>
+#include <stddef.h>
+#include "cdk-types.h"
 
-/* include cdk header files */
-#include "cdk/cdk-process.h"
-#include "cdk/cdk-prng.h"
-#include "cdk/cdk-time.h"
-#include "cdk/cdk-logger.h"
-#include "cdk/cdk-thread.h"
-#include "cdk/cdk-types.h"
-#include "cdk/cdk-sync.h"
-#include "cdk/cdk-atomic.h"
-#include "cdk/cdk-net.h"
-#include "cdk/cdk-queue.h"
-#include "cdk/cdk-stack.h"
-#include "cdk/cdk-threadpool.h"
-#include "cdk/cdk-systeminfo.h"
-#include "cdk/cdk-list.h"
-#include "cdk/cdk-io.h"
-#include "cdk/cdk-memory.h"
-#include "cdk/cdk-loadapi.h"
-#include "cdk/cdk-rbtree.h"
+#define	RB_RED		0
+#define	RB_BLACK	1
 
-#endif /* __CDK_H__ */
+#define	cdk_rb_entry(n, t, m)                          \
+			((t *) ((char *) (n) - offsetof(t, m)))                     
+
+extern void cdk_rb_create(rb_tree_t* tree);
+
+extern rb_node_t* cdk_rb_next(rb_node_t* node);
+extern rb_node_t* cdk_rb_prev(rb_node_t* node);
+extern rb_node_t* cdk_rb_first(rb_tree_t* tree);
+extern rb_node_t* cdk_rb_last(rb_tree_t* tree);
+
+extern void cdk_rb_insert_color(rb_tree_t* tree, rb_node_t* node);
+extern void cdk_rb_erase(rb_tree_t* tree, rb_node_t* node);
+extern void cdk_rb_replace_node(rb_tree_t* tree, rb_node_t* victim, rb_node_t* new);
+extern void cdk_rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link);
+
+#endif /* __CDK_RBTREE_H__ */

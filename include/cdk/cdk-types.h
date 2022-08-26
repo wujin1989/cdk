@@ -94,6 +94,19 @@ typedef struct _addrinfo_t {
 
 typedef void (*routine_t)(sock_t s);
 
+typedef struct _rb_node_t
+{
+	struct _rb_node_t* rb_parent;
+	struct _rb_node_t* rb_right;
+	struct _rb_node_t* rb_left;
+	char               rb_color;
+}rb_node_t;
+
+typedef struct _rb_tree_t
+{
+	rb_node_t* rb_root;
+}rb_tree_t;
+
 typedef struct _list_node_t {
 	struct _list_node_t* p;
 	struct _list_node_t* n;

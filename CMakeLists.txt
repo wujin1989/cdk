@@ -50,7 +50,8 @@ set(HDRS
 	include/cdk/cdk-systeminfo.h
 	include/cdk/cdk-io.h
 	include/cdk/cdk-memory.h
-	include/cdk/cdk-loadapi.h)
+	include/cdk/cdk-loadapi.h
+	include/cdk/cdk-rbtree.h)
 	
 set(SRCS 
 	src/cdk-logger.c
@@ -68,7 +69,8 @@ set(SRCS
 	src/cdk-systeminfo.c
 	src/cdk-io.c
 	src/cdk-memory.c
-	src/cdk-loadapi.c)
+	src/cdk-loadapi.c
+	src/cdk-rbtree.c)
 	
 if(WIN32)
 	
