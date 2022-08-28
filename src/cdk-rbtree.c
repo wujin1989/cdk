@@ -78,7 +78,7 @@ void cdk_rb_create(rb_tree_t* tree) {
 	tree->rb_root = NULL;
 }
 
-void rb_insert_color(rb_tree_t* tree, rb_node_t* node)
+void cdk_rb_insert_color(rb_tree_t* tree, rb_node_t* node)
 {
 	rb_node_t* parent, * gparent;
 
@@ -232,7 +232,7 @@ static void __rb_erase_color(rb_node_t* node, rb_node_t* parent, rb_tree_t* tree
 	}
 }
 
-void rb_erase(rb_tree_t* tree, rb_node_t* node)
+void cdk_rb_erase(rb_tree_t* tree, rb_node_t* node)
 {
 	rb_node_t* child, * parent;
 	int color;
@@ -394,7 +394,7 @@ rb_node_t* cdk_rb_prev(rb_node_t* node)
 	return parent;
 }
 
-void rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link)
+void cdk_rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link)
 {
 	node->rb_parent = parent;
 	node->rb_color  = RB_RED;
@@ -402,7 +402,7 @@ void rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link)
 	*rb_link        = node;
 }
 
-void rb_replace_node(rb_tree_t* tree, rb_node_t* victim, rb_node_t* new)
+void cdk_rb_replace_node(rb_tree_t* tree, rb_node_t* victim, rb_node_t* new)
 {
 	rb_node_t* parent = victim->rb_parent;
 

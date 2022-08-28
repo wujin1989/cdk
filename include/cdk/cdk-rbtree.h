@@ -25,6 +25,56 @@
 #include <stddef.h>
 #include "cdk-types.h"
 
+/**
+ * to use rbtrees you'll have to implement your own insert and search cores.
+ * this will avoid us to use callbacks and to drop drammatically performances.
+ * i know it's not the cleaner way,  but in c (not in c++) to get
+ * performances and genericity...
+ * 
+ * example:
+ * 
+ *	static inline void cdk_rb_insert(rb_tree_t* tree, char* key, rb_node_t* node){
+ *
+ *		rb_node_t** p      = &(tree->rb_root);
+ *		rb_node_t*  parent = NULL;
+ * 
+ *		while(*p){
+ *			
+ *			T* t = cdk_rb_entry(node, T, rb_node);
+ * 
+ *			int r = strcmp(key, t->key);
+ *          if(r < 0){
+ *				p = &(*p)->rb_left;
+ *          }else if(r > 0){
+ *				p = &(*p)->rb_right;
+ *          }else{
+ *				return;
+ *			}
+ *		}
+ *		cdk_rb_link_node(node, parent, p);
+ *		cdk_rb_insert_color(tree, node);
+ *	}
+ * 
+ *	static inline T* cdk_rb_find(rb_tree_t* tree, const char* key){
+ * 
+ *		rb_node_t* n = tree->rb_root;
+ * 
+ *      while(n){
+ *			T* t = cdk_rb_entry(n, T, rb_node);
+ *          
+ *          int r = strcmp(key, t->key);
+ *          if(r < 0){
+ *				n = n->rb_left;
+ *          }else if(r > 0){
+ *				n = n->rb_right;
+ *          }else{
+ *				return t;
+ *			}
+ *      }
+ *		return NULL;
+ *  }
+ */
+
 #define	RB_RED		0
 #define	RB_BLACK	1
 
@@ -38,9 +88,9 @@ extern rb_node_t* cdk_rb_prev(rb_node_t* node);
 extern rb_node_t* cdk_rb_first(rb_tree_t* tree);
 extern rb_node_t* cdk_rb_last(rb_tree_t* tree);
 
+extern void cdk_rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link);
 extern void cdk_rb_insert_color(rb_tree_t* tree, rb_node_t* node);
 extern void cdk_rb_erase(rb_tree_t* tree, rb_node_t* node);
 extern void cdk_rb_replace_node(rb_tree_t* tree, rb_node_t* victim, rb_node_t* new);
-extern void cdk_rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link);
 
 #endif /* __CDK_RBTREE_H__ */
