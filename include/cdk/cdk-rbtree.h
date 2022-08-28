@@ -40,7 +40,8 @@
  * 
  *		while(*p){
  *			
- *			T* t = cdk_rb_entry(node, T, rb_node);
+ *			parent = *p;
+ *			T* t   = cdk_rb_entry(parent, T, rb_node);
  * 
  *			int r = strcmp(key, t->key);
  *          if(r < 0){
@@ -82,12 +83,10 @@
 			((t *) ((char *) (n) - offsetof(t, m)))                     
 
 extern void cdk_rb_create(rb_tree_t* tree);
-
 extern rb_node_t* cdk_rb_next(rb_node_t* node);
 extern rb_node_t* cdk_rb_prev(rb_node_t* node);
 extern rb_node_t* cdk_rb_first(rb_tree_t* tree);
 extern rb_node_t* cdk_rb_last(rb_tree_t* tree);
-
 extern void cdk_rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link);
 extern void cdk_rb_insert_color(rb_tree_t* tree, rb_node_t* node);
 extern void cdk_rb_erase(rb_tree_t* tree, rb_node_t* node);
