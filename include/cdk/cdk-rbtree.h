@@ -31,6 +31,10 @@
  * i know it's not the cleaner way,  but in c (not in c++) to get
  * performances and genericity...
  * 
+ * TODO:
+ *	wait for the c standard to support similar gnu typeof (currently not supported by msvc), 
+ *  so that the insert and search methods can implement common operations through typeof and C11 _Generic.
+ * 
  * example:
  * 
  *	static inline void cdk_rb_insert(rb_tree_t* tree, char* key, rb_node_t* node){
@@ -44,11 +48,11 @@
  *			T* t   = cdk_rb_entry(parent, T, rb_node);
  * 
  *			int r = strcmp(key, t->key);
- *          if(r < 0){
+ *			if(r < 0){
  *				p = &(*p)->rb_left;
- *          }else if(r > 0){
+ *			}else if(r > 0){
  *				p = &(*p)->rb_right;
- *          }else{
+ *			}else{
  *				return;
  *			}
  *		}
@@ -60,36 +64,85 @@
  * 
  *		rb_node_t* n = tree->rb_root;
  * 
- *      while(n){
+ *		while(n){
  *			T* t = cdk_rb_entry(n, T, rb_node);
  *          
- *          int r = strcmp(key, t->key);
- *          if(r < 0){
+ *			int r = strcmp(key, t->key);
+ *			if(r < 0){
  *				n = n->rb_left;
- *          }else if(r > 0){
+ *			}else if(r > 0){
  *				n = n->rb_right;
- *          }else{
+ *			}else{
  *				return t;
  *			}
- *      }
+ *		}
  *		return NULL;
  *  }
  */
 
 #define	RB_RED		0
-#define	RB_BLACK	1
+#define	RB_BLACK	1                  
 
-#define	cdk_rb_entry(n, t, m)                          \
-			((t *) ((char *) (n) - offsetof(t, m)))                     
-
+/**
+ *  create a empty rbtree.
+ *
+ *  @param tree [in] rbtree.
+ *  @return N/A.
+ */
 extern void cdk_rb_create(rb_tree_t* tree);
+
+/**
+ *  erase a entry from rbtree.
+ *
+ *  @param tree [in] rbtree.
+ *  @param node [in] rbtree node.
+ *  @return N/A.
+ */
+extern void cdk_rb_erase(rb_tree_t* tree, rb_node_t* node);
+
+/**
+ *  retrive the successive element for the specified node.
+ *	the successive element is an element with greater key value.
+ *
+ *  @param node [in] rbtree node.
+ *  @return the successive node, or NULL if the node has no successor.
+ */
 extern rb_node_t* cdk_rb_next(rb_node_t* node);
+
+/**
+ *  retrive the previous element for the specified node.
+ *	the previous element is an element with less key value.
+ *
+ *  @param node [in] rbtree node.
+ *  @return the previous tree node, or NULL if the node has no previous node.
+ */
 extern rb_node_t* cdk_rb_prev(rb_node_t* node);
+
+/**
+ *  retrive first element from rbtree.
+ *	the first element always has the least value for the key.
+ *
+ *  @param tree [in] rbtree.
+ *  @return the tree node, or NULL if the tree has no element.
+ */
 extern rb_node_t* cdk_rb_first(rb_tree_t* tree);
+
+/**
+ *  retrive last element from rbtree.
+ *	the last element always has the greatest value for the key.
+ *
+ *  @param tree [in] rbtree.
+ *  @return the tree node, or NULL if the tree has no element.
+ */
 extern rb_node_t* cdk_rb_last(rb_tree_t* tree);
+
+/**
+ * the following functions are only used internally by rbtree.
+ */
+#define	cdk_rb_entry(n, t, m)                          \
+			((t *) ((char *) (n) - offsetof(t, m)))   
+
 extern void cdk_rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link);
 extern void cdk_rb_insert_color(rb_tree_t* tree, rb_node_t* node);
-extern void cdk_rb_erase(rb_tree_t* tree, rb_node_t* node);
-extern void cdk_rb_replace_node(rb_tree_t* tree, rb_node_t* victim, rb_node_t* new);
 
 #endif /* __CDK_RBTREE_H__ */

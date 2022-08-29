@@ -401,29 +401,3 @@ void cdk_rb_link_node(rb_node_t* node, rb_node_t* parent, rb_node_t** rb_link)
 	node->rb_left   = node->rb_right = NULL;
 	*rb_link        = node;
 }
-
-void cdk_rb_replace_node(rb_tree_t* tree, rb_node_t* victim, rb_node_t* new)
-{
-	rb_node_t* parent = victim->rb_parent;
-
-	/* Set the surrounding nodes to point to the replacement */
-	if (parent) {
-		if (victim == parent->rb_left) {
-			parent->rb_left = new;
-		}
-		else {
-			parent->rb_right = new;
-		}
-	}
-	else {
-		tree->rb_root = new;
-	}
-	if (victim->rb_left) {
-		victim->rb_left->rb_parent = new;
-	}
-	if (victim->rb_right) {
-		victim->rb_right->rb_parent = new;
-	}
-	/* Copy the pointers/colour from the victim to the replacement */
-	*new = *victim;
-}
