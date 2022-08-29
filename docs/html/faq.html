@@ -1,21 +1,21 @@
-<h3>Q: When using the cdk library in the project, it was found that the related functions of the pthread library could not be found. For example: "undefined reference to `pthread_create'" </h3>
-<p>
-    A: This is because the thread function of cdk only wrapper the thread library function in the operating system. If your system requires you to explicitly link thread library, then you should link it in your project. For example: In ubuntu, you will find
-    the parameter -pthread that needs to be explicitly plus the compiling and linking parameters. Refer to CMakeLists.txt under examples.
-</p>
+<pre style="color:steelblue; font-family:Á¥Êé; font-weight:bold;">
+    Q:
+        when using the cdk library in the project, it was found that the related functions of the pthread library could not be found. For example: "undefined reference to `pthread_create'" 
 
-<h3>Q: How to generate dynamic library?</h3>
-<p>
-    A: It is recommended to always use a static library instead of a dynamic library, because the use of dynamic libraries under the windows platform will have some problems,
-    <br>
-    for example: if there are third-party dynamic libraries linked by your program and set '/MTd, /MT in visual studio ', a crash will occur.
-    <br>
-    Of course, if you are sure to use a dynamic library, you can also use the following command in CMakeLists.txt:
-    <br>
-    <br>
-    add_library(cdk SHARED ${SRCS} ${HDRS})
-    <br>
-    #generate .lib symbols file for dll. only effects for msvc
-    <br>
-    set_target_properties(cdk PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
-</p>
+    A: 
+        this is because the thread function of cdk only wrapper the thread library function in the operating system. If your system requires you to explicitly link thread library, then you should link it in your project. For example: In ubuntu, you will find
+        the parameter -pthread that needs to be explicitly plus the compiling and linking parameters. Refer to CMakeLists.txt under examples.
+</pre>
+
+<pre style="color:steelblue; font-family:Á¥Êé; font-weight:bold;">
+    Q: 
+        How to generate dynamic library?
+    A: 
+        It is recommended to always use a static library instead of a dynamic library, because the use of dynamic libraries under the windows platform will have some problems,
+        for example: if there are third-party dynamic libraries linked by your program and set '/MTd, /MT in visual studio ', a crash will occur.
+        Of course, if you are sure to use a dynamic library, you can also use the following command in CMakeLists.txt:
+    
+        add_library(cdk SHARED ${SRCS} ${HDRS})
+        #generate .lib symbols file for dll. only effects for msvc
+        set_target_properties(cdk PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
+</pre>

@@ -1,163 +1,123 @@
 <h3>extern t* cdk_list_data(list_node_t* x, t, m)</h3>
-<p>
+<pre>
     get current node data.
-    <br>
-    <br>
+
     @param x [in] current node.
-    <br>
     @param t [in] type of the structure where the current node is located.
-    <br>
     @param m [in] name of the member in the structure where the list node is located.
-    <br>
     @return type pointer of the structure where the current node is located.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern void cdk_list_create(list_t* l)</h3>
-<p>
+<pre>
     create a null list that contains sentinel node.
-    <br>
-    <br>
+
     @param l [in] current list.
-    <br>
     @return N/A.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern void cdk_list_init_node(list_node_t* x)</h3>
-<p>
+<pre>
     initialize a list node.
-    <br>
-    <br>
+
     @param x [in].
-    <br>
     @return N/A.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern void cdk_list_insert_head(list_t* l, list_node_t* x)</h3>
-<p>
+<pre>
     insert a node at the head of the list.
-    <br>
-    <br>
+
     @param l [in] current list.
-    <br>
     @param x [in] new node.
-    <br>
     @return N/A.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern void cdk_list_insert_tail(list_t* l, list_node_t* x)</h3>
-<p>
+<pre>
     insert a node at the tail of the list.
-    <br>
-    <br>
+
     @param l [in] current list.
-    <br>
     @param x [in] new node.
-    <br>
     @return N/A.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern bool cdk_list_empty(list_t* l)</h3>
-<p>
+<pre>
     check if the list is empty.
-    <br>
-    <br>
+
     @param l [in] current list.
-    <br>
     @return if list is empty return true, otherwis return false.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern list_node_t* cdk_list_head(list_t* l)</h3>
-<p>
+<pre>
     get first node by sentinel node in the list.
-    <br>
-    <br>
+
     @param l [in] current list.
-    <br>
     @return first node in the list.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern list_node_t* cdk_list_tail(list_t* l)</h3>
-<p>
+<pre>
     get last node by sentinel node in the list.
-    <br>
-    <br>
+
     @param l [in] current list.
-    <br>
     @return last node in the list.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern list_node_t* cdk_list_next(list_node_t* x)</h3>
-<p>
+<pre>
     get current node's next node.
-    <br>
-    <br>
+
     @param x [in] current node.
-    <br>
     @return current node's next node in the list.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern list_node_t* cdk_list_prev(list_node_t* x)</h3>
-<p>
+<pre>
     get current node's prev node.
-    <br>
-    <br>
+
     @param x [in] current node.
-    <br>
     @return current node's prev node in the list.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern void cdk_list_remove(list_node_t* x)</h3>
-<p>
+<pre>
     remove current node.
-    <br>
-    <br>
+
     @param x [in] current node.
-    <br>
     @return N/A.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern list_node_t* cdk_list_sentinel(list_t* l)</h3>
-<p>
+<pre>
     get sentinel node.
-    <br>
-    <br>
+
     @param l [in] current list.
-    <br>
     @return sentinel node.
-    <br>
-</p>
+</pre>
 
 <br>

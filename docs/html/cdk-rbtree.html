@@ -56,82 +56,67 @@
 </pre>
 
 <h3>extern void cdk_rb_create(rb_tree_t* tree)</h3>
-<p>
+<pre>
     create a empty rbtree.
-    <br>
-    <br>
+
     @param tree [in] rbtree.
-    <br>
     @return N/A.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern void cdk_rb_erase(rb_tree_t* tree, rb_node_t* node)</h3>
-<p>
+<pre>
     erase a entry from rbtree.
-    <br>
-    <br>
+
     @param tree [in] rbtree.
-    <br>
-    <br>
     @param node [in] rbtree node.
-    <br>
     @return N/A.
     <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern rb_node_t* cdk_rb_next(rb_node_t* node)</h3>
-<p>
-    retrive the successive element for the specified node.the successive element is an element with greater key value.
-    <br>
-    <br>
+<pre>
+    retrive the successive element for the specified node.
+    the successive element is an element with greater key value.
+
     @param node [in] rbtree node.
-    <br>
     @return the successive node, or NULL if the node has no successor.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern rb_node_t* cdk_rb_prev(rb_node_t* node)</h3>
-<p>
-    retrive the previous element for the specified node.the previous element is an element with less key value.
-    <br>
-    <br>
+<pre>
+    retrive the previous element for the specified node.
+    the previous element is an element with less key value.
+
     @param node [in] rbtree node.
-    <br>
     @return the previous tree node, or NULL if the node has no previous node.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern rb_node_t* cdk_rb_first(rb_tree_t* tree)</h3>
-<p>
-    retrive first element from rbtree.the first element always has the least value for the key.
-    <br>
-    <br>
+<pre>
+    retrive first element from rbtree.
+    the first element always has the least value for the key.
+
     @param node [in] rbtree node.
-    <br>
     @return the tree node, or NULL if the tree has no element.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern rb_node_t* cdk_rb_last(rb_tree_t* tree)</h3>
-<p>
-    retrive last element from rbtree.the last element always has the greatest value for the key.
-    <br>
-    <br>
+<pre>
+    retrive last element from rbtree.
+    the last element always has the greatest value for the key.
+
     @param node [in] rbtree node.
-    <br>
     @return the tree node, or NULL if the tree has no element.
-    <br>
-</p>
+</pre>
 
 <br>

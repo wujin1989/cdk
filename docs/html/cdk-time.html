@@ -1,40 +1,30 @@
 <h3>extern uint64_t cdk_timespec_get(void)</h3>
-<p>
+<pre>
     obtain a high-precision clock with a precision of milliseconds. instead of gettimeofday.
-    <br>
-    <br>
+
     @param N/A.
-    <br>
     @return if successful it returns current time in milliseconds since epoch. otherwise, it returns zero.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern bool cdk_localtime(const time_t* t, struct tm* r)</h3>
-<p>
+<pre>
     convert the seconds that have passed since epoch to local time.
-    <br>
-    <br>
+
     @param t [in] seconds elapsed since epoch.
-    <br>
     @param r [in/out] broken-down time.
-    <br>
     @return success return true; failure return false.
-    <br>
-</p>
+</pre>
 
 <br>
 
 <h3>extern void cdk_sleep(const uint32_t ms)</h3>
-<p>
+<pre>
     suspend current thread.
-    <br>
-    <br> 
-    @param ms [in] milliseconds to suspend the current thread.
-    <br> 
+ 
+    @param ms [in] milliseconds to suspend the current thread. 
     @return N/A.
-    <br>
-</p>
+</pre>
 
 <br>
