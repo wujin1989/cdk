@@ -79,9 +79,7 @@
  *		return NULL;
  *  }
  */
-
-#define	RB_RED		0
-#define	RB_BLACK	1                  
+                  
 
 /**
  *  create a empty rbtree.

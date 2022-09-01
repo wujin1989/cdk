@@ -21,6 +21,9 @@
 
 #include "cdk/cdk-rbtree.h"
 
+#define	RB_RED		0
+#define	RB_BLACK	1
+
 static void __rb_rotate_left(rb_node_t* node, rb_tree_t* tree)
 {
 	rb_node_t* right = node->rb_right;
