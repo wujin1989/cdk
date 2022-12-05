@@ -79,10 +79,7 @@ void _cdk_atomic_fetch_and(volatile atomic_t* t, LONG64 o) {
 _Bool _cdk_atomic_cas(volatile atomic_t* t, int64_t* e, int64_t d)
 {
 	LONG64 m = *e;
-	LONG64 n = InterlockedCompareExchange64(t, d, m);
-
-	_Bool r = n == m;
+	*e = InterlockedCompareExchange64(t, d, m);
 	
-	if (!r) { *e = n; }
-	return r;
+	return *e == m;
 }
