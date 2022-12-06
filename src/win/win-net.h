@@ -31,7 +31,6 @@ extern void   _cdk_net_close(sock_t s);
 /* tcp */
 extern sock_t _cdk_tcp_listen(const char* restrict h, const char* restrict p);
 extern sock_t _cdk_tcp_dial(const char* restrict h, const char* restrict p);
-extern void   _cdk_tcp_keepalive(sock_t s);
 extern sock_t _cdk_tcp_accept(sock_t s);
 
 /* udp */

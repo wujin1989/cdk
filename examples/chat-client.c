@@ -167,8 +167,6 @@ int main(void) {
 
 	s = cdk_tcp_dial("127.0.0.1", "9999");
 
-	cdk_tcp_keepalive(s);
-
 	while (true) {
 		switch (user_selector())
 		{

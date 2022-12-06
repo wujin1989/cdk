@@ -125,14 +125,6 @@ extern sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p);
 extern sock_t cdk_tcp_accept(sock_t s);
 
 /**
- *  enable tcp keepalive option.
- *
- *  @param s  [in].
- *  @return N/A.
- */
-extern void cdk_tcp_keepalive(sock_t s);
-
-/**
  *  create a tcp blocking socket and connect.
  *
  *  @param h [in] host.

@@ -31,6 +31,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #define TCPv4_MSS    536
 #define TCPv6_MSS    1220
@@ -53,7 +54,36 @@ static void _reuse_addr(sock_t s) {
     if (r < 0) { abort(); }
 }
 
+static void _nonblock(sock_t s) {
+
+    int flag = fcntl(s, F_GETFL, 0);
+    if (-1 == flag) {
+        return;
+    }
+
+    fcntl(s, F_SETFL, flag | O_NONBLOCK);
+}
+
 #if defined(__linux__)
+
+static void _keepalive(sock_t s) {
+
+    int r;
+    int on = 1;
+    int d = 60;
+    int i = 1;  /* 1 second; same as default on win32 */
+    int c = 10; /* 10 retries; same as hardcoded on win32 since vista */
+
+    r = setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on));
+    if (r < 0) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPIDLE, (const void*)&d, sizeof(d));
+    if (r < 0) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i));
+    if (r < 0) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c));
+    if (r < 0) { abort(); }
+}
+
 static void _maxseg(sock_t s) {
 
     int    v;
@@ -69,6 +99,25 @@ static void _maxseg(sock_t s) {
 #endif
 
 #if defined(__APPLE__)
+
+static void _keepalive(sock_t s) {
+
+    int r;
+    int on = 1;
+    int d = 60;
+    int i = 1;  /* 1 second; same as default on win32 */
+    int c = 10; /* 10 retries; same as hardcoded on win32 since vista */
+
+    r = setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on));
+    if (r < 0) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPALIVE, (const void*)&d, sizeof(d));
+    if (r < 0) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i));
+    if (r < 0) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c));
+    if (r < 0) { abort(); }
+}
+
 static void _maxseg(sock_t s) {
 
     /**
@@ -119,9 +168,14 @@ static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
         _reuse_port(s);
 
         if (bind(s, rp->ai_addr, rp->ai_addrlen) < 0) { continue; }
+        /**
+         * these options inherited by connection-socket. 
+         */
         if (t == SOCK_STREAM) {
             if (listen(s, SOMAXCONN) < 0) { close(s); continue; }
             _maxseg(s);
+            _nodelay(s, true);
+            _keepalive(s);
         }
         break;
     }
@@ -155,10 +209,11 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
         if (s == -1) { continue; }
         if (t == SOCK_STREAM) {
             _maxseg(s);
+            _nodelay(s, true);
+            _keepalive(s);
         }
         if (connect(s, rp->ai_addr, rp->ai_addrlen) < 0) { close(s); continue; }
-
-        _nodelay(s, true);
+        
         break;
     }
     if (rp == NULL) { return -1; }
@@ -167,6 +222,29 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
 }
 
 /* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
+
+void _cdk_net_rtimeo(sock_t s, int t) {
+
+    int r;
+    struct timeval tv;
+
+    tv.tv_sec = 0;
+    tv.tv_usec = t * 1000;
+
+    r = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv));
+    if (r < 0) { abort(); }
+}
+
+void _cdk_net_stimeo(sock_t s, int t) {
+
+    int r;
+    struct timeval tv;
+
+    tv.tv_sec = 0;
+    tv.tv_usec = t * 1000;
+    r = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&tv, sizeof(tv));
+    if (r < 0) { abort(); }
+}
 
 void _cdk_net_close(sock_t s) {
 
@@ -199,29 +277,6 @@ int _cdk_net_af(sock_t s) {
 }
 #endif
 
-void _cdk_net_rtimeo(sock_t s, int t) {
-
-    int r;
-    struct timeval tv;
-
-    tv.tv_sec  = 0;
-    tv.tv_usec = t * 1000;
-
-    r = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv));
-    if (r < 0) { abort(); }
-}
-
-void _cdk_net_stimeo(sock_t s, int t) {
-
-    int r;
-    struct timeval tv;
-
-    tv.tv_sec  = 0;
-    tv.tv_usec = t * 1000;
-    r = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&tv, sizeof(tv));
-    if (r < 0) { abort(); }
-}
-
 /* ///////////////////////////////////////////  tcp  //////////////////////////////////////////////////////////// */
 
 sock_t _cdk_tcp_accept(sock_t s) {
@@ -229,7 +284,6 @@ sock_t _cdk_tcp_accept(sock_t s) {
     sock_t c = accept(s, NULL, NULL);
     if (c < 0) { abort(); }
 
-    _nodelay(c, true);
     return c;
 }
 
@@ -242,47 +296,6 @@ sock_t _cdk_tcp_dial(const char* restrict h, const char* restrict p) {
     
     return _dial(h, p, SOCK_STREAM);
 }
-
-#if defined(__linux__)
-void _cdk_tcp_keepalive(sock_t s) {
-
-    int r;
-    int on = 1;
-    int d  = 60;
-    int i  = 1;  /* 1 second; same as default on win32 */
-    int c  = 10; /* 10 retries; same as hardcoded on win32 since vista */
-
-    r = setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on));
-    if (r < 0) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPIDLE, (const void*)&d, sizeof(d));
-    if (r < 0) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i));
-    if (r < 0) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c));
-    if (r < 0) { abort(); }
-}
-#endif
-
-#if defined(__APPLE__)
-void _cdk_tcp_keepalive(sock_t s) {
-
-    int r;
-    int on = 1;
-    int d  = 60;
-    int i  = 1;  /* 1 second; same as default on win32 */
-    int c  = 10; /* 10 retries; same as hardcoded on win32 since vista */
-
-    r= setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on));
-    if (r < 0) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPALIVE, (const void*)&d, sizeof(d));
-    if (r < 0) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i));
-    if (r < 0) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c));
-    if (r < 0) { abort(); }
-}
-#endif
-
 
 /* ///////////////////////////////////////////  udp  //////////////////////////////////////////////////////////// */
 sock_t _cdk_udp_listen(const char* restrict h, const char* restrict p) {

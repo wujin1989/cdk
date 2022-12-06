@@ -60,19 +60,19 @@ static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
 
 /* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
 
-void cdk_net_close(sock_t s) {
-
-    _cdk_net_close(s);
-}
-
 void cdk_net_rtimeo(sock_t s, int t) {
-    
+
     _cdk_net_rtimeo(s, t);
 }
 
 void cdk_net_stimeo(sock_t s, int t) {
 
     _cdk_net_stimeo(s, t);
+}
+
+void cdk_net_close(sock_t s) {
+
+    _cdk_net_close(s);
 }
 
 void cdk_net_rbuf(sock_t s, int v) {
@@ -180,11 +180,6 @@ sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p) {
 sock_t cdk_tcp_accept(sock_t s) {
 
     return _cdk_tcp_accept(s);
-}
-
-void cdk_tcp_keepalive(sock_t s) {
-
-    _cdk_tcp_keepalive(s);
 }
 
 sock_t cdk_tcp_dial(const char* restrict h, const char* restrict p) {

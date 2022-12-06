@@ -32,6 +32,30 @@ static void _nodelay(sock_t s, bool on) {
     setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const void*)&v, sizeof(v));
 }
 
+static void _nonblock(sock_t s) {
+
+    u_long on = 1;
+    ioctlsocket(s, FIONBIO, &on);
+}
+
+static void _keepalive(sock_t s) {
+
+    int r;
+    int on = 1;
+    int d = 60;
+    int i = 1;  /* 1 second; same as default on win32 */
+    int c = 10; /* 10 retries; same as hardcoded on win32 since vista */
+
+    r = setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on));
+    if (r == SOCKET_ERROR) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPIDLE, (const void*)&d, sizeof(d));
+    if (r == SOCKET_ERROR) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i));
+    if (r == SOCKET_ERROR) { abort(); }
+    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c));
+    if (r == SOCKET_ERROR) { abort(); }
+}
+
 static void _maxseg(sock_t s) {
 
     int    v;
@@ -99,6 +123,8 @@ static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
         if (t == SOCK_STREAM) {
             if (listen(s, SOMAXCONN) < 0) { closesocket(s); continue; }
             _maxseg(s);
+            _nodelay(s, true);
+            _keepalive(s);
         }
         break;
     }
@@ -138,12 +164,13 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
 
         if (t == SOCK_STREAM) {
             _maxseg(s);
+            _nodelay(s, true);
+            _keepalive(s);
         }
         if (connect(s, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) { 
             closesocket(s); continue; 
         }
         
-        _nodelay(s, true);
         break;
     }
     if (rp == NULL) { return INVALID_SOCKET; }
@@ -152,11 +179,6 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
 }
 
 /* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
-
-void _cdk_net_close(sock_t s) {
-
-    closesocket(s);
-}
 
 void _cdk_net_rtimeo(sock_t s, int t) {
 
@@ -170,6 +192,11 @@ void _cdk_net_stimeo(sock_t s, int t) {
     int r;
     r = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&t, sizeof(t));
     if (r == SOCKET_ERROR) { abort(); }
+}
+
+void _cdk_net_close(sock_t s) {
+
+    closesocket(s);
 }
 
 int _cdk_net_af(sock_t s) {
@@ -190,31 +217,12 @@ sock_t _cdk_tcp_accept(sock_t s) {
     sock_t c = accept(s, NULL, NULL);
     if (c == INVALID_SOCKET) { abort(); }
 
-    _nodelay(c, true);
     return c;
 }
 
 sock_t _cdk_tcp_listen(const char* restrict h, const char* restrict p) {
 	
     return _listen(h, p, SOCK_STREAM);
-}
-
-void _cdk_tcp_keepalive(sock_t s) {
-
-    int r;
-    int on = 1;
-    int d  = 60;
-    int i  = 1;  /* 1 second; same as default on win32 */
-    int c  = 10; /* 10 retries; same as hardcoded on win32 since vista */
-
-    r = setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on));
-    if (r == SOCKET_ERROR) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPIDLE, (const void*)&d, sizeof(d));
-    if (r == SOCKET_ERROR) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i));
-    if (r == SOCKET_ERROR) { abort(); }
-    r = setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c));
-    if (r == SOCKET_ERROR) { abort(); }
 }
 
 sock_t _cdk_tcp_dial(const char* restrict h, const char* restrict p) {
