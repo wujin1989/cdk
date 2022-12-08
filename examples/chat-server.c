@@ -255,7 +255,7 @@ int main(void) {
 
 	s = cdk_tcp_listen("0.0.0.0", "9999");
 	while (true) {
-		c = cdk_tcp_accept(s);
+		//c = cdk_tcp_accept(s);
 
 		thrd_t t;
 		if (!cdk_thrd_create(&t, routine, &c)) { break; }

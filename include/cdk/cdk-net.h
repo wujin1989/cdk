@@ -117,14 +117,6 @@ extern int cdk_net_af(sock_t s);
 extern sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p);
 
 /**
- *  accept tcp connection.
- *
- *  @param s [in] listen fd.
- *  @return connect fd.
- */
-extern sock_t cdk_tcp_accept(sock_t s);
-
-/**
  *  create a tcp blocking socket and connect.
  *
  *  @param h [in] host.

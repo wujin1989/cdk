@@ -177,11 +177,6 @@ sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p) {
 	return _cdk_tcp_listen(h, p);
 }
 
-sock_t cdk_tcp_accept(sock_t s) {
-
-    return _cdk_tcp_accept(s);
-}
-
 sock_t cdk_tcp_dial(const char* restrict h, const char* restrict p) {
 
     return _cdk_tcp_dial(h, p);

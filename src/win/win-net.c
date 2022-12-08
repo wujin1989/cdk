@@ -24,18 +24,40 @@
 
 /* ///////////////////////////////////////////  private  //////////////////////////////////////////////////////////// */
 
+static void _nonblock(sock_t s) {
+
+    u_long on = 1;
+    ioctlsocket(s, FIONBIO, &on);
+}
+
+static int _wait(sock_t s, int t) {
+
+    struct pollfd pfd;
+    memset(&pfd, 0, sizeof(struct pollfd));
+
+    pfd.fd = s;
+    pfd.events = POLLOUT;
+
+    return WSAPoll(&pfd, 1, t);
+}
+
+static sock_t _tcp_accept(sock_t s) {
+
+    sock_t c = accept(s, NULL, NULL);
+    if (c == INVALID_SOCKET) {
+        closesocket(s);
+        return INVALID_SOCKET;
+    }
+    _nonblock(c);
+    return c;
+}
+
 static void _nodelay(sock_t s, bool on) {
 
     int v;
     if (on) { v = 1; }
     else { v = 0; }
     setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const void*)&v, sizeof(v));
-}
-
-static void _nonblock(sock_t s) {
-
-    u_long on = 1;
-    ioctlsocket(s, FIONBIO, &on);
 }
 
 static void _keepalive(sock_t s) {
@@ -121,11 +143,12 @@ static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
 
         if (bind(s, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) { closesocket(s); continue; }
         if (t == SOCK_STREAM) {
-            if (listen(s, SOMAXCONN) < 0) { closesocket(s); continue; }
+            if (listen(s, SOMAXCONN) == SOCKET_ERROR) { closesocket(s); continue; }
             _maxseg(s);
             _nodelay(s, true);
             _keepalive(s);
         }
+        _nonblock(s);
         break;
     }
     if (rp == NULL) { return INVALID_SOCKET; }
@@ -167,10 +190,19 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
             _nodelay(s, true);
             _keepalive(s);
         }
-        if (connect(s, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) { 
-            closesocket(s); continue; 
-        }
+        _nonblock(s);
         
+        r = connect(s, rp->ai_addr, (int)rp->ai_addrlen);
+        if (r == SOCKET_ERROR && WSAGetLastError() != WSAEWOULDBLOCK) {
+            closesocket(s);
+            continue;
+        }
+        if (r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK) {
+            if (_wait(s, 10000) <= 0) {
+                closesocket(s);
+                return INVALID_SOCKET;
+            }
+        }
         break;
     }
     if (rp == NULL) { return INVALID_SOCKET; }
@@ -211,14 +243,6 @@ int _cdk_net_af(sock_t s) {
 }
 
 /* ///////////////////////////////////////////  tcp  //////////////////////////////////////////////////////////// */
-
-sock_t _cdk_tcp_accept(sock_t s) {
-
-    sock_t c = accept(s, NULL, NULL);
-    if (c == INVALID_SOCKET) { abort(); }
-
-    return c;
-}
 
 sock_t _cdk_tcp_listen(const char* restrict h, const char* restrict p) {
 	
