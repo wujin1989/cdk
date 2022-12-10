@@ -38,6 +38,9 @@ static int _wait(sock_t s, int t) {
     pfd.fd = s;
     pfd.events = POLLOUT;
 
+    /**
+     * WSAPoll bug fixed at win10 2004ver for non-blocking connect system call.
+     */
     return WSAPoll(&pfd, 1, t);
 }
 
@@ -141,9 +144,15 @@ static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
 
         _reuse_addr(s);
 
-        if (bind(s, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) { closesocket(s); continue; }
+        if (bind(s, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) {
+            closesocket(s);
+            continue;
+        }
         if (t == SOCK_STREAM) {
-            if (listen(s, SOMAXCONN) == SOCKET_ERROR) { closesocket(s); continue; }
+            if (listen(s, SOMAXCONN) == SOCKET_ERROR) {
+                closesocket(s);
+                continue;
+            }
             _maxseg(s);
             _nodelay(s, true);
             _keepalive(s);
@@ -211,20 +220,6 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
 }
 
 /* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
-
-void _cdk_net_rtimeo(sock_t s, int t) {
-
-    int r;
-    r = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&t, sizeof(t));
-    if (r == SOCKET_ERROR) { abort(); }
-}
-
-void _cdk_net_stimeo(sock_t s, int t) {
-
-    int r;
-    r = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&t, sizeof(t));
-    if (r == SOCKET_ERROR) { abort(); }
-}
 
 void _cdk_net_close(sock_t s) {
 

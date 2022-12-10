@@ -52,24 +52,6 @@ extern void cdk_net_rbuf(sock_t s, int v);
 extern void cdk_net_sbuf(sock_t s, int v);
 
 /**
- *  set the receive timeout of the socket.
- *
- *  @param s [in].
- *  @param t [in] timeout, the unit is ms.
- *  @return N/A.
- */
-extern void cdk_net_rtimeo(sock_t s, int t);
-
-/**
- *  set the send timeout of the socket.
- *
- *  @param s [in].
- *  @param t [in] timeout, the unit is ms.
- *  @return N/A.
- */
-extern void cdk_net_stimeo(sock_t s, int t);
-
-/**
  *  convert network address format to presentable address.
  *
  *  @param ss [in] ipv4 or ipv6 address.
@@ -121,7 +103,7 @@ extern sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p);
  *
  *  @param h [in] host.
  *  @param p [in] port.
- *  @return tcp socket fd.
+ *  @return connection fd.
  */
 extern sock_t cdk_tcp_dial(const char* restrict h, const char* restrict p);
 

@@ -165,7 +165,7 @@ int main(void) {
 	sock_t   s;
 	cdk_logger_init(NULL, false);
 
-	s = cdk_tcp_dial("192.168.1.66", "9999");
+	s = cdk_tcp_dial("127.0.0.1", "9999");
 
 	while (true) {
 		switch (user_selector())

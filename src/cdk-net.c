@@ -60,16 +60,6 @@ static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
 
 /* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
 
-void cdk_net_rtimeo(sock_t s, int t) {
-
-    _cdk_net_rtimeo(s, t);
-}
-
-void cdk_net_stimeo(sock_t s, int t) {
-
-    _cdk_net_stimeo(s, t);
-}
-
 void cdk_net_close(sock_t s) {
 
     _cdk_net_close(s);

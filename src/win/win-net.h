@@ -23,8 +23,6 @@
 
 #include "cdk/cdk-types.h"
 /* common */
-extern void   _cdk_net_rtimeo(sock_t s, int t);
-extern void   _cdk_net_stimeo(sock_t s, int t);
 extern int    _cdk_net_af(sock_t s);
 extern void   _cdk_net_close(sock_t s);
 

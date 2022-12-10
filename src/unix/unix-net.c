@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <errno.h>
 
 #define TCPv4_MSS       536
 #define TCPv6_MSS       1220
@@ -278,29 +279,6 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
 }
 
 /* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
-
-void _cdk_net_rtimeo(sock_t s, int t) {
-
-    int r;
-    struct timeval tv;
-
-    tv.tv_sec = 0;
-    tv.tv_usec = t * 1000;
-
-    r = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv));
-    if (r < 0) { abort(); }
-}
-
-void _cdk_net_stimeo(sock_t s, int t) {
-
-    int r;
-    struct timeval tv;
-
-    tv.tv_sec = 0;
-    tv.tv_usec = t * 1000;
-    r = setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&tv, sizeof(tv));
-    if (r < 0) { abort(); }
-}
 
 void _cdk_net_close(sock_t s) {
 

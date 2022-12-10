@@ -18,23 +18,12 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
-#ifndef __UNIX_NET_H__
-#define __UNIX_NET_H__
+#ifndef __UNIX_EVENT_H__
+#define __UNIX_EVENT_H__
 
-#include "cdk/cdk-types.h"
+typedef struct event_t {
+	sock_t fd;
+	int    events;
+}event_t;
 
-
-/* common */
-extern int    _cdk_net_af(sock_t s);
-extern void   _cdk_net_close(sock_t s);
-
-/* tcp */
-extern sock_t _cdk_tcp_listen(const char* restrict h, const char* restrict p);
-extern sock_t _cdk_tcp_dial(const char* restrict h, const char* restrict p);
-
-/* udp */
-extern sock_t _cdk_udp_listen(const char* restrict h, const char* restrict p);
-extern sock_t _cdk_udp_dial(const char* restrict h, const char* restrict p);
-
-#endif /* __UNIX_NET_H__ */
-
+#endif /* __UNIX_EVENT_H__ */

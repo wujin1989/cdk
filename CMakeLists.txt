@@ -107,6 +107,7 @@ if(UNIX)
 		src/unix/unix-systeminfo.c
 		src/unix/unix-io.c
 		src/unix/unix-loadapi.c
+		src/unix/unix-event.c
 		src/unix/unix-process.h
 		src/unix/unix-thread.h
 		src/unix/unix-time.h
@@ -115,7 +116,8 @@ if(UNIX)
 		src/unix/unix-net.h
 		src/unix/unix-systeminfo.h
 		src/unix/unix-io.h
-		src/unix/unix-loadapi.h)
+		src/unix/unix-loadapi.h
+		src/unix/unix-event.h)
 endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${HDRS})
