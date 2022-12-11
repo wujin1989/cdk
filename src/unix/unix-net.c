@@ -44,7 +44,7 @@ static void _nonblock(sock_t s) {
 
     int flag = fcntl(s, F_GETFL, 0);
     if (-1 == flag) {
-        return;
+        abort();
     }
     fcntl(s, F_SETFL, flag | O_NONBLOCK);
 }
