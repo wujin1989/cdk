@@ -21,6 +21,7 @@ else()
 	message(FATAL_ERROR "[cdk compile]: 32bit os isn't supported!")
 endif()
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 #iso c standard, support c11 and later
