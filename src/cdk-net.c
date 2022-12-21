@@ -28,6 +28,7 @@
 
 #if defined(__linux__) || defined(__APPLE__)
 #include "unix/unix-net.h"
+#include "unix/unix-netpoller.h"
 #include <sys/socket.h>
 #include <string.h>
 #include <stdlib.h>
@@ -162,14 +163,19 @@ int cdk_net_af(sock_t s) {
 }
 
 /* ///////////////////////////////////////////  tcp  //////////////////////////////////////////////////////////// */
-sock_t cdk_tcp_listen(const char* restrict h, const char* restrict p) {
+void cdk_tcp_listen(const char* restrict h, const char* restrict p, netpoller_handler_t* handler) {
 	
-	return _cdk_tcp_listen(h, p);
+    sock_t s;
+    
+    _netpoller_create();
+	s = _tcp_listen(h, p);
+
+    _netpoller_register(s, _NETPOLLER_IO_ACCEPT, handler);
 }
 
 sock_t cdk_tcp_dial(const char* restrict h, const char* restrict p) {
 
-    return _cdk_tcp_dial(h, p);
+    return _tcp_dial(h, p);
 }
 
 net_msg_t* cdk_tcp_marshaller(char* restrict b, int tp, int sz) {

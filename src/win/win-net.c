@@ -157,7 +157,7 @@ static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
             _nodelay(s, true);
             _keepalive(s);
         }
-        _nonblock(s);
+        //_nonblock(s);
         break;
     }
     if (rp == NULL) { return INVALID_SOCKET; }
