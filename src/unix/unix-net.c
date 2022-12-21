@@ -210,7 +210,7 @@ static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
         /**
          * this option not inherited by connection-socket.
          */
-        _nonblock(s);
+        //_nonblock(s);
         break;
     }
     if (rp == NULL) { return -1; }

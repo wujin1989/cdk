@@ -18,12 +18,33 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
-#ifndef __UNIX_EVENT_H__
-#define __UNIX_EVENT_H__
+#ifndef __UNIX_NETPOLLER_H__
+#define __UNIX_NETPOLLER_H__
 
-typedef struct event_t {
-	sock_t fd;
-	int    events;
-}event_t;
+#include "cdk/cdk-types.h"
 
-#endif /* __UNIX_EVENT_H__ */
+typedef enum _netpoller_cmd_t {
+
+	_NETPOLLER_CMD_R     ,
+	_NETPOLLER_CMD_W     ,
+	_NETPOLLER_CMD_A     ,
+	_NETPOLLER_CMD_C     ,
+	_NETPOLLER_CMD_U
+}netpoller_cmd_t;
+
+typedef struct _netpoller_handler_t {
+
+	void (*on_accept) (sock_t s);
+	void (*on_connect)(sock_t s);
+	void (*on_read)   (sock_t s, void* buf, size_t sz);
+	void (*on_write)  (sock_t s);
+}netpoller_handler_t;
+
+typedef struct _netpoller_ctx_t {
+
+	sock_t               fd;
+	netpoller_cmd_t      cmd;
+	netpoller_handler_t* h;
+}netpoller_ctx_t;
+
+#endif /* __UNIX_NETPOLLER_H__ */
