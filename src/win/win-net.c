@@ -22,15 +22,7 @@
 #include "win-net.h"
 #include <WS2tcpip.h>
 
-/* ///////////////////////////////////////////  private  //////////////////////////////////////////////////////////// */
-
-static void _nonblock(sock_t s) {
-
-    u_long on = 1;
-    ioctlsocket(s, FIONBIO, &on);
-}
-
-static int _wait(sock_t s, int t) {
+static int __wait(sock_t s, int t) {
 
     struct pollfd pfd;
     memset(&pfd, 0, sizeof(struct pollfd));
@@ -44,7 +36,13 @@ static int _wait(sock_t s, int t) {
     return WSAPoll(&pfd, 1, t);
 }
 
-static sock_t _tcp_accept(sock_t s) {
+void _net_nonblock(sock_t s) {
+
+    u_long on = 1;
+    ioctlsocket(s, FIONBIO, &on);
+}
+
+sock_t _tcp_accept(sock_t s) {
 
     sock_t c = accept(s, NULL, NULL);
     if (c == INVALID_SOCKET) {
@@ -55,7 +53,7 @@ static sock_t _tcp_accept(sock_t s) {
     return c;
 }
 
-static void _nodelay(sock_t s, bool on) {
+void _tcp_nodelay(sock_t s, bool on) {
 
     int v;
     if (on) { v = 1; }
@@ -63,7 +61,7 @@ static void _nodelay(sock_t s, bool on) {
     setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const void*)&v, sizeof(v));
 }
 
-static void _keepalive(sock_t s) {
+void _tcp_keepalive(sock_t s) {
 
     int r;
     int on = 1;
@@ -81,7 +79,7 @@ static void _keepalive(sock_t s) {
     if (r == SOCKET_ERROR) { abort(); }
 }
 
-static void _maxseg(sock_t s) {
+void _tcp_maxseg(sock_t s) {
 
     int    v;
     int    af;
@@ -106,7 +104,7 @@ static void _maxseg(sock_t s) {
     }
 }
 
-static void _reuse_addr(sock_t s) {
+void _net_reuse_addr(sock_t s) {
 
     int r;
     int on = 1;
@@ -114,26 +112,26 @@ static void _reuse_addr(sock_t s) {
     if (r == SOCKET_ERROR) { abort(); }
 }
 
-static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
+sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
 
     int                r;
     WSADATA            d;
     SOCKET             s;
     struct addrinfo    hints;
-    struct addrinfo*   res;
-    struct addrinfo*   rp;
+    struct addrinfo* res;
+    struct addrinfo* rp;
 
     r = WSAStartup(MAKEWORD(2, 2), &d);
     if (r != NO_ERROR) { return INVALID_SOCKET; }
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family     = AF_UNSPEC;
-    hints.ai_socktype   = t;
-    hints.ai_flags      = AI_PASSIVE;
-    hints.ai_protocol   = 0;
-    hints.ai_canonname  = NULL;
-    hints.ai_addr       = NULL;
-    hints.ai_next       = NULL;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = t;
+    hints.ai_flags = AI_PASSIVE;
+    hints.ai_protocol = 0;
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
 
     r = getaddrinfo(h, p, &hints, &res);
     if (r != 0) { return INVALID_SOCKET; }
@@ -153,11 +151,11 @@ static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
                 closesocket(s);
                 continue;
             }
-            _maxseg(s);
-            _nodelay(s, true);
-            _keepalive(s);
+            _tcp_maxseg(s);
+            _tcp_nodelay(s, true);
+            _tcp_keepalive(s);
         }
-        //_nonblock(s);
+        _net_nonblock(s);
         break;
     }
     if (rp == NULL) { return INVALID_SOCKET; }
@@ -166,25 +164,25 @@ static sock_t _listen(const char* restrict h, const char* restrict p, int t) {
     return s;
 }
 
-static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
+sock_t _net_dial(const char* restrict h, const char* restrict p, int t) {
     int                r;
     WSADATA            d;
     SOCKET             s;
     struct addrinfo    hints;
-    struct addrinfo*   res;
-    struct addrinfo*   rp;
+    struct addrinfo* res;
+    struct addrinfo* rp;
 
     r = WSAStartup(MAKEWORD(2, 2), &d);
     if (r != NO_ERROR) { return INVALID_SOCKET; }
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family     = AF_UNSPEC;
-    hints.ai_socktype   = t;
-    hints.ai_flags      = 0;
-    hints.ai_protocol   = 0;
-    hints.ai_canonname  = NULL;
-    hints.ai_addr       = NULL;
-    hints.ai_next       = NULL;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = t;
+    hints.ai_flags = 0;
+    hints.ai_protocol = 0;
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
 
     r = getaddrinfo(h, p, &hints, &res);
     if (r != 0) { return INVALID_SOCKET; }
@@ -195,19 +193,19 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
         if (s == INVALID_SOCKET) { continue; }
 
         if (t == SOCK_STREAM) {
-            _maxseg(s);
-            _nodelay(s, true);
-            _keepalive(s);
+            _tcp_maxseg(s);
+            _tcp_nodelay(s, true);
+            _tcp_keepalive(s);
         }
-        _nonblock(s);
-        
+        _net_nonblock(s);
+
         r = connect(s, rp->ai_addr, (int)rp->ai_addrlen);
         if (r == SOCKET_ERROR && WSAGetLastError() != WSAEWOULDBLOCK) {
             closesocket(s);
             continue;
         }
         if (r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK) {
-            if (_wait(s, 10000) <= 0) {
+            if (__wait(s, 10000) <= 0) {
                 closesocket(s);
                 return INVALID_SOCKET;
             }
@@ -219,14 +217,12 @@ static sock_t _dial(const char* restrict h, const char* restrict p, int t) {
     return s;
 }
 
-/* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
-
-void _cdk_net_close(sock_t s) {
+void _net_close(sock_t s) {
 
     closesocket(s);
 }
 
-int _cdk_net_af(sock_t s) {
+int _net_af(sock_t s) {
 
     WSAPROTOCOL_INFOW i; /* using unicode name to avoiding ninja build warning */
     socklen_t         l;
@@ -235,27 +231,4 @@ int _cdk_net_af(sock_t s) {
     getsockopt(s, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&i, &l);
 
     return i.iAddressFamily;
-}
-
-/* ///////////////////////////////////////////  tcp  //////////////////////////////////////////////////////////// */
-
-sock_t _cdk_tcp_listen(const char* restrict h, const char* restrict p) {
-	
-    return _listen(h, p, SOCK_STREAM);
-}
-
-sock_t _cdk_tcp_dial(const char* restrict h, const char* restrict p) {
-
-    return _dial(h, p, SOCK_STREAM);
-}
-
-/* ///////////////////////////////////////////  udp  //////////////////////////////////////////////////////////// */
-sock_t _cdk_udp_listen(const char* restrict h, const char* restrict p) {
-
-    return _listen(h, p, SOCK_DGRAM);
-}
-
-sock_t _cdk_udp_dial(const char* restrict h, const char* restrict p) {
-
-    return _dial(h, p, SOCK_DGRAM);
 }

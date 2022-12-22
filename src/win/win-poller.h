@@ -18,33 +18,16 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
-#ifndef __UNIX_NETPOLLER_H__
-#define __UNIX_NETPOLLER_H__
+
+_Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-typedef enum _netpoller_cmd_t {
+void _poller_create(void);
+void _poller_destroy(void);
+void _poller_register(sock_t s, poller_cmd_t c, poller_handler_t* h);
+void _poller_unregister(sock_t s);
+void _poller_poll(void);
 
-	_NETPOLLER_CMD_R     ,
-	_NETPOLLER_CMD_W     ,
-	_NETPOLLER_CMD_A     ,
-	_NETPOLLER_CMD_C     ,
-	_NETPOLLER_CMD_U
-}netpoller_cmd_t;
 
-typedef struct _netpoller_handler_t {
 
-	void (*on_accept) (sock_t s);
-	void (*on_connect)(sock_t s);
-	void (*on_read)   (sock_t s, void* buf, size_t sz);
-	void (*on_write)  (sock_t s);
-}netpoller_handler_t;
-
-typedef struct _netpoller_ctx_t {
-
-	sock_t               fd;
-	netpoller_cmd_t      cmd;
-	netpoller_handler_t* h;
-}netpoller_ctx_t;
-
-#endif /* __UNIX_NETPOLLER_H__ */

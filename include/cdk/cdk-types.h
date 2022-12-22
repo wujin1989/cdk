@@ -147,4 +147,29 @@ typedef struct _net_msg_t {
 	char               p[];
 }net_msg_t;
 
+typedef struct _poller_handler_t {
+
+	void (*on_accept) (sock_t s);
+	void (*on_connect)(sock_t s);
+	void (*on_read)   (sock_t s, void* buf, size_t sz);
+	void (*on_write)  (sock_t s);
+}poller_handler_t;
+
+typedef enum _poller_cmd_t {
+
+	_POLLER_CMD_R,
+	_POLLER_CMD_W,
+	_POLLER_CMD_A,
+	_POLLER_CMD_C,
+	_POLLER_CMD_U
+}poller_cmd_t;
+
+typedef struct _poller_conn_t {
+
+	sock_t               fd;
+	poller_cmd_t         cmd;
+	poller_handler_t*    h;
+	char                 buf[];
+}poller_conn_t;
+
 #endif /* __CDK_TYPES_H__ */

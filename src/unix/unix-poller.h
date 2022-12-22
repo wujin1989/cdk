@@ -23,16 +23,8 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-sock_t  _tcp_accept(sock_t s);
-void    _tcp_nodelay(sock_t s, bool on);
-void    _tcp_keepalive(sock_t s);
-void    _tcp_maxseg(sock_t s);
-void    _net_nonblock(sock_t s);
-void    _net_reuse_addr(sock_t s);
-void    _net_reuse_port(sock_t s);
-sock_t  _net_listen(const char* restrict h, const char* restrict p, int t);
-sock_t  _net_dial(const char* restrict h, const char* restrict p, int t);
-void    _net_close(sock_t s);
-int     _net_af(sock_t s);
-
-
+void _poller_create(void);
+void _poller_destroy(void);
+void _poller_register(sock_t s, poller_cmd_t c, poller_handler_t* h);
+void _poller_unregister(sock_t s);
+void _poller_poll(void);

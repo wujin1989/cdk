@@ -28,7 +28,7 @@
 
 #if defined(__linux__) || defined(__APPLE__)
 #include "unix/unix-net.h"
-#include "unix/unix-netpoller.h"
+#include "unix/unix-poller.h"
 #include <sys/socket.h>
 #include <string.h>
 #include <stdlib.h>
@@ -47,7 +47,6 @@
 #define SNDRCV_BUFFER_SIZE_MIN  32767
 #define SNDRCV_BUFFER_SIZE_STEP 16384
 
-/* ///////////////////////////////////////////  private  //////////////////////////////////////////////////////////// */
 
 static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
 
@@ -59,11 +58,9 @@ static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
     }
 }
 
-/* ///////////////////////////////////////////  common  //////////////////////////////////////////////////////////// */
-
 void cdk_net_close(sock_t s) {
 
-    _cdk_net_close(s);
+    _net_close(s);
 }
 
 void cdk_net_rbuf(sock_t s, int v) {
@@ -159,42 +156,42 @@ void cdk_net_obtain_addr(sock_t s, addrinfo_t* ai, bool p) {
 
 int cdk_net_af(sock_t s) {
 
-    return _cdk_net_af(s);
+    return _net_af(s);
 }
 
-/* ///////////////////////////////////////////  tcp  //////////////////////////////////////////////////////////// */
-void cdk_tcp_listen(const char* restrict h, const char* restrict p, netpoller_handler_t* handler) {
+void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 	
     sock_t s;
-    
-    _netpoller_create();
-	s = _tcp_listen(h, p);
+    _poller_create();
 
-    _netpoller_register(s, _NETPOLLER_IO_ACCEPT, handler);
-}
-
-sock_t cdk_tcp_dial(const char* restrict h, const char* restrict p) {
-
-    return _tcp_dial(h, p);
-}
-
-net_msg_t* cdk_tcp_marshaller(char* restrict b, int tp, int sz) {
-
-    net_msg_t* m = cdk_malloc(sizeof(net_msg_t) + sz);
-
-    if (!cdk_byteorder()) {
-        m->h.p_s = htonl(sz);
-        m->h.p_t = htonl(tp);
+    if (strncmp(t, "tcp", strlen("tcp"))) {
+        s = _net_listen(h, p, SOCK_STREAM);
     }
-    if (cdk_byteorder())  {
-        m->h.p_s = sz;
-        m->h.p_t = tp;
+    if (strncmp(t, "udp", strlen("udp"))) {
+        s = _net_listen(h, p, SOCK_DGRAM);
     }
-    memcpy(m->p, b, sz);
-    return m;
+    _poller_register(s, _POLLER_CMD_A, handler);
 }
 
-int cdk_tcp_send(sock_t s, net_msg_t* restrict m) {
+sock_t cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
+
+    sock_t s;
+    if (strncmp(t, "tcp", strlen("tcp"))) {
+        s = _net_dial(h, p, SOCK_STREAM);
+    }
+    if (strncmp(t, "udp", strlen("udp"))) {
+        s = _net_dial(h, p, SOCK_DGRAM);
+    }
+    return s;
+}
+
+void cdk_net_poller(void) {
+
+    _poller_poll();
+    return;
+}
+
+int cdk_net_send(sock_t s, net_msg_t* restrict m) {
 
     uint32_t mss;
     uint32_t st;    /* sent bytes */
@@ -217,13 +214,7 @@ int cdk_tcp_send(sock_t s, net_msg_t* restrict m) {
     return sz;
 }
 
-void cdk_tcp_demarshaller(net_msg_t* m, char* restrict b) {
-
-    memcpy(b, m->p, m->h.p_s);
-    cdk_free(m);
-}
-
-net_msg_t* cdk_tcp_recv(sock_t s) {
+net_msg_t* cdk_net_recv(sock_t s) {
 
     int              r;
     net_msg_hdr_t    h;
@@ -244,25 +235,4 @@ net_msg_t* cdk_tcp_recv(sock_t s) {
     if (r <= 0) { return NULL; }
 
     return m;
-}
-
-/* ///////////////////////////////////////////  udp  //////////////////////////////////////////////////////////// */
-sock_t cdk_udp_listen(const char* restrict h, const char* restrict p) {
-
-    return _cdk_udp_listen(h, p);
-}
-
-sock_t cdk_udp_dial(const char* restrict h, const char* restrict p) {
-
-    return _cdk_udp_dial(h, p);
-}
-
-int cdk_udp_send(sock_t s, char* restrict b, int sz, struct sockaddr_storage* restrict ss, socklen_t l) {
-
-    return sendto(s, b, sz, 0, (struct sockaddr*)ss, l);
-}
-
-int cdk_udp_recv(sock_t s, char* restrict b, int sz, struct sockaddr_storage* restrict ss, socklen_t* restrict lp) {
-
-    return recvfrom(s, b, sz, 0, (struct sockaddr*)ss, lp);
 }

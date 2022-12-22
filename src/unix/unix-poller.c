@@ -19,11 +19,12 @@
  *  IN THE SOFTWARE.
  */
 
-#include "unix-netpoller.h"
+#include "unix-poller.h"
+#include "unix-net.h"
 #include "cdk/cdk-net.h"
 #include "cdk/cdk-memory.h"
-#include "cdk/cdk-logger.h"
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(__linux__)
 
@@ -34,7 +35,7 @@
 
 static int epfd;
 
-void _netpoller_create(void) {
+void _poller_create(void) {
 
 	if (!epfd) {
 		epfd = epoll_create1(0);
@@ -42,7 +43,7 @@ void _netpoller_create(void) {
 	return;
 }
 
-void _netpoller_destroy(void) {
+void _poller_destroy(void) {
 
 	if (epfd) {
 		cdk_net_close(epfd);
@@ -50,42 +51,42 @@ void _netpoller_destroy(void) {
 	return;
 }
 
-void _netpoller_register(sock_t s, netpoller_cmd_t c, netpoller_handler_t* h) {
+void _poller_register(sock_t s, poller_cmd_t c, poller_handler_t* h) {
 
-	netpoller_ctx_t* ctx = cdk_malloc(sizeof(netpoller_ctx_t));
+	poller_conn_t* conn = cdk_malloc(sizeof(poller_conn_t));
 
-	ctx->cmd    = c;
-	ctx->fd     = s;
-	ctx->h      = h;
+	conn->cmd    = c;
+	conn->fd     = s;
+	conn->h      = h;
 
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
 
-	if (c & _NETPOLLER_CMD_A) {
+	if (c & _POLLER_CMD_A) {
 		ee.events = EPOLLIN | EPOLLET;
 	}
-	if (c & _NETPOLLER_CMD_C) {
+	if (c & _POLLER_CMD_C) {
 		ee.events = EPOLLOUT | EPOLLET;
 	}
-	if (c & _NETPOLLER_CMD_R) {
+	if (c & _POLLER_CMD_R) {
 		ee.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
 	}
-	if (c & _NETPOLLER_CMD_W) {
+	if (c & _POLLER_CMD_W) {
 		ee.events = EPOLLOUT | EPOLLET | EPOLLONESHOT;
 	}
-	ee.data.ptr = ctx;
+	ee.data.ptr = conn;
 
 	epoll_ctl(epfd, EPOLL_CTL_ADD, s, (struct epoll_event*)&ee);
 }
 
-void _netpoller_unregister(sock_t s) {
+void _poller_unregister(sock_t s) {
 
 	epoll_ctl(epfd, EPOLL_CTL_DEL, s, NULL);
 }
 
-void _netpoller_poll(void) {
+void _poller_poll(void) {
 
-	struct epoll_event events[MAX_EPOLL_EVENTS];
+	struct epoll_event events[MAX_EPOLL_EVENTS] = {0, {0}};
 
 	while (true) {
 		int r;
@@ -96,21 +97,39 @@ void _netpoller_poll(void) {
 			abort();
 		}
 		for (int i = 0; i < r; i++) {
-			netpoller_ctx_t* ctx = events[i].data.ptr;
+			poller_conn_t* conn = events[i].data.ptr;
 
 			if (events[i].events & EPOLLIN) {
-				if (ctx->cmd & _NETPOLLER_CMD_A) {
+				if (conn->cmd & _POLLER_CMD_A) {
+					sock_t c;
 
+					while ((c = _tcp_accept(conn->fd)) > 0) {
+						_poller_register(c, _POLLER_CMD_R, conn->h);
+						conn->h->on_accept(c);
+					}
 				}
-				if (ctx->cmd & _NETPOLLER_CMD_R) {
-
+				if (conn->cmd & _POLLER_CMD_R) {
+					char buf[8192];
+					ssize_t n;
+					while (n = _net_recv(conn->fd, buf, sizeof(buf))) {
+						conn->h->on_read(conn->fd, buf, n);
+					}
+					if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+						continue;
+					}
+					/**
+					 *  (n < 0 && errno != EAGAIN || errno != EWOULDBLOCK) or n == 0;
+					 *  thus close it.
+					 */
+					_poller_unregister(conn->fd);
+					_net_close(conn->fd);
 				}
 			}
 			if (events[i].events & EPOLLOUT) {
-				if (ctx->cmd & _NETPOLLER_CMD_C) {
+				if (conn->cmd & _POLLER_CMD_C) {
 
 				}
-				if (ctx->cmd & _NETPOLLER_CMD_W) {
+				if (conn->cmd & _POLLER_CMD_W) {
 
 				}
 			}

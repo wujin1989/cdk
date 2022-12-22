@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.16)
 
 project(cdk VERSION 1.0.0 LANGUAGES C)
 
@@ -85,6 +85,7 @@ if(WIN32)
 		src/win/win-systeminfo.c
 		src/win/win-io.c
 		src/win/win-loadapi.c
+		src/win/win-poller.c
 		src/win/win-process.h
 		src/win/win-thread.h
 		src/win/win-time.h
@@ -93,7 +94,8 @@ if(WIN32)
 		src/win/win-net.h
 		src/win/win-systeminfo.h
 		src/win/win-io.h
-		src/win/win-loadapi.h)
+		src/win/win-loadapi.h
+		src/win/win-poller.h)
 endif()
 
 if(UNIX)
@@ -108,7 +110,7 @@ if(UNIX)
 		src/unix/unix-systeminfo.c
 		src/unix/unix-io.c
 		src/unix/unix-loadapi.c
-		src/unix/unix-netpoller.c
+		src/unix/unix-poller.c
 		src/unix/unix-process.h
 		src/unix/unix-thread.h
 		src/unix/unix-time.h
@@ -118,7 +120,7 @@ if(UNIX)
 		src/unix/unix-systeminfo.h
 		src/unix/unix-io.h
 		src/unix/unix-loadapi.h
-		src/unix/unix-netpoller.h)
+		src/unix/unix-poller.h)
 endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${HDRS})

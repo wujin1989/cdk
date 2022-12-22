@@ -22,17 +22,18 @@
 #define __WIN_NET_H__
 
 #include "cdk/cdk-types.h"
-/* common */
-extern int    _cdk_net_af(sock_t s);
-extern void   _cdk_net_close(sock_t s);
 
-/* tcp */
-extern sock_t _cdk_tcp_listen(const char* restrict h, const char* restrict p);
-extern sock_t _cdk_tcp_dial(const char* restrict h, const char* restrict p);
-
-/* udp */
-extern sock_t _cdk_udp_listen(const char* restrict h, const char* restrict p);
-extern sock_t _cdk_udp_dial(const char* restrict h, const char* restrict p);
+sock_t  _tcp_accept(sock_t s);
+void    _tcp_nodelay(sock_t s, bool on);
+void    _tcp_keepalive(sock_t s);
+void    _tcp_maxseg(sock_t s);
+void    _net_nonblock(sock_t s);
+void    _net_reuse_addr(sock_t s);
+void    _net_reuse_port(sock_t s);
+sock_t  _net_listen(const char* restrict h, const char* restrict p, int t);
+sock_t  _net_dial(const char* restrict h, const char* restrict p, int t);
+void    _net_close(sock_t s);
+int     _net_af(sock_t s);
 
 #endif /* __WIN_NET_H__ */
 
