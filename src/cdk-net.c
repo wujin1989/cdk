@@ -164,22 +164,22 @@ void cdk_net_listen(const char* restrict t, const char* restrict h, const char* 
     sock_t s;
     _poller_create();
 
-    if (strncmp(t, "tcp", strlen("tcp"))) {
+    if (!strncmp(t, "tcp", strlen("tcp"))) {
         s = _net_listen(h, p, SOCK_STREAM);
     }
-    if (strncmp(t, "udp", strlen("udp"))) {
+    if (!strncmp(t, "udp", strlen("udp"))) {
         s = _net_listen(h, p, SOCK_DGRAM);
     }
-    _poller_register(s, _POLLER_CMD_A, handler);
+    _poller_conn_create(s, _POLLER_CMD_A, handler);
 }
 
 sock_t cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
     sock_t s;
-    if (strncmp(t, "tcp", strlen("tcp"))) {
+    if (!strncmp(t, "tcp", strlen("tcp"))) {
         s = _net_dial(h, p, SOCK_STREAM);
     }
-    if (strncmp(t, "udp", strlen("udp"))) {
+    if (!strncmp(t, "udp", strlen("udp"))) {
         s = _net_dial(h, p, SOCK_DGRAM);
     }
     return s;
@@ -189,6 +189,19 @@ void cdk_net_poller(void) {
 
     _poller_poll();
     return;
+}
+
+void cdk_net_ctl(poller_conn_t* conn, poller_rw_ctrl_t ctl) {
+    
+    switch (ctl) {
+    case _POLLER_CTL_R:
+        conn->cmd = _POLLER_CMD_R;
+        break;
+    case _POLLER_CTL_W:
+        conn->cmd = _POLLER_CMD_W;
+        break;
+    }
+    _poller_conn_modify(conn);
 }
 
 int cdk_net_send(sock_t s, net_msg_t* restrict m) {

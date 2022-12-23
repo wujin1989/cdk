@@ -23,8 +23,9 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-void _poller_create(void);
-void _poller_destroy(void);
-void _poller_register(sock_t s, poller_cmd_t c, poller_handler_t* h);
-void _poller_unregister(sock_t s);
-void _poller_poll(void);
+void           _poller_create(void);
+void           _poller_destroy(void);
+poller_conn_t* _poller_conn_create(sock_t s, poller_cmd_t c, poller_handler_t* h);
+void           _poller_conn_modify(poller_conn_t* conn);
+void           _poller_conn_destroy(poller_conn_t* conn);
+void           _poller_poll(void);

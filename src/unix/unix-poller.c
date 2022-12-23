@@ -23,6 +23,7 @@
 #include "unix-net.h"
 #include "cdk/cdk-net.h"
 #include "cdk/cdk-memory.h"
+#include "cdk/cdk-list.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,13 +52,15 @@ void _poller_destroy(void) {
 	return;
 }
 
-void _poller_register(sock_t s, poller_cmd_t c, poller_handler_t* h) {
+poller_conn_t* _poller_conn_create(sock_t s, poller_cmd_t c, poller_handler_t* h) {
 
 	poller_conn_t* conn = cdk_malloc(sizeof(poller_conn_t));
 
 	conn->cmd    = c;
 	conn->fd     = s;
 	conn->h      = h;
+	cdk_list_create(&conn->rbufs);
+	cdk_list_create(&conn->sbufs);
 
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
@@ -77,11 +80,36 @@ void _poller_register(sock_t s, poller_cmd_t c, poller_handler_t* h) {
 	ee.data.ptr = conn;
 
 	epoll_ctl(epfd, EPOLL_CTL_ADD, s, (struct epoll_event*)&ee);
+	return conn;
 }
 
-void _poller_unregister(sock_t s) {
+void _poller_conn_modify(poller_conn_t* conn) {
 
-	epoll_ctl(epfd, EPOLL_CTL_DEL, s, NULL);
+	struct epoll_event ee;
+	memset(&ee, 0, sizeof(struct epoll_event));
+
+	if (conn->cmd & _POLLER_CMD_A) {
+		ee.events = EPOLLIN | EPOLLET;
+	}
+	if (conn->cmd & _POLLER_CMD_C) {
+		ee.events = EPOLLOUT | EPOLLET;
+	}
+	if (conn->cmd & _POLLER_CMD_R) {
+		ee.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+	}
+	if (conn->cmd & _POLLER_CMD_W) {
+		ee.events = EPOLLOUT | EPOLLET | EPOLLONESHOT;
+	}
+	ee.data.ptr = conn;
+
+	epoll_ctl(epfd, EPOLL_CTL_MOD, conn->fd, (struct epoll_event*)&ee);
+}
+
+void _poller_conn_destroy(poller_conn_t* conn) {
+
+	epoll_ctl(epfd, EPOLL_CTL_DEL, conn->fd, NULL);
+	_net_close(conn->fd);
+	cdk_free(conn);
 }
 
 void _poller_poll(void) {
@@ -104,25 +132,31 @@ void _poller_poll(void) {
 					sock_t c;
 
 					while ((c = _tcp_accept(conn->fd)) > 0) {
-						_poller_register(c, _POLLER_CMD_R, conn->h);
+						_poller_conn_create(c, _POLLER_CMD_R, conn->h);
 						conn->h->on_accept(c);
 					}
 				}
 				if (conn->cmd & _POLLER_CMD_R) {
-					char buf[8192];
+					char tmp[8192];
 					ssize_t n;
-					while (n = _net_recv(conn->fd, buf, sizeof(buf))) {
-						conn->h->on_read(conn->fd, buf, n);
+					while ((n = _net_recv(conn->fd, tmp, sizeof(tmp))) > 0) {
+
+						conn_buf_t* rbuf = cdk_malloc(sizeof(conn_buf_t) + n + 1);
+						rbuf->sz = n + 1;
+						memcpy(rbuf->buf, tmp, n + 1);
+						cdk_list_init_node(&rbuf->n);
+						cdk_list_insert_tail(&conn->rbufs, &rbuf->n);
 					}
 					if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+
+						conn->h->on_read(conn);
 						continue;
 					}
 					/**
 					 *  (n < 0 && errno != EAGAIN || errno != EWOULDBLOCK) or n == 0;
 					 *  thus close it.
 					 */
-					_poller_unregister(conn->fd);
-					_net_close(conn->fd);
+					_poller_conn_destroy(conn);
 				}
 			}
 			if (events[i].events & EPOLLOUT) {
