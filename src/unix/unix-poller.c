@@ -23,6 +23,7 @@
 #include "unix-net.h"
 #include "cdk/cdk-net.h"
 #include "cdk/cdk-memory.h"
+#include "cdk/cdk-time.h"
 #include "cdk/cdk-list.h"
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +31,7 @@
 #if defined(__linux__)
 
 #define MAX_EPOLL_EVENTS 1024
+#define YIELDTIME        10
 
 #include <sys/epoll.h>
 #include <errno.h>
@@ -52,15 +54,18 @@ void _poller_destroy(void) {
 	return;
 }
 
-poller_conn_t* _poller_conn_create(sock_t s, poller_cmd_t c, poller_handler_t* h) {
+void _poller_conn_create(sock_t s, poller_cmd_t c, poller_handler_t* h) {
 
 	poller_conn_t* conn = cdk_malloc(sizeof(poller_conn_t));
 
 	conn->cmd    = c;
 	conn->fd     = s;
 	conn->h      = h;
+	conn->fin    = false;
 	cdk_list_create(&conn->rbufs);
 	cdk_list_create(&conn->sbufs);
+
+	cdk_list_init_node(&conn->n);
 
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
@@ -80,7 +85,6 @@ poller_conn_t* _poller_conn_create(sock_t s, poller_cmd_t c, poller_handler_t* h
 	ee.data.ptr = conn;
 
 	epoll_ctl(epfd, EPOLL_CTL_ADD, s, (struct epoll_event*)&ee);
-	return conn;
 }
 
 void _poller_conn_modify(poller_conn_t* conn) {
@@ -115,6 +119,9 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 void _poller_poll(void) {
 
 	struct epoll_event events[MAX_EPOLL_EVENTS] = {0, {0}};
+	list_t conns;
+
+	cdk_list_create(&conns);
 
 	while (true) {
 		int r;
@@ -126,51 +133,59 @@ void _poller_poll(void) {
 		}
 		for (int i = 0; i < r; i++) {
 			poller_conn_t* conn = events[i].data.ptr;
+			cdk_list_insert_tail(&conns, &conn->n);
+		}
+		for (list_node_t* n = cdk_list_head(&conns); n != cdk_list_sentinel(&conns); ) {
 
-			if (events[i].events & EPOLLIN) {
-				if (conn->cmd & _POLLER_CMD_A) {
-					sock_t c;
+			uint64_t stime, etime;
+			stime = etime = cdk_timespec_get();
 
-					while ((c = _tcp_accept(conn->fd)) > 0) {
-						_poller_conn_create(c, _POLLER_CMD_R, conn->h);
-						conn->h->on_accept(c);
-					}
+			poller_conn_t* conn = cdk_list_data(n, poller_conn_t, n);
+			n = cdk_list_next(n);
+
+			if (conn->cmd & _POLLER_CMD_A) {
+				sock_t c;
+				
+				while ((etime - stime < YIELDTIME) && ((c = _tcp_accept(conn->fd)) > 0)) {
+					_poller_conn_create(c, _POLLER_CMD_R, conn->h);
+					conn->h->on_accept(conn);
+					etime = cdk_timespec_get();
 				}
-				if (conn->cmd & _POLLER_CMD_R) {
-					char tmp[8192];
-					ssize_t n;
-					while ((n = _net_recv(conn->fd, tmp, sizeof(tmp))) > 0) {
+				if (c == -1) {
+					cdk_list_remove(&conn->n);
+				}
+			}
+			if (conn->cmd & _POLLER_CMD_R) {
+				char tmp[8192];
+				ssize_t n;
 
-						conn_buf_t* rbuf = cdk_malloc(sizeof(conn_buf_t) + n + 1);
-						rbuf->sz = n + 1;
-						memcpy(rbuf->buf, tmp, n + 1);
-						cdk_list_init_node(&rbuf->n);
-						cdk_list_insert_tail(&conn->rbufs, &rbuf->n);
-					}
-					if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+				while ((etime - stime < YIELDTIME) && ((n = _net_recv(conn->fd, tmp, sizeof(tmp))) > 0)) {
 
-						conn->h->on_read(conn);
-						continue;
-					}
-					/**
-					 *  (n < 0 && errno != EAGAIN || errno != EWOULDBLOCK) or n == 0;
-					 *  thus close it.
-					 */
+					conn_buf_t* rbuf = cdk_malloc(sizeof(conn_buf_t) + n + 1);
+					rbuf->sz = n + 1;
+					memcpy(rbuf->buf, tmp, n + 1);
+					cdk_list_init_node(&rbuf->n);
+					cdk_list_insert_tail(&conn->rbufs, &rbuf->n);
+
+					conn->h->on_read(conn);
+					etime = cdk_timespec_get();
+				}
+				if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+
+					cdk_list_remove(&conn->n);
+					conn->fin = true;
+					conn->h->on_read(conn);
+				}
+				if (n == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)) {
+
+					cdk_list_remove(&conn->n);
 					_poller_conn_destroy(conn);
 				}
 			}
-			if (events[i].events & EPOLLOUT) {
-				if (conn->cmd & _POLLER_CMD_C) {
-
-				}
-				if (conn->cmd & _POLLER_CMD_W) {
-
-				}
-			}
-			if (events[i].events & EPOLLERR) {
+			if (conn->cmd & _POLLER_CMD_C) {
 
 			}
-			if (events[i].events & EPOLLHUP) {
+			if (conn->cmd & _POLLER_CMD_W) {
 
 			}
 		}

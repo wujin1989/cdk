@@ -1,17 +1,22 @@
 #include "cdk.h"
 
-static void handle_accept(sock_t sock) {
-	printf("[%d]new connection coming...\n", (int)sock);
+static void handle_accept(poller_conn_t* conn) {
+	printf("[%d]new connection coming...\n", (int)conn->fd);
 }
 
 static void handle_read(poller_conn_t* conn) {
 	
-	conn_buf_t* buf = cdk_list_data(cdk_list_head(&conn->rbufs), conn_buf_t, n);
-	cdk_list_remove(cdk_list_head(&conn->rbufs));
-	
-	printf("recv %s\n", buf->buf);
-	cdk_free(buf);
-	cdk_net_ctl(conn, _POLLER_CTL_R);
+	for (list_node_t* n = cdk_list_head(&conn->rbufs); n != cdk_list_sentinel(&conn->rbufs); ) {
+
+		conn_buf_t* buf = cdk_list_data(n, conn_buf_t, n);
+		n = cdk_list_next(n);
+
+		printf("recv %s\n", buf->buf);
+
+		cdk_list_remove(&buf->n);
+		cdk_free(buf);
+	}
+	post_recv(conn);
 }
 
 int main(void) {

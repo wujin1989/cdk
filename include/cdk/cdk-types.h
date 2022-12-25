@@ -151,8 +151,8 @@ typedef struct _poller_conn_t poller_conn_t;
 
 typedef struct _poller_handler_t {
 
-	void (*on_accept) (sock_t s);
-	void (*on_connect)(sock_t s);
+	void (*on_accept) (poller_conn_t*);
+	void (*on_connect)(poller_conn_t*);
 	void (*on_read)   (poller_conn_t*);
 	void (*on_write)  (poller_conn_t*);
 }poller_handler_t;
@@ -164,11 +164,6 @@ typedef enum _poller_cmd_t {
 	_POLLER_CMD_A = 0x4,
 	_POLLER_CMD_C = 0x8
 }poller_cmd_t;
-
-typedef enum _poller_rw_ctrl_t {
-	_POLLER_CTL_R,
-	_POLLER_CTL_W
-}poller_rw_ctrl_t;
 
 typedef struct _conn_buf_t {
 
@@ -184,6 +179,8 @@ typedef struct _poller_conn_t {
 	poller_handler_t*    h;
 	list_t               rbufs;
 	list_t               sbufs;
+	bool                 fin;
+	list_node_t          n;
 }poller_conn_t;
 
 #endif /* __CDK_TYPES_H__ */

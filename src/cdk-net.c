@@ -191,17 +191,20 @@ void cdk_net_poller(void) {
     return;
 }
 
-void cdk_net_ctl(poller_conn_t* conn, poller_rw_ctrl_t ctl) {
+void post_recv(poller_conn_t* conn) {
     
-    switch (ctl) {
-    case _POLLER_CTL_R:
+    if (conn->fin) {
         conn->cmd = _POLLER_CMD_R;
-        break;
-    case _POLLER_CTL_W:
-        conn->cmd = _POLLER_CMD_W;
-        break;
+        _poller_conn_modify(conn);
     }
-    _poller_conn_modify(conn);
+}
+
+void post_send(poller_conn_t* conn) {
+
+    if (conn->fin) {
+        conn->cmd = _POLLER_CMD_W;
+        _poller_conn_modify(conn);
+    }
 }
 
 int cdk_net_send(sock_t s, net_msg_t* restrict m) {
