@@ -4,6 +4,10 @@ static void handle_accept(poller_conn_t* conn) {
 	printf("[%d]new connection coming...\n", (int)conn->fd);
 }
 
+static void handle_write(poller_conn_t* conn) {
+
+	printf("recv write envent\n");
+}
 static void handle_read(poller_conn_t* conn) {
 	
 	for (list_node_t* n = cdk_list_head(&conn->rbufs); n != cdk_list_sentinel(&conn->rbufs); ) {
@@ -11,12 +15,12 @@ static void handle_read(poller_conn_t* conn) {
 		conn_buf_t* buf = cdk_list_data(n, conn_buf_t, n);
 		n = cdk_list_next(n);
 
-		printf("recv %s\n", buf->buf);
+		printf("[%d]recv %s\n", (int)conn->fd, buf->buf);
 
 		cdk_list_remove(&buf->n);
 		cdk_free(buf);
 	}
-	post_recv(conn);
+	cdk_post_recv(conn);
 }
 
 int main(void) {
@@ -25,7 +29,7 @@ int main(void) {
 		.on_accept  = handle_accept,
 		.on_connect = NULL,
 		.on_read    = handle_read,
-		.on_write   = NULL
+		.on_write   = handle_write
 	};
 	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 	

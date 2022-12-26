@@ -100,8 +100,8 @@ extern void cdk_net_listen(const char* restrict t, const char* restrict h, const
 
 extern void cdk_net_poller(void);
 
-extern void post_send(poller_conn_t* conn);
-extern void post_recv(poller_conn_t* conn);
+extern void cdk_post_send(poller_conn_t* conn);
+extern void cdk_post_recv(poller_conn_t* conn);
 
 /**
  *  create a tcp blocking socket and connect.

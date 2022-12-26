@@ -157,14 +157,6 @@ typedef struct _poller_handler_t {
 	void (*on_write)  (poller_conn_t*);
 }poller_handler_t;
 
-typedef enum _poller_cmd_t {
-
-	_POLLER_CMD_R = 0x1,
-	_POLLER_CMD_W = 0x2,
-	_POLLER_CMD_A = 0x4,
-	_POLLER_CMD_C = 0x8
-}poller_cmd_t;
-
 typedef struct _conn_buf_t {
 
 	list_node_t    n;
@@ -175,7 +167,7 @@ typedef struct _conn_buf_t {
 typedef struct _poller_conn_t {
 
 	sock_t               fd;
-	poller_cmd_t         cmd;
+	uint32_t             cmd;
 	poller_handler_t*    h;
 	list_t               rbufs;
 	list_t               sbufs;
