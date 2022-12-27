@@ -171,7 +171,6 @@ typedef struct _poller_conn_t {
 	poller_handler_t*    h;
 	list_t               rbufs;
 	list_t               sbufs;
-	bool                 fin;
 	list_node_t          n;
 }poller_conn_t;
 

@@ -164,16 +164,9 @@ void cdk_net_listen(const char* restrict t, const char* restrict h, const char* 
     _poller_listen(t, h, p, handler);
 }
 
-sock_t cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
+void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
-    sock_t s;
-    if (!strncmp(t, "tcp", strlen("tcp"))) {
-        s = _net_dial(h, p, SOCK_STREAM);
-    }
-    if (!strncmp(t, "udp", strlen("udp"))) {
-        s = _net_dial(h, p, SOCK_DGRAM);
-    }
-    return s;
+    _poller_dial(t, h, p, handler);
 }
 
 void cdk_net_poller(void) {
@@ -182,12 +175,12 @@ void cdk_net_poller(void) {
     return;
 }
 
-void cdk_post_recv(poller_conn_t* conn) {
+void cdk_net_postrecv(poller_conn_t* conn) {
     
     _poller_post_recv(conn);
 }
 
-void cdk_post_send(poller_conn_t* conn) {
+void cdk_net_postsend(poller_conn_t* conn) {
 
     _poller_post_send(conn);
 }

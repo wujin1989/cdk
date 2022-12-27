@@ -30,5 +30,6 @@ void           _poller_conn_modify(poller_conn_t* conn);
 void           _poller_conn_destroy(poller_conn_t* conn);
 void           _poller_poll(void);
 void           _poller_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
+void           _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
 void           _poller_post_recv(poller_conn_t* conn);
 void           _poller_post_send(poller_conn_t* conn);

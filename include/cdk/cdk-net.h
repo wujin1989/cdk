@@ -100,8 +100,8 @@ extern void cdk_net_listen(const char* restrict t, const char* restrict h, const
 
 extern void cdk_net_poller(void);
 
-extern void cdk_post_send(poller_conn_t* conn);
-extern void cdk_post_recv(poller_conn_t* conn);
+extern void cdk_net_postsend(poller_conn_t* conn);
+extern void cdk_net_postrecv(poller_conn_t* conn);
 
 /**
  *  create a tcp blocking socket and connect.
@@ -110,7 +110,7 @@ extern void cdk_post_recv(poller_conn_t* conn);
  *  @param p [in] port.
  *  @return connection fd.
  */
-extern sock_t cdk_tcp_dial(const char* restrict h, const char* restrict p);
+extern void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
 
 /**
  *  marshalling a net_msg_t.

@@ -67,7 +67,7 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 	conn->cmd    = c;
 	conn->fd     = s;
 	conn->h      = h;
-	conn->fin    = false;
+
 	cdk_list_create(&conn->rbufs);
 	cdk_list_create(&conn->sbufs);
 
@@ -132,6 +132,18 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 	cdk_free(conn);
 }
 
+static bool _poller_check_connect_status(poller_conn_t* conn) {
+	int       e;
+	socklen_t l;
+	l = sizeof(int);
+	getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, (char*)&e, &l);
+	if (e) {
+		_poller_conn_destroy(conn);
+		return false;
+	}
+	return true;
+}
+
 void _poller_poll(void) {
 
 	struct epoll_event events[MAX_EPOLL_EVENTS];
@@ -166,13 +178,14 @@ void _poller_poll(void) {
 					sock_t c;
 					poller_conn_t* new_conn;
 					while ((etime - stime < YIELDTIME) && ((c = _tcp_accept(conn->fd)) > 0)) {
-						new_conn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
+						new_conn = _poller_conn_create(c, _POLLER_CMD_R | _POLLER_CMD_W, conn->h);
 						conn->h->on_accept(new_conn);
 						etime = cdk_timespec_get();
 					}
 					if (c == -1) {
 						cdk_list_remove(&conn->n);
 					}
+					continue;
 				}
 				if (conn->cmd & _POLLER_CMD_R) {
 					char tmp[8192];
@@ -191,11 +204,7 @@ void _poller_poll(void) {
 					}
 					if (n == -1) {
 						cdk_list_remove(&conn->n);
-						if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-							conn->fin = true;
-							conn->h->on_read(conn);
-						}
-						else {
+						if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
 							_poller_conn_destroy(conn);
 						}
 					}
@@ -203,12 +212,19 @@ void _poller_poll(void) {
 						cdk_list_remove(&conn->n);
 						_poller_conn_destroy(conn);
 					}
+					continue;
 				}
 				if (conn->cmd & _POLLER_CMD_C) {
-
+					cdk_list_remove(&conn->n);
+					if (_poller_check_connect_status(conn)) {
+						conn->h->on_connect(conn);
+					}
+					continue;
 				}
 				if (conn->cmd & _POLLER_CMD_W) {
+					cdk_list_remove(&conn->n);
 					conn->h->on_write(conn);
+					continue;
 				}
 			}
 		}
@@ -229,20 +245,36 @@ void _poller_listen(const char* restrict t, const char* restrict h, const char* 
 	_poller_conn_create(s, _POLLER_CMD_A, handler);
 }
 
+void _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
+
+	sock_t         s;
+	bool           connected;
+	poller_conn_t* conn;
+
+	_poller_create();
+
+	if (!strncmp(t, "tcp", strlen("tcp"))) {
+		s = _net_dial(h, p, SOCK_STREAM, &connected);
+	}
+	if (!strncmp(t, "udp", strlen("udp"))) {
+		s = _net_dial(h, p, SOCK_DGRAM, &connected);
+	}
+	conn = _poller_conn_create(s, _POLLER_CMD_C, handler);
+	if (connected) {
+		handler->on_connect(conn);
+	}
+}
+
 void _poller_post_recv(poller_conn_t* conn) {
 
-	if (conn->fin) {
-		conn->cmd = _POLLER_CMD_R;
-		_poller_conn_modify(conn);
-	}
+	conn->cmd = _POLLER_CMD_R;
+	_poller_conn_modify(conn);
 }
 
 void _poller_post_send(poller_conn_t* conn) {
 
-	if (conn->fin) {
-		conn->cmd = _POLLER_CMD_W;
-		_poller_conn_modify(conn);
-	}
+	conn->cmd = _POLLER_CMD_W;
+	_poller_conn_modify(conn);
 }
 
 #endif

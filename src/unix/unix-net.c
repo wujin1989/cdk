@@ -215,7 +215,7 @@ sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
     return s;
 }
 
-sock_t _net_dial(const char* restrict h, const char* restrict p, int t) {
+sock_t _net_dial(const char* restrict h, const char* restrict p, int t, bool* connected) {
     int                 r;
     int                 s;
     struct addrinfo     hints;
@@ -253,21 +253,10 @@ sock_t _net_dial(const char* restrict h, const char* restrict p, int t) {
             continue;
         }
         if (r == -1 && errno == EINPROGRESS) {
-            if (__wait(s, 10000) <= 0) {
-                close(s);
-                return -1;
-            }
-            else {
-                int       e;
-                socklen_t l;
-                l = sizeof(int);
-                getsockopt(s, SOL_SOCKET, SO_ERROR, (char*)&e, &l);
-                if (e) {
-                    close(s);
-                    return -1;
-                }
-            }
+            *connected = false;
+            break;
         }
+        *connected = true;
         break;
     }
     if (rp == NULL) { return -1; }
