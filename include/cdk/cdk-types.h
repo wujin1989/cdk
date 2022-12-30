@@ -48,6 +48,16 @@ typedef pthread_mutex_t                  mtx_t;
 typedef pthread_cond_t                   cnd_t;
 typedef atomic_llong                     atomic_t;
 typedef int                              sock_t;
+
+typedef struct _conn_buf_t {
+
+	size_t       total;
+	size_t       sent;
+	struct {
+		uint32_t len;
+		char*    buf;
+	} buffer;
+}conn_buf_t;
 #endif
 
 
@@ -77,6 +87,13 @@ typedef LONG64                           atomic_t;
 typedef SOCKET                           sock_t;
 typedef int                              socklen_t;
 typedef SSIZE_T                          ssize_t;
+
+typedef struct _conn_buf_t {
+	size_t         total;
+	size_t         sent;
+	WSABUF         buffer;
+	WSAOVERLAPPED  o;
+}conn_buf_t;
 #endif
 
 //======================================= common ================================================================
@@ -157,20 +174,12 @@ typedef struct _poller_handler_t {
 	void (*on_write)  (poller_conn_t*);
 }poller_handler_t;
 
-typedef struct _conn_buf_t {
-
-	list_node_t    n;
-	size_t         sz;
-	char           buf[];
-}conn_buf_t;
-
 typedef struct _poller_conn_t {
 
 	sock_t               fd;
 	uint32_t             cmd;
 	poller_handler_t*    h;
-	list_t               rbufs;
-	list_t               sbufs;
+	conn_buf_t           iobuf;
 	list_node_t          n;
 }poller_conn_t;
 

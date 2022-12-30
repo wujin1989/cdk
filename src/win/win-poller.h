@@ -23,11 +23,16 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-void _poller_create(void);
-void _poller_destroy(void);
-void _poller_register(sock_t s, poller_cmd_t c, poller_handler_t* h);
-void _poller_unregister(sock_t s);
-void _poller_poll(void);
+extern void           _poller_create(void);
+extern void           _poller_destroy(void);
+extern poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h);
+extern void           _poller_conn_modify(poller_conn_t* conn);
+extern void           _poller_conn_destroy(poller_conn_t* conn);
+extern void           _poller_poll(void);
+extern void           _poller_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
+extern void           _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
+extern void           _poller_post_recv(poller_conn_t* conn);
+extern void           _poller_post_send(poller_conn_t* conn);
 
 
 

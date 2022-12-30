@@ -22,20 +22,6 @@
 #include "win-net.h"
 #include <WS2tcpip.h>
 
-static int __wait(sock_t s, int t) {
-
-    struct pollfd pfd;
-    memset(&pfd, 0, sizeof(struct pollfd));
-
-    pfd.fd = s;
-    pfd.events = POLLOUT;
-
-    /**
-     * WSAPoll bug fixed at win10 2004ver for non-blocking connect system call.
-     */
-    return WSAPoll(&pfd, 1, t);
-}
-
 void _net_nonblock(sock_t s) {
 
     u_long on = 1;
@@ -115,14 +101,10 @@ void _net_reuse_addr(sock_t s) {
 sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
 
     int                r;
-    WSADATA            d;
     SOCKET             s;
     struct addrinfo    hints;
-    struct addrinfo* res;
-    struct addrinfo* rp;
-
-    r = WSAStartup(MAKEWORD(2, 2), &d);
-    if (r != NO_ERROR) { return INVALID_SOCKET; }
+    struct addrinfo*   res;
+    struct addrinfo*   rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;
@@ -140,7 +122,7 @@ sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
         s = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
         if (s == INVALID_SOCKET) { continue; }
 
-        _reuse_addr(s);
+        _net_reuse_addr(s);
 
         if (bind(s, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) {
             closesocket(s);
@@ -164,16 +146,26 @@ sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
     return s;
 }
 
+void _net_startup(void) {
+
+    WSADATA  d;
+    int r = WSAStartup(MAKEWORD(2, 2), &d);
+    if (r != NO_ERROR) { 
+        abort();
+    }
+}
+
+void _net_cleanup(void) {
+
+    WSACleanup();
+}
+
 sock_t _net_dial(const char* restrict h, const char* restrict p, int t) {
     int                r;
-    WSADATA            d;
     SOCKET             s;
     struct addrinfo    hints;
-    struct addrinfo* res;
-    struct addrinfo* rp;
-
-    r = WSAStartup(MAKEWORD(2, 2), &d);
-    if (r != NO_ERROR) { return INVALID_SOCKET; }
+    struct addrinfo*   res;
+    struct addrinfo*   rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;

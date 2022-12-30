@@ -18,22 +18,23 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
-#ifndef __WIN_NET_H__
-#define __WIN_NET_H__
+
+_Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-sock_t  _tcp_accept(sock_t s);
-void    _tcp_nodelay(sock_t s, bool on);
-void    _tcp_keepalive(sock_t s);
-void    _tcp_maxseg(sock_t s);
-void    _net_nonblock(sock_t s);
-void    _net_reuse_addr(sock_t s);
-void    _net_reuse_port(sock_t s);
-sock_t  _net_listen(const char* restrict h, const char* restrict p, int t);
-sock_t  _net_dial(const char* restrict h, const char* restrict p, int t);
-void    _net_close(sock_t s);
-int     _net_af(sock_t s);
-
-#endif /* __WIN_NET_H__ */
+extern void    _net_startup(void);
+extern void    _net_cleanup(void);
+extern sock_t  _tcp_accept(sock_t s);
+extern void    _tcp_nodelay(sock_t s, bool on);
+extern void    _tcp_keepalive(sock_t s);
+extern void    _tcp_maxseg(sock_t s);
+extern void    _net_nonblock(sock_t s);
+extern void    _net_reuse_addr(sock_t s);
+extern void    _net_reuse_port(sock_t s);
+extern sock_t  _net_listen(const char* restrict h, const char* restrict p, int t);
+extern sock_t  _net_dial(const char* restrict h, const char* restrict p, int t, bool* connected);
+extern void    _net_close(sock_t s);
+extern int     _net_af(sock_t s);
+extern ssize_t _net_recv(sock_t s, void* buf, size_t len);
 

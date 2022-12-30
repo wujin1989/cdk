@@ -38,17 +38,6 @@
 #define TCPv4_MSS       536
 #define TCPv6_MSS       1220
 
-static int __wait(sock_t s, int t) {
-
-    struct pollfd pfd;
-    memset(&pfd, 0, sizeof(struct pollfd));
-
-    pfd.fd = s;
-    pfd.events = POLLOUT;
-
-    return poll(&pfd, 1, t);
-}
-
 void _net_nonblock(sock_t s) {
 
     int flag = fcntl(s, F_GETFL, 0);
@@ -303,5 +292,15 @@ ssize_t _net_recv(sock_t s, void* buf, size_t len) {
         n = recv(s, buf, len, 0);
     } while (n == -1 && errno == EINTR);
     
+    return n;
+}
+
+ssize_t _net_send(sock_t s, void* buf, size_t len) {
+
+    ssize_t n;
+    do {
+        n = send(s, buf, len, 0);
+    } while (n == -1 && errno == EINTR);
+
     return n;
 }
