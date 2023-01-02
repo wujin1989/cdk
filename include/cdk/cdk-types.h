@@ -25,6 +25,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef struct _poller_handler_t poller_handler_t;
+
  //======================================= unix ================================================================
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -62,6 +64,15 @@ typedef struct _conn_buf_t {
 		char*    buf;
 	} buffer;
 }conn_buf_t;
+
+typedef struct _poller_conn_t {
+
+	sock_t               fd;
+	uint32_t             cmd;
+	poller_handler_t*    h;
+	conn_buf_t           iobuf;
+	list_node_t          n;
+}poller_conn_t;
 #endif
 
 
@@ -96,8 +107,16 @@ typedef struct _conn_buf_t {
 	size_t         total;
 	size_t         sent;
 	WSABUF         buffer;
-	WSAOVERLAPPED  o;
 }conn_buf_t;
+
+typedef struct _poller_conn_t {
+
+	sock_t               fd;
+	uint32_t             cmd;
+	poller_handler_t*    h;
+	conn_buf_t           iobuf;
+	WSAOVERLAPPED        o;
+}poller_conn_t;
 #endif
 
 //======================================= common ================================================================
@@ -168,8 +187,6 @@ typedef struct _net_msg_t {
 	char               p[];
 }net_msg_t;
 
-typedef struct _poller_conn_t poller_conn_t;
-
 typedef struct _poller_handler_t {
 
 	void (*on_accept) (poller_conn_t*);
@@ -177,14 +194,5 @@ typedef struct _poller_handler_t {
 	void (*on_read)   (poller_conn_t*);
 	void (*on_write)  (poller_conn_t*);
 }poller_handler_t;
-
-typedef struct _poller_conn_t {
-
-	sock_t               fd;
-	uint32_t             cmd;
-	poller_handler_t*    h;
-	conn_buf_t           iobuf;
-	list_node_t          n;
-}poller_conn_t;
 
 #endif /* __CDK_TYPES_H__ */

@@ -107,13 +107,13 @@ sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
     struct addrinfo*   rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = t;
-    hints.ai_flags = AI_PASSIVE;
-    hints.ai_protocol = 0;
+    hints.ai_family    = AF_UNSPEC;
+    hints.ai_socktype  = t;
+    hints.ai_flags     = AI_PASSIVE;
+    hints.ai_protocol  = 0;
     hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
+    hints.ai_addr      = NULL;
+    hints.ai_next      = NULL;
 
     r = getaddrinfo(h, p, &hints, &res);
     if (r != 0) { return INVALID_SOCKET; }
