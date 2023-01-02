@@ -185,7 +185,17 @@ void cdk_net_postsend(poller_conn_t* conn) {
     _poller_post_send(conn);
 }
 
-int cdk_net_send(sock_t s, net_msg_t* restrict m) {
+void cdk_net_read(poller_conn_t* conn, void* data, size_t size) {
+
+    _poller_recv(conn, data, size);
+}
+
+void cdk_net_write(poller_conn_t* conn, void* data, size_t size) {
+
+    _poller_send(conn, data, size);
+}
+
+int cdk_net_send2(sock_t s, net_msg_t* restrict m) {
 
     uint32_t mss;
     uint32_t st;    /* sent bytes */
@@ -208,7 +218,7 @@ int cdk_net_send(sock_t s, net_msg_t* restrict m) {
     return sz;
 }
 
-net_msg_t* cdk_net_recv(sock_t s) {
+net_msg_t* cdk_net_recv2(sock_t s) {
 
     int              r;
     net_msg_hdr_t    h;

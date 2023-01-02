@@ -103,6 +103,9 @@ extern void cdk_net_poller(void);
 extern void cdk_net_postsend(poller_conn_t* conn);
 extern void cdk_net_postrecv(poller_conn_t* conn);
 
+extern void cdk_net_read(poller_conn_t* conn, void* data, size_t size);
+extern void cdk_net_write(poller_conn_t* conn, void* data, size_t size);
+
 /**
  *  create a tcp blocking socket and connect.
  *
@@ -131,23 +134,6 @@ extern net_msg_t* cdk_tcp_marshaller(char* restrict b, int tp, int sz);
  */
 extern void cdk_tcp_demarshaller(net_msg_t* m, char* restrict b);
 
-/**
- *  send a net_msg_t.
- *  note: this function is mtu safe.
- *
- *  @param s [in].
- *  @param m [in].
- *  @return sended bytes.
- */
-extern int cdk_tcp_send(sock_t s, net_msg_t* restrict m);
-
-/**
- *  recv a net_msg_t.
- *
- *  @param s [in].
- *  @return net_msg_t pointer.
- */
-extern net_msg_t* cdk_tcp_recv(sock_t s);
 
 /* //////////////////////////////////////////udp////////////////////////////////////////////// */
 

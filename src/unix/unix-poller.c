@@ -174,22 +174,18 @@ void _poller_poll(void) {
 				poller_conn_t* conn = cdk_list_data(n, poller_conn_t, n);
 				n = cdk_list_next(n);
 
-				if (conn->cmd & _POLLER_CMD_A) {
-					sock_t c;
-					poller_conn_t* new_conn;
-					while ((etime - stime < YIELDTIME) && ((c = _tcp_accept(conn->fd)) > 0)) {
-						new_conn = _poller_conn_create(c, _POLLER_CMD_R | _POLLER_CMD_W, conn->h);
-						conn->h->on_accept(new_conn);
-						etime = cdk_timespec_get();
+				while ((etime - stime < YIELDTIME)) {
+					if (conn->cmd & _POLLER_CMD_A) {
+
+						sock_t c = _tcp_accept(conn->fd);
+						if (c == -1) {
+							cdk_list_remove(&conn->n);
+							break;
+						}
+						poller_conn_t* nconn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
+						conn->h->on_accept(nconn);
 					}
-					if (c == -1) {
-						cdk_list_remove(&conn->n);
-					}
-					continue;
-				}
-				if (conn->cmd & _POLLER_CMD_R) {
-					
-					while ((etime - stime < YIELDTIME)) {
+					if (conn->cmd & _POLLER_CMD_R) {
 
 						ssize_t n = _net_recv(conn->fd, conn->iobuf.buffer.buf, MAX_IOBUF_SIZE);
 						if (n == -1) {
@@ -208,43 +204,45 @@ void _poller_poll(void) {
 							break;
 						}
 						conn->iobuf.buffer.len = n;
-
 						conn->h->on_read(conn);
-						etime = cdk_timespec_get();
 					}
-				}
-				if (conn->cmd & _POLLER_CMD_C) {
-					cdk_list_remove(&conn->n);
-					if (_poller_check_connect_status(conn)) {
-						conn->h->on_connect(conn);
+					if (conn->cmd & _POLLER_CMD_C) {
+						
+						if (_poller_check_connect_status(conn)) {
+							conn->h->on_connect(conn);
+						}
+						cdk_list_remove(&conn->n);
 					}
-				}
-				if (conn->cmd & _POLLER_CMD_W) {
-					
-					while ((etime - stime < YIELDTIME)) {
-
-						uint32_t total = conn->iobuf.buffer.len;
-
-						ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[sent], total - sent);
-						if (n == -1) {
-							cdk_list_remove(&conn->n);
-							if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+					if (conn->cmd & _POLLER_CMD_W) {
+						
+						if (conn->iobuf.sent < conn->iobuf.total) {
+							
+							ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.total - conn->iobuf.sent);
+							if (n == -1) {
+								cdk_list_remove(&conn->n);
+								if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+									_poller_conn_destroy(conn);
+								}
+								if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+									_poller_post_send(conn);
+								}
+								break;
+							}
+							if (n == 0) {
+								cdk_list_remove(&conn->n);
 								_poller_conn_destroy(conn);
+								break;
 							}
-							if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-								_poller_post_send(conn);
-							}
-							break;
+							conn->iobuf.sent += n;
 						}
-						if (n == 0) {
-							cdk_list_remove(&conn->n);
-							_poller_conn_destroy(conn);
-							break;
+						else {
+							conn->iobuf.sent  = 0;
+							conn->iobuf.total = 0;
+
+							conn->h->on_write(conn);
 						}
-						sent += n;
-						conn->h->on_write(conn);
-						etime = cdk_timespec_get();
 					}
+					etime = cdk_timespec_get();
 				}
 			}
 		}
@@ -288,8 +286,8 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 void _poller_post_recv(poller_conn_t* conn) {
 
 	if (conn->iobuf.buffer.buf == NULL) {
-		conn->iobuf.buffer.buf = (char*)cdk_malloc(MAX_IOBUF_SIZE);
-		conn->iobuf.buffer.len = MAX_IOBUF_SIZE;
+		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
+		conn->iobuf.buffer.len = 0;
 	}
 	conn->cmd = _POLLER_CMD_R;
 	_poller_conn_modify(conn);
@@ -298,11 +296,35 @@ void _poller_post_recv(poller_conn_t* conn) {
 void _poller_post_send(poller_conn_t* conn) {
 
 	if (conn->iobuf.buffer.buf == NULL) {
-		conn->iobuf.buffer.buf = (char*)cdk_malloc(MAX_IOBUF_SIZE);
-		conn->iobuf.buffer.len = MAX_IOBUF_SIZE;
+		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
+		conn->iobuf.buffer.len = 0;
 	}
 	conn->cmd = _POLLER_CMD_W;
 	_poller_conn_modify(conn);
+}
+
+void _poller_recv(poller_conn_t* conn, void* data, size_t size) {
+
+	if (size > MAX_IOBUF_SIZE) {
+		abort();
+	}
+	memset(data, 0, size);
+	memcpy(data, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
+}
+
+void _poller_send(poller_conn_t* conn, void* data, size_t size) {
+
+	/**
+	 * the application layer guarantees read, write size.
+	 */
+	if (size > MAX_IOBUF_SIZE) {
+		abort();
+	}
+	conn->iobuf.buffer.len = size;
+	conn->iobuf.sent       = 0;
+	conn->iobuf.total      = size;
+
+	memcpy(conn->iobuf.buffer.buf, data, size);
 }
 
 #endif

@@ -51,8 +51,12 @@ typedef int                              sock_t;
 
 typedef struct _conn_buf_t {
 
+	/**
+	 * below 2 fileds is effect just only to send.
+	 */
 	size_t       total;
 	size_t       sent;
+
 	struct {
 		uint32_t len;
 		char*    buf;

@@ -1,4 +1,5 @@
 #include "cdk.h"
+#include <string.h>
 
 static void handle_accept(poller_conn_t* conn) {
 	printf("[%d]new connection coming...\n", (int)conn->fd);
@@ -8,14 +9,19 @@ static void handle_accept(poller_conn_t* conn) {
 
 static void handle_write(poller_conn_t* conn) {
 
-	printf("recv write envent\n");
+	printf("recv write complete\n");
 	cdk_net_postrecv(conn);
 }
 static void handle_read(poller_conn_t* conn) {
 	
-	printf("recv buf: %s\n", conn->iobuf.buffer.buf);
+	char buf[1024];
+	cdk_net_read(conn, buf, sizeof(buf));
+
+	printf("recv buf: %s\n", buf);
 	
-	cdk_net_postrecv(conn);
+	char* wbuf = "hello world\n";
+	cdk_net_write(conn, wbuf, strlen(wbuf)+1);
+	cdk_net_postsend(conn);
 }
 
 int main(void) {

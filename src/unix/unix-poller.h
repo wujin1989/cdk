@@ -33,3 +33,5 @@ extern void           _poller_listen(const char* restrict t, const char* restric
 extern void           _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
 extern void           _poller_post_recv(poller_conn_t* conn);
 extern void           _poller_post_send(poller_conn_t* conn);
+extern void           _poller_recv(poller_conn_t* conn, void* data, size_t size);
+extern void           _poller_send(poller_conn_t* conn, void* data, size_t size);
