@@ -1,15 +1,27 @@
 #include "cdk.h"
 #include <string.h>
 
+typedef struct _net_msg_hdr_t {
+
+	uint32_t      p_s;   /* payload size */
+	uint32_t      p_t;   /* payload type */
+}net_msg_hdr_t;
+
+typedef struct _net_msg_t {
+
+	net_msg_hdr_t      h;
+	char               p[];
+}net_msg_t;
+
 static void handle_accept(poller_conn_t* conn) {
 	printf("[%d]new connection coming...\n", (int)conn->fd);
 
 	cdk_net_postrecv(conn);
 }
 
-static void handle_write(poller_conn_t* conn) {
+static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 
-	printf("recv write complete\n");
+	printf("recv write complete, %s\n", (char*)buf);
 	cdk_net_postrecv(conn);
 }
 static void handle_read(poller_conn_t* conn) {

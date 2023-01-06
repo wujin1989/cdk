@@ -27,7 +27,38 @@
 
 typedef struct _poller_handler_t poller_handler_t;
 
- //======================================= unix ================================================================
+typedef struct _rb_node_t
+{
+	struct _rb_node_t* rb_parent;
+	struct _rb_node_t* rb_right;
+	struct _rb_node_t* rb_left;
+	char               rb_color;
+}rb_node_t;
+
+typedef struct _rb_tree_t
+{
+	rb_node_t* rb_root;
+}rb_tree_t;
+
+typedef struct _list_node_t {
+	struct _list_node_t* p;
+	struct _list_node_t* n;
+}list_node_t;
+
+typedef list_node_t    list_t;
+
+typedef list_t         fifo_t;
+typedef list_node_t    fifo_node_t;
+
+typedef list_t         filo_t;
+typedef list_node_t    filo_node_t;
+
+typedef struct _thrdpool_job_t {
+	void          (*fn)(void*);
+	void*         p;
+	fifo_node_t   q_n;      /* queue node */
+}thrdpool_job_t;
+
 #if defined(__linux__) || defined(__APPLE__)
 
 #include <stdatomic.h>
@@ -54,11 +85,20 @@ typedef int                              sock_t;
 typedef struct _conn_buf_t {
 
 	/**
-	 * below 2 fileds is effect just only to send.
+	 * used by send. 
 	 */
-	size_t       total;
 	size_t       sent;
-
+	/**
+	 * used by recv.
+	 */
+	struct {
+		char*    buf;
+		uint32_t start;
+		uint32_t offset;
+	} accumulated;
+	/**
+	 * used by recv and send.
+	 */
 	struct {
 		uint32_t len;
 		char*    buf;
@@ -74,9 +114,6 @@ typedef struct _poller_conn_t {
 	list_node_t          n;
 }poller_conn_t;
 #endif
-
-
-//======================================= windows ================================================================
 
 #if defined(_WIN32)
 
@@ -119,7 +156,6 @@ typedef struct _poller_conn_t {
 }poller_conn_t;
 #endif
 
-//======================================= common ================================================================
 typedef struct _rwlock_t {
 	atomic_t w;
 	atomic_t r;
@@ -134,37 +170,6 @@ typedef struct _addrinfo_t {
 
 typedef void (*routine_t)(sock_t s);
 
-typedef struct _rb_node_t
-{
-	struct _rb_node_t* rb_parent;
-	struct _rb_node_t* rb_right;
-	struct _rb_node_t* rb_left;
-	char               rb_color;
-}rb_node_t;
-
-typedef struct _rb_tree_t
-{
-	rb_node_t* rb_root;
-}rb_tree_t;
-
-typedef struct _list_node_t {
-	struct _list_node_t* p;
-	struct _list_node_t* n;
-}list_node_t;
-typedef list_node_t    list_t;
-
-typedef list_t         fifo_t;
-typedef list_node_t    fifo_node_t;
-
-typedef list_t         filo_t;
-typedef list_node_t    filo_node_t;
-
-typedef struct _thrdpool_job_t {
-	void          (*fn)(void*);
-	void*         p;
-	fifo_node_t   q_n;      /* queue node */
-}thrdpool_job_t;
-
 typedef struct _thrdpool_t {
 	thrd_t*       t;       /* threads */
 	size_t        t_c;     /* thread count */
@@ -175,24 +180,12 @@ typedef struct _thrdpool_t {
 	bool          s;       /* status, idle or running */
 }thrdpool_t;
 
-typedef struct _net_msg_hdr_t {
-
-	uint32_t      p_s;   /* payload size */
-	uint32_t      p_t;   /* payload type */
-}net_msg_hdr_t;
-
-typedef struct _net_msg_t {
-
-	net_msg_hdr_t      h;
-	char               p[];
-}net_msg_t;
-
 typedef struct _poller_handler_t {
 
 	void (*on_accept) (poller_conn_t*);
 	void (*on_connect)(poller_conn_t*);
 	void (*on_read)   (poller_conn_t*);
-	void (*on_write)  (poller_conn_t*);
+	void (*on_write)  (poller_conn_t*, void* buf, size_t len);
 }poller_handler_t;
 
 #endif /* __CDK_TYPES_H__ */

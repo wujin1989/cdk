@@ -115,25 +115,6 @@ extern void cdk_net_write(poller_conn_t* conn, void* data, size_t size);
  */
 extern void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
 
-/**
- *  marshalling a net_msg_t.
- *
- *  @param b  [in] payload.
- *  @param tp [in] payload type.
- *  @param sz [in] payload size.
- *  @return net_msg_t pointer.
- */
-extern net_msg_t* cdk_tcp_marshaller(char* restrict b, int tp, int sz);
-
-/**
- *  demarshalling a net_msg_t.
- *
- *  @param m  [in].
- *  @param b  [in] payload.
- *  @return N/A.
- */
-extern void cdk_tcp_demarshaller(net_msg_t* m, char* restrict b);
-
 
 /* //////////////////////////////////////////udp////////////////////////////////////////////// */
 

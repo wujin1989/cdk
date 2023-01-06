@@ -286,7 +286,6 @@ int _net_af(sock_t s) {
 
 ssize_t _net_recv(sock_t s, void* buf, size_t len) {
 
-    memset(buf, 0, len);
     ssize_t n;
     do {
         n = recv(s, buf, len, 0);

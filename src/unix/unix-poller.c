@@ -33,7 +33,7 @@
 #define _POLLER_CMD_A    0x4
 #define _POLLER_CMD_C    0x8
 
-#define MAX_IOBUF_SIZE     8192
+#define MAX_IOBUF_SIZE     (16 * 1024)
 #define MAX_PROCESS_EVENTS 1024
 #define YIELDTIME          10
 
@@ -215,9 +215,9 @@ void _poller_poll(void) {
 					}
 					if (conn->cmd & _POLLER_CMD_W) {
 						
-						if (conn->iobuf.sent < conn->iobuf.total) {
+						if (conn->iobuf.sent < conn->iobuf.buffer.len) {
 							
-							ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.total - conn->iobuf.sent);
+							ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.buffer.len - conn->iobuf.sent);
 							if (n == -1) {
 								cdk_list_remove(&conn->n);
 								if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -236,10 +236,7 @@ void _poller_poll(void) {
 							conn->iobuf.sent += n;
 						}
 						else {
-							conn->iobuf.sent  = 0;
-							conn->iobuf.total = 0;
-
-							conn->h->on_write(conn);
+							conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
 						}
 					}
 					etime = cdk_timespec_get();
@@ -286,8 +283,10 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 void _poller_post_recv(poller_conn_t* conn) {
 
 	if (conn->iobuf.buffer.buf == NULL) {
-		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
-		conn->iobuf.buffer.len = 0;
+		conn->iobuf.buffer.buf  = cdk_malloc(MAX_IOBUF_SIZE);
+	}
+	if (conn->iobuf.accumulated == NULL) {
+		conn->iobuf.accumulated = cdk_malloc(MAX_IOBUF_SIZE);
 	}
 	conn->cmd = _POLLER_CMD_R;
 	_poller_conn_modify(conn);
@@ -296,8 +295,10 @@ void _poller_post_recv(poller_conn_t* conn) {
 void _poller_post_send(poller_conn_t* conn) {
 
 	if (conn->iobuf.buffer.buf == NULL) {
-		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
-		conn->iobuf.buffer.len = 0;
+		conn->iobuf.buffer.buf  = cdk_malloc(MAX_IOBUF_SIZE);
+	}
+	if (conn->iobuf.accumulated == NULL) {
+		conn->iobuf.accumulated = cdk_malloc(MAX_IOBUF_SIZE);
 	}
 	conn->cmd = _POLLER_CMD_W;
 	_poller_conn_modify(conn);
@@ -310,6 +311,7 @@ void _poller_recv(poller_conn_t* conn, void* data, size_t size) {
 	}
 	memset(data, 0, size);
 	memcpy(data, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
+	memset(conn->iobuf.buffer.buf, 0, MAX_IOBUF_SIZE);
 }
 
 void _poller_send(poller_conn_t* conn, void* data, size_t size) {
@@ -322,8 +324,8 @@ void _poller_send(poller_conn_t* conn, void* data, size_t size) {
 	}
 	conn->iobuf.buffer.len = size;
 	conn->iobuf.sent       = 0;
-	conn->iobuf.total      = size;
 
+	memset(conn->iobuf.buffer.buf, 0, MAX_IOBUF_SIZE);
 	memcpy(conn->iobuf.buffer.buf, data, size);
 }
 

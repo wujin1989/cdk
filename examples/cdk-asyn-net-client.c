@@ -1,30 +1,30 @@
 #include "cdk.h"
 
+typedef struct _net_msg_hdr_t {
+
+	uint32_t      p_s;   /* payload size */
+	uint32_t      p_t;   /* payload type */
+}net_msg_hdr_t;
+
+typedef struct _net_msg_t {
+
+	net_msg_hdr_t      h;
+	char               p[];
+}net_msg_t;
+
 static void handle_connect(poller_conn_t* conn) {
 	printf("[%d]has connected to remote...\n", (int)conn->fd);
 
 	cdk_net_postsend(conn);
 }
 
-static void handle_write(poller_conn_t* conn) {
+static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 
 	printf("recv write envent\n");
 	//cdk_net_postrecv(conn);
 }
 static void handle_read(poller_conn_t* conn) {
 
-	for (list_node_t* n = cdk_list_head(&conn->rbufs); n != cdk_list_sentinel(&conn->rbufs); ) {
-
-		conn_buf_t* buf = cdk_list_data(n, conn_buf_t, n);
-		n = cdk_list_next(n);
-
-		printf("[%d]recv %s\n", (int)conn->fd, buf->buf);
-
-		cdk_list_remove(&buf->n);
-		cdk_free(buf);
-	}
-	//cdk_net_postsend(conn);
-	//cdk_net_postrecv(conn);
 }
 
 int main(void) {
