@@ -84,21 +84,8 @@ typedef int                              sock_t;
 
 typedef struct _conn_buf_t {
 
-	/**
-	 * used by send. 
-	 */
 	size_t       sent;
-	/**
-	 * used by recv.
-	 */
-	struct {
-		char*    buf;
-		uint32_t start;
-		uint32_t offset;
-	} accumulated;
-	/**
-	 * used by recv and send.
-	 */
+	size_t       offset;
 	struct {
 		uint32_t len;
 		char*    buf;
@@ -184,7 +171,7 @@ typedef struct _poller_handler_t {
 
 	void (*on_accept) (poller_conn_t*);
 	void (*on_connect)(poller_conn_t*);
-	void (*on_read)   (poller_conn_t*);
+	void (*on_read)   (poller_conn_t*, void* buf, size_t len);
 	void (*on_write)  (poller_conn_t*, void* buf, size_t len);
 }poller_handler_t;
 

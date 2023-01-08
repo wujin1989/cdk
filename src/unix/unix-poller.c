@@ -60,6 +60,98 @@ void _poller_destroy(void) {
 	return;
 }
 
+static bool _poller_check_connect_status(poller_conn_t* conn) {
+	int       e;
+	socklen_t l;
+	l = sizeof(int);
+	getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, (char*)&e, &l);
+	if (e) {
+		_poller_conn_destroy(conn);
+		return false;
+	}
+	return true;
+}
+
+static bool __process_connection(poller_conn_t* conn, uint32_t cmd) {
+
+	if (cmd & _POLLER_CMD_A) {
+
+		sock_t c = _tcp_accept(conn->fd);
+		if (c == -1) {
+			cdk_list_remove(&conn->n);
+			return false;
+		}
+		poller_conn_t* nconn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
+		conn->h->on_accept(nconn);
+	}
+	if (cmd & _POLLER_CMD_C) {
+
+		cdk_list_remove(&conn->n);
+		if (_poller_check_connect_status(conn)) {
+			conn->h->on_connect(conn);
+		}
+		else {
+			_poller_conn_destroy(conn);
+		}
+		return false;
+	}
+	if (cmd & _POLLER_CMD_R) {
+
+		if (conn->iobuf.buffer.buf == NULL) {
+			conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
+		}
+		ssize_t n = _net_recv(conn->fd, conn->iobuf.buffer.buf, MAX_IOBUF_SIZE);
+		if (n == -1) {
+			cdk_list_remove(&conn->n);
+			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+				_poller_conn_destroy(conn);
+			}
+			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+				_poller_post_recv(conn);
+			}
+			return false;
+		}
+		if (n == 0) {
+			cdk_list_remove(&conn->n);
+			_poller_conn_destroy(conn);
+			return false;
+		}
+		conn->iobuf.buffer.len = n;
+		conn->h->on_read(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
+	}
+	if (cmd & _POLLER_CMD_W) {
+
+		if (conn->iobuf.buffer.buf == NULL) {
+			conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
+		}
+		if (conn->iobuf.sent < conn->iobuf.buffer.len) {
+
+			ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.buffer.len - conn->iobuf.sent);
+			if (n == -1) {
+				cdk_list_remove(&conn->n);
+				if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+					_poller_conn_destroy(conn);
+				}
+				if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+					_poller_post_send(conn);
+				}
+				return false;
+			}
+			if (n == 0) {
+				cdk_list_remove(&conn->n);
+				_poller_conn_destroy(conn);
+				return false;
+			}
+			conn->iobuf.sent += n;
+		}
+		else {
+			conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
+		}
+	}
+
+	return true;
+}
+
 poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 
 	poller_conn_t* conn = cdk_malloc(sizeof(poller_conn_t));
@@ -132,18 +224,6 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 	cdk_free(conn);
 }
 
-static bool _poller_check_connect_status(poller_conn_t* conn) {
-	int       e;
-	socklen_t l;
-	l = sizeof(int);
-	getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, (char*)&e, &l);
-	if (e) {
-		_poller_conn_destroy(conn);
-		return false;
-	}
-	return true;
-}
-
 void _poller_poll(void) {
 
 	struct epoll_event events[MAX_PROCESS_EVENTS];
@@ -175,69 +255,9 @@ void _poller_poll(void) {
 				n = cdk_list_next(n);
 
 				while ((etime - stime < YIELDTIME)) {
-					if (conn->cmd & _POLLER_CMD_A) {
 
-						sock_t c = _tcp_accept(conn->fd);
-						if (c == -1) {
-							cdk_list_remove(&conn->n);
-							break;
-						}
-						poller_conn_t* nconn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
-						conn->h->on_accept(nconn);
-					}
-					if (conn->cmd & _POLLER_CMD_R) {
-
-						ssize_t n = _net_recv(conn->fd, conn->iobuf.buffer.buf, MAX_IOBUF_SIZE);
-						if (n == -1) {
-							cdk_list_remove(&conn->n);
-							if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-								_poller_conn_destroy(conn);
-							}
-							if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-								_poller_post_recv(conn);
-							}
-							break;
-						}
-						if (n == 0) {
-							cdk_list_remove(&conn->n);
-							_poller_conn_destroy(conn);
-							break;
-						}
-						conn->iobuf.buffer.len = n;
-						conn->h->on_read(conn);
-					}
-					if (conn->cmd & _POLLER_CMD_C) {
-						
-						if (_poller_check_connect_status(conn)) {
-							conn->h->on_connect(conn);
-						}
-						cdk_list_remove(&conn->n);
-					}
-					if (conn->cmd & _POLLER_CMD_W) {
-						
-						if (conn->iobuf.sent < conn->iobuf.buffer.len) {
-							
-							ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.buffer.len - conn->iobuf.sent);
-							if (n == -1) {
-								cdk_list_remove(&conn->n);
-								if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-									_poller_conn_destroy(conn);
-								}
-								if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-									_poller_post_send(conn);
-								}
-								break;
-							}
-							if (n == 0) {
-								cdk_list_remove(&conn->n);
-								_poller_conn_destroy(conn);
-								break;
-							}
-							conn->iobuf.sent += n;
-						}
-						else {
-							conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
-						}
+					if (!__process_connection(conn, conn->cmd)) {
+						break;
 					}
 					etime = cdk_timespec_get();
 				}
@@ -282,24 +302,12 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 
 void _poller_post_recv(poller_conn_t* conn) {
 
-	if (conn->iobuf.buffer.buf == NULL) {
-		conn->iobuf.buffer.buf  = cdk_malloc(MAX_IOBUF_SIZE);
-	}
-	if (conn->iobuf.accumulated == NULL) {
-		conn->iobuf.accumulated = cdk_malloc(MAX_IOBUF_SIZE);
-	}
 	conn->cmd = _POLLER_CMD_R;
 	_poller_conn_modify(conn);
 }
 
 void _poller_post_send(poller_conn_t* conn) {
 
-	if (conn->iobuf.buffer.buf == NULL) {
-		conn->iobuf.buffer.buf  = cdk_malloc(MAX_IOBUF_SIZE);
-	}
-	if (conn->iobuf.accumulated == NULL) {
-		conn->iobuf.accumulated = cdk_malloc(MAX_IOBUF_SIZE);
-	}
 	conn->cmd = _POLLER_CMD_W;
 	_poller_conn_modify(conn);
 }

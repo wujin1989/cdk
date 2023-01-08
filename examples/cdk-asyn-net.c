@@ -24,15 +24,17 @@ static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 	printf("recv write complete, %s\n", (char*)buf);
 	cdk_net_postrecv(conn);
 }
-static void handle_read(poller_conn_t* conn) {
-	
-	char buf[1024];
-	cdk_net_read(conn, buf, sizeof(buf));
+static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
+
+	while (true) {
+
+	}
+
 
 	printf("recv buf: %s\n", buf);
 	
-	char* wbuf = "hello world\n";
-	cdk_net_write(conn, wbuf, strlen(wbuf)+1);
+	char* outbuf = "hello world\n";
+	cdk_net_write(conn, outbuf, strlen(outbuf)+1);
 	cdk_net_postsend(conn);
 }
 
