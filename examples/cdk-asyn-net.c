@@ -29,9 +29,7 @@ static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
 	while (true) {
 
 	}
-
-
-	printf("recv buf: %s\n", buf);
+	printf("recv buf: %s\n", (char*)buf);
 	
 	char* outbuf = "hello world\n";
 	cdk_net_write(conn, outbuf, strlen(outbuf)+1);

@@ -25,6 +25,8 @@
 #include "cdk/cdk-memory.h"
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-list.h"
+#include "cdk/cdk-queue.h"
+#include "cdk/cdk-thread.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,7 +35,7 @@
 #define _POLLER_CMD_A    0x4
 #define _POLLER_CMD_C    0x8
 
-#define MAX_IOBUF_SIZE     (16 * 1024)
+#define MAX_IOBUF_SIZE     4096
 #define MAX_PROCESS_EVENTS 1024
 #define YIELDTIME          10
 
@@ -60,7 +62,39 @@ void _poller_destroy(void) {
 	return;
 }
 
-static bool _poller_check_connect_status(poller_conn_t* conn) {
+static iobuf_t* __poller_iobuf_create(char* buf, size_t len) {
+
+	iobuf_t* pkt = cdk_malloc(sizeof(iobuf_t) + len);
+	
+	pkt->len = len;
+	memcpy(pkt->buf, buf, pkt->len);
+	cdk_queue_init_node(&pkt->node);
+
+	return pkt;
+}
+
+static void __poller_unpacking(poller_conn_t* conn) {
+
+	while (!cdk_queue_empty(&conn->ibufs)) {
+		iobuf_t* pkt = cdk_queue_data(cdk_queue_dequeue(&conn->ibufs), iobuf_t, node);
+		
+		memcpy(conn->accumulation.cache, pkt->buf + conn->accumulation.offset, pkt->len);
+		conn->accumulation.offset += pkt->len;
+
+		cdk_free(pkt);
+
+		if (conn->accumulation.offset < sizeof(net_msg_t)) {
+			continue;
+		}
+		if (conn->accumulation.offset < sizeof(net_msg_t) + ) {
+
+		}
+		
+		conn->h->on_read(conn, buf, n);
+	}
+}
+
+static bool __poller_check_connect_status(poller_conn_t* conn) {
 	int       e;
 	socklen_t l;
 	l = sizeof(int);
@@ -87,7 +121,7 @@ static bool __process_connection(poller_conn_t* conn, uint32_t cmd) {
 	if (cmd & _POLLER_CMD_C) {
 
 		cdk_list_remove(&conn->n);
-		if (_poller_check_connect_status(conn)) {
+		if (__poller_check_connect_status(conn)) {
 			conn->h->on_connect(conn);
 		}
 		else {
@@ -97,10 +131,8 @@ static bool __process_connection(poller_conn_t* conn, uint32_t cmd) {
 	}
 	if (cmd & _POLLER_CMD_R) {
 
-		if (conn->iobuf.buffer.buf == NULL) {
-			conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
-		}
-		ssize_t n = _net_recv(conn->fd, conn->iobuf.buffer.buf, MAX_IOBUF_SIZE);
+		char buf[MAX_IOBUF_SIZE] = { 0 };
+		ssize_t n = _net_recv(conn->fd, buf, MAX_IOBUF_SIZE);
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -115,9 +147,11 @@ static bool __process_connection(poller_conn_t* conn, uint32_t cmd) {
 			cdk_list_remove(&conn->n);
 			_poller_conn_destroy(conn);
 			return false;
-		}
-		conn->iobuf.buffer.len = n;
-		conn->h->on_read(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
+		}	
+		iobuf_t* pkt = __poller_iobuf_create(buf, n);
+		cdk_queue_enqueue(&conn->ibufs, &pkt->node);
+
+		__poller_unpacking(conn);
 	}
 	if (cmd & _POLLER_CMD_W) {
 
@@ -160,8 +194,8 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 	conn->fd     = s;
 	conn->h      = h;
 	
-	memset(&conn->iobuf, 0, sizeof(conn_buf_t));
-
+	cdk_queue_create(&conn->ibufs);
+	cdk_queue_create(&conn->obufs);
 	cdk_list_init_node(&conn->n);
 
 	struct epoll_event ee;
@@ -220,7 +254,6 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 
 	epoll_ctl(epfd, EPOLL_CTL_DEL, conn->fd, NULL);
 	_net_close(conn->fd);
-	cdk_free(conn->iobuf.buffer.buf);
 	cdk_free(conn);
 }
 
@@ -234,7 +267,6 @@ void _poller_poll(void) {
 	while (true) {
 		int r;
 
-		memset(events, 0, sizeof(struct epoll_event) * MAX_PROCESS_EVENTS);
 		do {
 			r = epoll_wait(epfd, (struct epoll_event*)&events, MAX_PROCESS_EVENTS, -1);
 		} while (r == -1 && errno == EINTR);

@@ -49,5 +49,8 @@ endif()
 add_executable(cdk-asyn-net "cdk-asyn-net.c")
 target_link_libraries(cdk-asyn-net PUBLIC cdk Threads::Threads)
 
-#add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
-#target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)
+#add_executable(list-usage "list-usage.c")
+#target_link_libraries(list-usage PUBLIC cdk Threads::Threads)
+
+add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
+target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)

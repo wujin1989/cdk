@@ -59,6 +59,15 @@ typedef struct _thrdpool_job_t {
 	fifo_node_t   q_n;      /* queue node */
 }thrdpool_job_t;
 
+typedef struct _net_msg_t {
+
+	struct{
+		uint32_t   p_s;   /* payload size */
+		uint32_t   p_t;   /* payload type */
+	}hdr;
+	char           buf[];
+}net_msg_t;
+
 #if defined(__linux__) || defined(__APPLE__)
 
 #include <stdatomic.h>
@@ -82,22 +91,24 @@ typedef pthread_cond_t                   cnd_t;
 typedef atomic_llong                     atomic_t;
 typedef int                              sock_t;
 
-typedef struct _conn_buf_t {
+typedef struct _iobuf_t {
 
-	size_t       sent;
-	size_t       offset;
-	struct {
-		uint32_t len;
-		char*    buf;
-	} buffer;
-}conn_buf_t;
+	fifo_node_t node;
+	uint32_t    len;
+	char        buf[];
+}iobuf_t;
 
 typedef struct _poller_conn_t {
 
+	struct {
+		char            cache[8192];
+		uint32_t        offset;
+	}accumulation;
 	sock_t               fd;
 	uint32_t             cmd;
 	poller_handler_t*    h;
-	conn_buf_t           iobuf;
+	fifo_t               ibufs;
+	fifo_t               obufs;
 	list_node_t          n;
 }poller_conn_t;
 #endif
@@ -127,11 +138,7 @@ typedef SOCKET                           sock_t;
 typedef int                              socklen_t;
 typedef SSIZE_T                          ssize_t;
 
-typedef struct _conn_buf_t {
-	size_t         total;
-	size_t         sent;
-	WSABUF         buffer;
-}conn_buf_t;
+typedef WSABUF iobuf_t;
 
 typedef struct _poller_conn_t {
 
@@ -139,6 +146,7 @@ typedef struct _poller_conn_t {
 	uint32_t             cmd;
 	poller_handler_t*    h;
 	conn_buf_t           iobuf;
+	int                  iofmt;  /* user defined */
 	WSAOVERLAPPED        o;
 }poller_conn_t;
 #endif
