@@ -26,7 +26,8 @@
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-list.h"
 #include "cdk/cdk-queue.h"
-#include "cdk/cdk-thread.h"
+#include "cdk/cdk-ringbuffer.h"
+#include "cdk/cdk-systeminfo.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -62,39 +63,71 @@ void _poller_destroy(void) {
 	return;
 }
 
-static iobuf_t* __poller_iobuf_create(char* buf, size_t len) {
+static void __poller_builtin_demarshaller1(poller_conn_t* conn) {
 
-	iobuf_t* pkt = cdk_malloc(sizeof(iobuf_t) + len);
-	
-	pkt->len = len;
-	memcpy(pkt->buf, buf, pkt->len);
-	cdk_queue_init_node(&pkt->node);
-
-	return pkt;
 }
 
-static void __poller_unpacking(poller_conn_t* conn) {
+static void __poller_builtin_demarshaller2(poller_conn_t* conn) {
 
-	while (!cdk_queue_empty(&conn->ibufs)) {
-		iobuf_t* pkt = cdk_queue_data(cdk_queue_dequeue(&conn->ibufs), iobuf_t, node);
-		
-		memcpy(conn->accumulation.cache, pkt->buf + conn->accumulation.offset, pkt->len);
-		conn->accumulation.offset += pkt->len;
+}
 
-		cdk_free(pkt);
+static void __poller_builtin_demarshaller3(poller_conn_t* conn) {
 
-		if (conn->accumulation.offset < sizeof(net_msg_t)) {
-			continue;
-		}
-		if (conn->accumulation.offset < sizeof(net_msg_t) + ) {
-
-		}
-		
-		conn->h->on_read(conn, buf, n);
+	net_hdr_t  hdr;
+	net_msg_t* msg;
+	if (cdk_ringbuf_len(&conn->ibufs) < sizeof(net_hdr_t)) {
+		return;
 	}
+	cdk_ringbuf_read(&conn->ibufs, &hdr, sizeof(net_hdr_t));
+
+	if (!cdk_byteorder()) {
+		hdr.p_s = ntohl(hdr.p_s);
+		hdr.p_t = ntohl(hdr.p_t);
+	}
+	if (cdk_ringbuf_len(&conn->ibufs) < hdr.p_s) {
+		return;
+	}
+	msg      = cdk_malloc(sizeof(net_msg_t) + hdr.p_s);
+	msg->hdr = hdr;
+	cdk_ringbuf_read(&conn->ibufs, msg->buf, hdr.p_s);
+
+	conn->h->on_read(conn, msg, sizeof(net_msg_t) + hdr.p_s);
+
+	cdk_free(msg);
+}
+
+static void __poller_userdefined_demarshaller(poller_conn_t* conn) {
+
+}
+
+static void __poller_demarshaller(poller_conn_t* conn) {
+
+	switch (conn->dmode)
+	{
+	case DEMARSHALLER_MODE_FIXED_LEN: {
+		__poller_builtin_demarshaller1(conn);
+		break;
+	}
+	case DEMARSHALLER_MODE_DELIMITER: {
+		__poller_builtin_demarshaller2(conn);
+		break;
+	}
+	case DEMARSHALLER_MODE_LEN_FIELD: {
+		__poller_builtin_demarshaller3(conn);
+		break;
+	}
+	case DEMARSHALLER_MODE_USER_DEFINED: {
+		__poller_userdefined_demarshaller(conn);
+		break;
+	}
+	default:
+		abort();
+	}
+	return;
 }
 
 static bool __poller_check_connect_status(poller_conn_t* conn) {
+
 	int       e;
 	socklen_t l;
 	l = sizeof(int);
@@ -148,10 +181,8 @@ static bool __process_connection(poller_conn_t* conn, uint32_t cmd) {
 			_poller_conn_destroy(conn);
 			return false;
 		}	
-		iobuf_t* pkt = __poller_iobuf_create(buf, n);
-		cdk_queue_enqueue(&conn->ibufs, &pkt->node);
-
-		__poller_unpacking(conn);
+		cdk_ringbuf_write(&conn->ibufs, buf, n);
+		__poller_demarshaller(conn);
 	}
 	if (cmd & _POLLER_CMD_W) {
 
@@ -194,7 +225,9 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 	conn->fd     = s;
 	conn->h      = h;
 	
-	cdk_queue_create(&conn->ibufs);
+	if (c & _POLLER_CMD_R) {
+		cdk_ringbuf_create(&conn->ibufs, 1, cdk_malloc(MAX_IOBUF_SIZE * 2), MAX_IOBUF_SIZE * 2);
+	}
 	cdk_queue_create(&conn->obufs);
 	cdk_list_init_node(&conn->n);
 
@@ -254,6 +287,7 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 
 	epoll_ctl(epfd, EPOLL_CTL_DEL, conn->fd, NULL);
 	_net_close(conn->fd);
+	cdk_free(conn->ibufs.b);
 	cdk_free(conn);
 }
 

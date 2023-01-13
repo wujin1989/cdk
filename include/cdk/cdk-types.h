@@ -59,14 +59,32 @@ typedef struct _thrdpool_job_t {
 	fifo_node_t   q_n;      /* queue node */
 }thrdpool_job_t;
 
+typedef struct _net_hdr_t{
+	uint32_t      p_s;   /* payload size */
+	uint32_t      p_t;   /* payload type */
+}net_hdr_t;
+
 typedef struct _net_msg_t {
 
-	struct{
-		uint32_t   p_s;   /* payload size */
-		uint32_t   p_t;   /* payload type */
-	}hdr;
-	char           buf[];
+	net_hdr_t     hdr;
+	char          buf[];
 }net_msg_t;
+
+typedef struct _ringbuf_t {
+	char*       b;
+	uint32_t    w;   /* write pos */
+	uint32_t    r;   /* read pos */
+	uint32_t    m;   /* mask */
+	uint32_t    esz; /* entry size */
+}ringbuf_t;
+
+typedef enum _demarshaller_mode_t {
+
+	DEMARSHALLER_MODE_FIXED_LEN       = 0   ,
+	DEMARSHALLER_MODE_DELIMITER       = 1   ,
+	DEMARSHALLER_MODE_LEN_FIELD       = 2   ,
+	DEMARSHALLER_MODE_USER_DEFINED    = 3
+}demarshaller_mode_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -100,15 +118,12 @@ typedef struct _iobuf_t {
 
 typedef struct _poller_conn_t {
 
-	struct {
-		char            cache[8192];
-		uint32_t        offset;
-	}accumulation;
 	sock_t               fd;
 	uint32_t             cmd;
 	poller_handler_t*    h;
-	fifo_t               ibufs;
+	ringbuf_t            ibufs;
 	fifo_t               obufs;
+	demarshaller_mode_t  dmode;
 	list_node_t          n;
 }poller_conn_t;
 #endif

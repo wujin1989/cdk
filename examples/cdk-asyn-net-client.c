@@ -70,6 +70,7 @@ msg_t* cdk_tcp_recv(sock_t s) {
 static void handle_connect(poller_conn_t* conn) {
 	printf("[%d]has connected to remote...\n", (int)conn->fd);
 
+	set_unpacking_mode(conn, );
 	login_req_t login = { "aaa", 10 };
 	msg_t* login_msg = _marshaller(&login, LOGIN_REQ, sizeof(login_req_t));
 	cdk_net_write(conn, login_msg, sizeof(msg_t) + ntohl(login_msg->h.p_s));
