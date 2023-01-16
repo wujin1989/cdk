@@ -59,17 +59,6 @@ typedef struct _thrdpool_job_t {
 	fifo_node_t   q_n;      /* queue node */
 }thrdpool_job_t;
 
-typedef struct _net_hdr_t{
-	uint32_t      p_s;   /* payload size */
-	uint32_t      p_t;   /* payload type */
-}net_hdr_t;
-
-typedef struct _net_msg_t {
-
-	net_hdr_t     hdr;
-	char          buf[];
-}net_msg_t;
-
 typedef struct _ringbuf_t {
 	char*       b;
 	uint32_t    w;   /* write pos */
@@ -78,13 +67,44 @@ typedef struct _ringbuf_t {
 	uint32_t    esz; /* entry size */
 }ringbuf_t;
 
-typedef enum _demarshaller_mode_t {
+typedef enum _splicer_t {
 
-	DEMARSHALLER_MODE_FIXED_LEN       = 0   ,
-	DEMARSHALLER_MODE_DELIMITER       = 1   ,
-	DEMARSHALLER_MODE_LEN_FIELD       = 2   ,
-	DEMARSHALLER_MODE_USER_DEFINED    = 3
-}demarshaller_mode_t;
+	SPLICE_TYPE_PRESET       = 0   ,
+	SPLICE_TYPE_TEXTPLAIN    = 1   ,
+	SPLICE_TYPE_BINARY       = 2   ,
+	SPLICE_TYPE_USER_DEFINED = 3
+}splicer_t;
+
+typedef struct _splicer_profile_t {
+
+	splicer_t           type;
+	union {
+		struct {
+			uint32_t    len;
+		}preset;
+
+		struct {
+			char        buf[16];
+			uint32_t    len;
+		}textplain;
+
+		struct {
+			uint32_t  payload;   /* payload offset          */
+			uint32_t  offset;    /* length field offset     */
+			uint32_t  size;      /* length field size       */
+			int32_t   adj;       /* length field adjustment */
+			enum {
+				LEN_FIELD_LITTLE_ENDIAN ,
+				LEN_FIELD_BIG_ENDIAN    ,
+				LEN_FIELD_VARINT
+			}coding;             /* length field coding     */
+		}binary;
+
+		struct {
+			void (*splice)(poller_conn_t* conn);
+		}userdefined;
+	};
+}splicer_profile_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -130,7 +150,7 @@ typedef struct _poller_conn_t {
 	}ibufs;
 
 	fifo_t               obufs;
-	demarshaller_mode_t  dmode;
+	splicer_profile_t    splicer;
 	list_node_t          n;
 }poller_conn_t;
 #endif

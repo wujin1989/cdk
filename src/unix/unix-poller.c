@@ -63,61 +63,47 @@ void _poller_destroy(void) {
 	return;
 }
 
-static void __poller_builtin_demarshaller1(poller_conn_t* conn) {
+static void __poller_builtin_splicer1(poller_conn_t* conn) {
 
 }
 
-static void __poller_builtin_demarshaller2(poller_conn_t* conn) {
+static void __poller_builtin_splicer2(poller_conn_t* conn) {
 
 }
 
-static void __poller_builtin_demarshaller3(poller_conn_t* conn) {
+static void __poller_builtin_splicer3(poller_conn_t* conn) {
 
-	net_hdr_t  hdr;
-	net_msg_t* msg;
-	if (cdk_ringbuf_len(&conn->ibufs) < sizeof(net_hdr_t)) {
-		return;
+	char* h = conn->ibufs.buf + conn->ibufs.bgn;
+	char* t = conn->ibufs.buf + conn->ibufs.end;
+
+	while () {
+
 	}
-	cdk_ringbuf_read(&conn->ibufs, &hdr, sizeof(net_hdr_t));
-
-	if (!cdk_byteorder()) {
-		hdr.p_s = ntohl(hdr.p_s);
-		hdr.p_t = ntohl(hdr.p_t);
-	}
-	if (cdk_ringbuf_len(&conn->ibufs) < hdr.p_s) {
-		return;
-	}
-	msg      = cdk_malloc(sizeof(net_msg_t) + hdr.p_s);
-	msg->hdr = hdr;
-	cdk_ringbuf_read(&conn->ibufs, msg->buf, hdr.p_s);
-
-	conn->h->on_read(conn, msg, sizeof(net_msg_t) + hdr.p_s);
-
-	cdk_free(msg);
 }
 
-static void __poller_userdefined_demarshaller(poller_conn_t* conn) {
+static void __poller_userdefined_splicer(poller_conn_t* conn) {
 
+	conn->splicer.userdefined.splice(conn);
 }
 
-static void __poller_demarshaller(poller_conn_t* conn) {
+static void __poller_splicer(poller_conn_t* conn) {
 
-	switch (conn->dmode)
+	switch (conn->splicer.type)
 	{
-	case DEMARSHALLER_MODE_FIXED_LEN: {
-		__poller_builtin_demarshaller1(conn);
+	case SPLICE_TYPE_PRESET: {
+		__poller_builtin_splicer1(conn);
 		break;
 	}
-	case DEMARSHALLER_MODE_DELIMITER: {
-		__poller_builtin_demarshaller2(conn);
+	case SPLICE_TYPE_TEXTPLAIN: {
+		__poller_builtin_splicer2(conn);
 		break;
 	}
-	case DEMARSHALLER_MODE_LEN_FIELD: {
-		__poller_builtin_demarshaller3(conn);
+	case SPLICE_TYPE_BINARY: {
+		__poller_builtin_splicer3(conn);
 		break;
 	}
-	case DEMARSHALLER_MODE_USER_DEFINED: {
-		__poller_userdefined_demarshaller(conn);
+	case SPLICE_TYPE_USER_DEFINED: {
+		__poller_userdefined_splicer(conn);
 		break;
 	}
 	default:
@@ -139,39 +125,69 @@ static bool __poller_check_connect_status(poller_conn_t* conn) {
 	return true;
 }
 
-static bool __process_connection(poller_conn_t* conn, uint32_t cmd) {
+static bool __poller_handle_accept(poller_conn_t* conn) {
 
-	if (cmd & _POLLER_CMD_A) {
-
-		sock_t c = _tcp_accept(conn->fd);
-		if (c == -1) {
-			cdk_list_remove(&conn->n);
-			return false;
-		}
-		poller_conn_t* nconn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
-		conn->h->on_accept(nconn);
-	}
-	if (cmd & _POLLER_CMD_C) {
-
+	sock_t c = _tcp_accept(conn->fd);
+	if (c == -1) {
 		cdk_list_remove(&conn->n);
-		if (__poller_check_connect_status(conn)) {
-			conn->h->on_connect(conn);
-		}
-		else {
+		return false;
+	}
+	poller_conn_t* nconn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
+	conn->h->on_accept(nconn);
+	return true;
+}
+
+static bool __poller_handle_connect(poller_conn_t* conn) {
+
+	cdk_list_remove(&conn->n);
+	if (__poller_check_connect_status(conn)) {
+		conn->h->on_connect(conn);
+	}
+	else {
+		_poller_conn_destroy(conn);
+	}
+	return false;
+}
+
+static bool __poller_handle_recv(poller_conn_t* conn) {
+
+	ssize_t n = _net_recv(conn->fd, conn->ibufs.buf + conn->ibufs.end, MAX_IOBUF_SIZE);
+	if (n == -1) {
+		cdk_list_remove(&conn->n);
+		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
 			_poller_conn_destroy(conn);
+		}
+		if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+			_poller_post_recv(conn);
 		}
 		return false;
 	}
-	if (cmd & _POLLER_CMD_R) {
+	if (n == 0) {
+		cdk_list_remove(&conn->n);
+		_poller_conn_destroy(conn);
+		return false;
+	}
+	conn->ibufs.end += n;
+	__poller_splicer(conn);
 
-		ssize_t n = _net_recv(conn->fd, conn->ibufs.buf, MAX_IOBUF_SIZE);
+	return true;
+}
+
+static bool __poller_handle_send(poller_conn_t* conn) {
+
+	if (conn->iobuf.buffer.buf == NULL) {
+		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
+	}
+	if (conn->iobuf.sent < conn->iobuf.buffer.len) {
+
+		ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.buffer.len - conn->iobuf.sent);
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
 				_poller_conn_destroy(conn);
 			}
 			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-				_poller_post_recv(conn);
+				_poller_post_send(conn);
 			}
 			return false;
 		}
@@ -179,41 +195,38 @@ static bool __process_connection(poller_conn_t* conn, uint32_t cmd) {
 			cdk_list_remove(&conn->n);
 			_poller_conn_destroy(conn);
 			return false;
-		}	
-		cdk_ringbuf_write(&conn->ibufs, buf, n);
-		__poller_demarshaller(conn);
+		}
+		conn->iobuf.sent += n;
+	}
+	else {
+		conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
+	}
+}
+
+static bool __poller_process_connection(poller_conn_t* conn, uint32_t cmd) {
+
+	if (cmd & _POLLER_CMD_A) {
+
+		return __poller_handle_accept(conn);
+	}
+	if (cmd & _POLLER_CMD_C) {
+
+		return __poller_handle_connect(conn);
+	}
+	if (cmd & _POLLER_CMD_R) {
+
+		return __poller_handle_recv(conn);
 	}
 	if (cmd & _POLLER_CMD_W) {
 
-		if (conn->iobuf.buffer.buf == NULL) {
-			conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
-		}
-		if (conn->iobuf.sent < conn->iobuf.buffer.len) {
-
-			ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.buffer.len - conn->iobuf.sent);
-			if (n == -1) {
-				cdk_list_remove(&conn->n);
-				if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-					_poller_conn_destroy(conn);
-				}
-				if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-					_poller_post_send(conn);
-				}
-				return false;
-			}
-			if (n == 0) {
-				cdk_list_remove(&conn->n);
-				_poller_conn_destroy(conn);
-				return false;
-			}
-			conn->iobuf.sent += n;
-		}
-		else {
-			conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
-		}
+		return __poller_handle_send(conn);
 	}
+	return false;
+}
 
-	return true;
+void _poller_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer) {
+
+	memcpy(&conn->splicer, splicer, sizeof(splicer_profile_t));
 }
 
 poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
@@ -223,7 +236,7 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 	conn->cmd    = c;
 	conn->fd     = s;
 	conn->h      = h;
-	
+
 	if (c & _POLLER_CMD_R) {
 		
 		conn->ibufs.len = (MAX_IOBUF_SIZE * 2);
@@ -231,6 +244,10 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 		conn->ibufs.bgn = 0;
 		conn->ibufs.end = 0;
 	}
+	/* setup default splicer */
+	conn->splicer.type       = SPLICE_TYPE_PRESET;
+	conn->splicer.preset.len = 4096;
+
 	cdk_queue_create(&conn->obufs);
 	cdk_list_init_node(&conn->n);
 
@@ -325,7 +342,7 @@ void _poller_poll(void) {
 
 				while ((etime - stime < YIELDTIME)) {
 
-					if (!__process_connection(conn, conn->cmd)) {
+					if (!__poller_process_connection(conn, conn->cmd)) {
 						break;
 					}
 					etime = cdk_timespec_get();
