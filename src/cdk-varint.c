@@ -41,8 +41,10 @@ size_t cdk_varint_encode(uint64_t num, char* buf, size_t len) {
     char* ptr = buf;
 
     while (num & MSBALL) {
+
         *(ptr++) = (num & 0xFF) | MSB;
         num = num >> 7;
+
         if ((ptr - buf) >= len) {
             abort();
         };
@@ -54,18 +56,18 @@ size_t cdk_varint_encode(uint64_t num, char* buf, size_t len) {
 
 uint64_t cdk_varint_decode(char* buf, size_t* len) {
 
-    uint64_t result, ll;
-    int      bits;
-    char*    ptr;
+    uint64_t result, ll, bits;
 
     result = bits = ll = 0;
-    ptr = buf;
+    char* ptr = buf;
 
     while (*ptr & MSB) {
+
         ll = *ptr;
         result += ((ll & 0x7F) << bits);
-        ptr++;
+        ptr++; 
         bits += 7;
+
         if ((ptr - buf) >= len) {
             abort();
         };
