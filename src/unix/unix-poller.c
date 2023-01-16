@@ -164,8 +164,7 @@ static bool __process_connection(poller_conn_t* conn, uint32_t cmd) {
 	}
 	if (cmd & _POLLER_CMD_R) {
 
-		char buf[MAX_IOBUF_SIZE] = { 0 };
-		ssize_t n = _net_recv(conn->fd, buf, MAX_IOBUF_SIZE);
+		ssize_t n = _net_recv(conn->fd, conn->ibufs.buf, MAX_IOBUF_SIZE);
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -226,7 +225,11 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 	conn->h      = h;
 	
 	if (c & _POLLER_CMD_R) {
-		cdk_ringbuf_create(&conn->ibufs, 1, cdk_malloc(MAX_IOBUF_SIZE * 2), MAX_IOBUF_SIZE * 2);
+		
+		conn->ibufs.len = (MAX_IOBUF_SIZE * 2);
+		conn->ibufs.buf = cdk_malloc(conn->ibufs.len);
+		conn->ibufs.bgn = 0;
+		conn->ibufs.end = 0;
 	}
 	cdk_queue_create(&conn->obufs);
 	cdk_list_init_node(&conn->n);
@@ -287,7 +290,7 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 
 	epoll_ctl(epfd, EPOLL_CTL_DEL, conn->fd, NULL);
 	_net_close(conn->fd);
-	cdk_free(conn->ibufs.b);
+	cdk_free(conn->ibufs.buf);
 	cdk_free(conn);
 }
 

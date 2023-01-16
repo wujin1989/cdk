@@ -121,7 +121,14 @@ typedef struct _poller_conn_t {
 	sock_t               fd;
 	uint32_t             cmd;
 	poller_handler_t*    h;
-	ringbuf_t            ibufs;
+
+	struct {
+		void*    buf;
+		uint32_t len;
+		uint32_t bgn;
+		uint32_t end;
+	}ibufs;
+
 	fifo_t               obufs;
 	demarshaller_mode_t  dmode;
 	list_node_t          n;
