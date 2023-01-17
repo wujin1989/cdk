@@ -76,7 +76,7 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 	char* h = conn->ibufs.buf + conn->ibufs.bgn;
 	char* t = conn->ibufs.buf + conn->ibufs.end;
 
-	while () {
+	while (true) {
 
 	}
 }
@@ -175,7 +175,7 @@ static bool __poller_handle_recv(poller_conn_t* conn) {
 
 static bool __poller_handle_send(poller_conn_t* conn) {
 
-	if (conn->iobuf.buffer.buf == NULL) {
+	/*if (conn->iobuf.buffer.buf == NULL) {
 		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
 	}
 	if (conn->iobuf.sent < conn->iobuf.buffer.len) {
@@ -200,7 +200,7 @@ static bool __poller_handle_send(poller_conn_t* conn) {
 	}
 	else {
 		conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
-	}
+	}*/
 }
 
 static bool __poller_process_connection(poller_conn_t* conn, uint32_t cmd) {
@@ -403,9 +403,9 @@ void _poller_recv(poller_conn_t* conn, void* data, size_t size) {
 	if (size > MAX_IOBUF_SIZE) {
 		abort();
 	}
-	memset(data, 0, size);
+	/*memset(data, 0, size);
 	memcpy(data, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
-	memset(conn->iobuf.buffer.buf, 0, MAX_IOBUF_SIZE);
+	memset(conn->iobuf.buffer.buf, 0, MAX_IOBUF_SIZE);*/
 }
 
 void _poller_send(poller_conn_t* conn, void* data, size_t size) {
@@ -416,11 +416,11 @@ void _poller_send(poller_conn_t* conn, void* data, size_t size) {
 	if (size > MAX_IOBUF_SIZE) {
 		abort();
 	}
-	conn->iobuf.buffer.len = size;
+	/*conn->iobuf.buffer.len = size;
 	conn->iobuf.sent       = 0;
 
 	memset(conn->iobuf.buffer.buf, 0, MAX_IOBUF_SIZE);
-	memcpy(conn->iobuf.buffer.buf, data, size);
+	memcpy(conn->iobuf.buffer.buf, data, size);*/
 }
 
 #endif

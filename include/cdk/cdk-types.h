@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef struct _poller_conn_t    poller_conn_t;
 typedef struct _poller_handler_t poller_handler_t;
 
 typedef struct _rb_node_t

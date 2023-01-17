@@ -193,6 +193,7 @@ static void _netpoller_run(void) {
 		printf("[%d]epoll_wait recvice event, active fd num: %d\n", (int)cdk_gettid(), n);
 		for (int i = 0; i < n; i++) {
 			if (eventlst[i].data.fd == sfd) {
+                cdk_sleep(10000);
 				sock_t cfd = _tcp_accept(sfd);
                 struct epoll_event event;
                 event.data.fd = cfd;

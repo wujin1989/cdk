@@ -25,8 +25,8 @@ find_package(Threads REQUIRED)
 
 
 if(UNIX)
-#add_executable(multi-threads-share-same-epfd "multi-threads-share-same-epfd.c")
-#target_link_libraries(multi-threads-share-same-epfd PUBLIC cdk Threads::Threads)
+add_executable(multi-threads-share-same-epfd "multi-threads-share-same-epfd.c")
+target_link_libraries(multi-threads-share-same-epfd PUBLIC cdk Threads::Threads)
 
 #add_executable(multi-threads-reuse-port "multi-threads-reuse-port.c")
 #target_link_libraries(multi-threads-reuse-port PUBLIC cdk Threads::Threads)
@@ -46,11 +46,11 @@ add_executable(iocp-usage "iocp-usage.c")
 target_link_libraries(iocp-usage PUBLIC cdk Threads::Threads)
 endif()
 
-add_executable(cdk-asyn-net "cdk-asyn-net.c")
-target_link_libraries(cdk-asyn-net PUBLIC cdk Threads::Threads)
+#add_executable(cdk-asyn-net "cdk-asyn-net.c")
+#target_link_libraries(cdk-asyn-net PUBLIC cdk Threads::Threads)
 
 #add_executable(list-usage "list-usage.c")
 #target_link_libraries(list-usage PUBLIC cdk Threads::Threads)
 
-add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
-target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)
+#add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
+#target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)

@@ -45,7 +45,7 @@ size_t cdk_varint_encode(uint64_t num, char* buf, size_t len) {
         *(ptr++) = (num & 0xFF) | MSB;
         num = num >> 7;
 
-        if ((ptr - buf) >= len) {
+        if ((ptrdiff_t)(ptr - buf) >= len) {
             abort();
         };
     }
@@ -68,7 +68,7 @@ uint64_t cdk_varint_decode(char* buf, size_t* len) {
         ptr++; 
         bits += 7;
 
-        if ((ptr - buf) >= len) {
+        if ((ptr - buf) >= *len) {
             abort();
         };
     }
