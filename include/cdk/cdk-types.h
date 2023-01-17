@@ -95,10 +95,13 @@ typedef struct _splicer_profile_t {
 			uint32_t  size;      /* length field size       */
 			int32_t   adj;       /* length field adjustment */
 			enum {
-				LEN_FIELD_LITTLE_ENDIAN ,
-				LEN_FIELD_BIG_ENDIAN    ,
-				LEN_FIELD_VARINT
+				LEN_FIELD_VARINT        ,
+				LEN_FIELD_FIXEDINT
 			}coding;             /* length field coding     */
+			enum {
+				LEN_FIELD_LITTLE_ENDIAN ,
+				LEN_FIELD_BIG_ENDIAN
+			}order;              /* length field byteorder  */
 		}binary;
 
 		struct {

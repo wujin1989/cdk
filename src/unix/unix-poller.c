@@ -28,6 +28,7 @@
 #include "cdk/cdk-queue.h"
 #include "cdk/cdk-ringbuffer.h"
 #include "cdk/cdk-systeminfo.h"
+#include "cdk/cdk-varint.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -73,12 +74,63 @@ static void __poller_builtin_splicer2(poller_conn_t* conn) {
 
 static void __poller_builtin_splicer3(poller_conn_t* conn) {
 
+	uint32_t fs; /* frame size   */
+	uint32_t hs; /* header size  */
+	uint32_t ps; /* payload size */
+
 	char* h = conn->ibufs.buf + conn->ibufs.bgn;
 	char* t = conn->ibufs.buf + conn->ibufs.end;
 
+	uint32_t accumulated = t - h;
+	
 	while (true) {
+		if (accumulated < conn->splicer.binary.payload) {
+			break;
+		}
+		hs = conn->splicer.binary.payload;
+		ps = 0;
 
+		if (conn->splicer.binary.coding == LEN_FIELD_FIXEDINT) {
+
+			if (conn->splicer.binary.order == LEN_FIELD_BIG_ENDIAN) {
+
+				for (int i = 0; i < conn->splicer.binary.size; i++) {
+					ps = (ps << 8) | (uint32_t)(*(h + conn->splicer.binary.offset + i));
+				}
+				if (!cdk_byteorder()) {
+					ps = ntohl(ps);
+				}
+			}
+			if (conn->splicer.binary.order == LEN_FIELD_LITTLE_ENDIAN) {
+
+				for (int i = 0; i < conn->splicer.binary.size; i++) {
+					ps |= (uint32_t)(*(h + conn->splicer.binary.offset + i)) << (i * 8);
+				}
+				if (cdk_byteorder()) {
+					ps = ntohl(ps);
+				}
+			}
+		}
+		if (conn->splicer.binary.coding == LEN_FIELD_VARINT) {
+
+			size_t flexible = (t - (h + conn->splicer.binary.offset));
+			/**
+			 * since the varint is encoded as a byte stream
+			 * , thus no need to consider the endianness.
+			 */
+			ps = cdk_varint_decode(h + conn->splicer.binary.offset, &flexible);
+			hs = conn->splicer.binary.payload + flexible - conn->splicer.binary.size;
+		}
+		fs = hs + ps + conn->splicer.binary.adj;
+
+		if (accumulated < fs) {
+			break;
+		}
+		conn->h->on_read(conn, h, fs);
+		h += fs;
+		accumulated -= fs;
 	}
+	return;
 }
 
 static void __poller_userdefined_splicer(poller_conn_t* conn) {
