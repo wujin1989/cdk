@@ -190,6 +190,9 @@ sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
                 continue;
             }
             _tcp_maxseg(s);
+            /**
+             * must be after _tcp_maxseg. due to _tcp_maxseg set TCP_NOOPT on macos.
+             */
             _tcp_nodelay(s, true);
             _tcp_keepalive(s);
         }
