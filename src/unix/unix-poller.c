@@ -66,10 +66,50 @@ void _poller_destroy(void) {
 
 static void __poller_builtin_splicer1(poller_conn_t* conn) {
 
+	char* head = conn->ibufs.buf;
+	char* tail = conn->ibufs.buf + conn->ibufs.off;
+	char* tmp  = head;
+
+	uint32_t accumulated = tail - head;
+
+	while (true) {
+
+		if (accumulated < conn->splicer.preset.len) {
+			break;
+		}
+		conn->h->on_read(conn, tmp, conn->splicer.preset.len);
+		tmp += conn->splicer.preset.len;
+		accumulated -= conn->splicer.preset.len;
+	}
+	if (tmp == head) {
+		return;
+	}
+	conn->ibufs.off = accumulated;
+	if (accumulated) {
+		memmove(conn->ibufs.buf, tmp, accumulated);
+	}
+	return;
 }
 
 static void __poller_builtin_splicer2(poller_conn_t* conn) {
 
+	char* head = conn->ibufs.buf;
+	char* tail = conn->ibufs.buf + conn->ibufs.off;
+	char* tmp  = head;
+
+	uint32_t accumulated = tail - head;
+
+	while (true) {
+
+	}
+	if (tmp == head) {
+		return;
+	}
+	conn->ibufs.off = accumulated;
+	if (accumulated) {
+		memmove(conn->ibufs.buf, tmp, accumulated);
+	}
+	return;
 }
 
 static void __poller_builtin_splicer3(poller_conn_t* conn) {
@@ -78,10 +118,11 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 	uint32_t hs; /* header size  */
 	uint32_t ps; /* payload size */
 
-	char* h = conn->ibufs.buf + conn->ibufs.bgn;
-	char* t = conn->ibufs.buf + conn->ibufs.end;
+	char* head = conn->ibufs.buf;
+	char* tail = conn->ibufs.buf + conn->ibufs.off;
+	char* tmp  = head;
 
-	uint32_t accumulated = t - h;
+	uint32_t accumulated = tail - head;
 	
 	while (true) {
 		if (accumulated < conn->splicer.binary.payload) {
@@ -95,7 +136,7 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 			if (conn->splicer.binary.order == LEN_FIELD_BIG_ENDIAN) {
 
 				for (int i = 0; i < conn->splicer.binary.size; i++) {
-					ps = (ps << 8) | (uint32_t)(*(h + conn->splicer.binary.offset + i));
+					ps = (ps << 8) | (uint32_t)(*(tmp + conn->splicer.binary.offset + i));
 				}
 				if (!cdk_byteorder()) {
 					ps = ntohl(ps);
@@ -104,7 +145,7 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 			if (conn->splicer.binary.order == LEN_FIELD_LITTLE_ENDIAN) {
 
 				for (int i = 0; i < conn->splicer.binary.size; i++) {
-					ps |= (uint32_t)(*(h + conn->splicer.binary.offset + i)) << (i * 8);
+					ps |= (uint32_t)(*(tmp + conn->splicer.binary.offset + i)) << (i * 8);
 				}
 				if (cdk_byteorder()) {
 					ps = ntohl(ps);
@@ -113,22 +154,32 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 		}
 		if (conn->splicer.binary.coding == LEN_FIELD_VARINT) {
 
-			size_t flexible = (t - (h + conn->splicer.binary.offset));
+			size_t flexible = (tail - (tmp + conn->splicer.binary.offset));
 			/**
 			 * since the varint is encoded as a byte stream
 			 * , thus no need to consider the endianness.
 			 */
-			ps = cdk_varint_decode(h + conn->splicer.binary.offset, &flexible);
+			ps = cdk_varint_decode(tmp + conn->splicer.binary.offset, &flexible);
 			hs = conn->splicer.binary.payload + flexible - conn->splicer.binary.size;
 		}
 		fs = hs + ps + conn->splicer.binary.adj;
 
+		if (fs > conn->ibufs.len) {
+			abort();
+		}
 		if (accumulated < fs) {
 			break;
 		}
-		conn->h->on_read(conn, h, fs);
-		h += fs;
+		conn->h->on_read(conn, tmp, fs);
+		tmp += fs;
 		accumulated -= fs;
+	}
+	if (tmp == head) {
+		return;
+	}
+	conn->ibufs.off = accumulated;
+	if (accumulated) {
+		memmove(conn->ibufs.buf, tmp, accumulated);
 	}
 	return;
 }
@@ -203,7 +254,7 @@ static bool __poller_handle_connect(poller_conn_t* conn) {
 
 static bool __poller_handle_recv(poller_conn_t* conn) {
 
-	ssize_t n = _net_recv(conn->fd, conn->ibufs.buf + conn->ibufs.end, MAX_IOBUF_SIZE);
+	ssize_t n = _net_recv(conn->fd, conn->ibufs.buf + conn->ibufs.off, MAX_IOBUF_SIZE);
 	if (n == -1) {
 		cdk_list_remove(&conn->n);
 		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -219,7 +270,7 @@ static bool __poller_handle_recv(poller_conn_t* conn) {
 		_poller_conn_destroy(conn);
 		return false;
 	}
-	conn->ibufs.end += n;
+	conn->ibufs.off += n;
 	__poller_splicer(conn);
 
 	return true;

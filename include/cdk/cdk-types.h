@@ -85,7 +85,7 @@ typedef struct _splicer_profile_t {
 		}preset;
 
 		struct {
-			char        buf[16];
+			char        delimiter[16];
 			uint32_t    len;
 		}textplain;
 
@@ -149,8 +149,7 @@ typedef struct _poller_conn_t {
 	struct {
 		void*    buf;
 		uint32_t len;
-		uint32_t bgn;
-		uint32_t end;
+		uint32_t off;
 	}ibufs;
 
 	fifo_t               obufs;
