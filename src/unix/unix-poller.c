@@ -78,7 +78,8 @@ static void __poller_builtin_splicer1(poller_conn_t* conn) {
 			break;
 		}
 		conn->h->on_read(conn, tmp, conn->splicer.preset.len);
-		tmp += conn->splicer.preset.len;
+
+		tmp         += conn->splicer.preset.len;
 		accumulated -= conn->splicer.preset.len;
 	}
 	if (tmp == head) {
@@ -93,15 +94,53 @@ static void __poller_builtin_splicer1(poller_conn_t* conn) {
 
 static void __poller_builtin_splicer2(poller_conn_t* conn) {
 
-	char* head = conn->ibufs.buf;
-	char* tail = conn->ibufs.buf + conn->ibufs.off;
-	char* tmp  = head;
+	char* head  = conn->ibufs.buf;
+	char* tail  = conn->ibufs.buf + conn->ibufs.off;
+	char* tmp   = head;
+
+	size_t dlen = strlen(conn->splicer.textplain.delimiter);
 
 	uint32_t accumulated = tail - head;
-
-	while (true) {
-
+	if (accumulated < dlen) {
+		return;
 	}
+	/**
+	 * for performance, thus split buffer by KMP.
+	 */
+	int* next = cdk_malloc(dlen * sizeof(int));
+	int j     = 0;
+
+	for (int i = 1; i < dlen; i++) {
+
+		while (j > 0 && conn->splicer.textplain.delimiter[i] != conn->splicer.textplain.delimiter[j]) {
+			j = next[j - 1];
+		}
+		if (conn->splicer.textplain.delimiter[i] == conn->splicer.textplain.delimiter[j]) {
+			j++;
+		}
+		next[i] = j;
+	}
+	j = 0;
+	for (int i = 0; i < accumulated; i++) {
+
+		while (j > 0 && tmp[i] != conn->splicer.textplain.delimiter[j]) {
+			j = next[j - 1];
+		}
+		if (tmp[i] == conn->splicer.textplain.delimiter[j]) {
+			j++;
+		}
+		if (j == dlen) {
+
+			conn->h->on_read(conn, tmp, ((i - dlen + 1) + dlen));
+
+			tmp         += (i - dlen + 1) + dlen;
+			accumulated -= (i - dlen + 1) + dlen;
+
+			i = -1;
+			j = 0;
+		}
+	}
+	cdk_free(next);
 	if (tmp == head) {
 		return;
 	}
@@ -344,12 +383,11 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 		
 		conn->ibufs.len = (MAX_IOBUF_SIZE * 2);
 		conn->ibufs.buf = cdk_malloc(conn->ibufs.len);
-		conn->ibufs.bgn = 0;
-		conn->ibufs.end = 0;
+		conn->ibufs.off = 0;
 	}
 	/* setup default splicer */
 	conn->splicer.type       = SPLICE_TYPE_PRESET;
-	conn->splicer.preset.len = 4096;
+	conn->splicer.preset.len = MAX_IOBUF_SIZE;
 
 	cdk_queue_create(&conn->obufs);
 	cdk_list_init_node(&conn->n);

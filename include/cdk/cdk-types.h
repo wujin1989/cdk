@@ -85,8 +85,7 @@ typedef struct _splicer_profile_t {
 		}preset;
 
 		struct {
-			char        delimiter[16];
-			uint32_t    len;
+			char        delimiter[8];
 		}textplain;
 
 		struct {
