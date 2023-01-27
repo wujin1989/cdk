@@ -180,17 +180,13 @@ void cdk_net_postrecv(poller_conn_t* conn) {
     _poller_post_recv(conn);
 }
 
-void cdk_net_postsend(poller_conn_t* conn) {
+void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size) {
 
+    _poller_send(conn, data, size);
     _poller_post_send(conn);
 }
 
-void cdk_net_read(poller_conn_t* conn, void* data, size_t size) {
+void cdk_net_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer) {
 
-    _poller_recv(conn, data, size);
-}
-
-void cdk_net_write(poller_conn_t* conn, void* data, size_t size) {
-
-    _poller_send(conn, data, size);
+    _poller_setup_splicer(conn, splicer);
 }

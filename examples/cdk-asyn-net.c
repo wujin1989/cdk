@@ -16,6 +16,15 @@ typedef struct _net_msg_t {
 static void handle_accept(poller_conn_t* conn) {
 	printf("[%d]new connection coming...\n", (int)conn->fd);
 
+	splicer_profile_t profile1 = {
+		.type = SPLICE_TYPE_FIXED,
+		.fixed.len = 6
+	};
+	splicer_profile_t profile2 = {
+		.type = SPLICE_TYPE_TEXTPLAIN,
+		.textplain.delimiter = "\r\n\r\n"
+	};
+	cdk_net_setup_splicer(conn, &profile2);
 	cdk_net_postrecv(conn);
 }
 
@@ -26,14 +35,14 @@ static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 }
 static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
 
-	while (true) {
-
-	}
-	printf("recv buf: %s\n", (char*)buf);
+	char str[4096] = {0};
+	memcpy(str, buf, len);
+	printf("recv buf: %s\n", str);
+	cdk_net_postsend(conn, str, strlen(str) + 1);
 	
-	char* outbuf = "hello world\n";
+	/*char* outbuf = "hello world\n";
 	cdk_net_write(conn, outbuf, strlen(outbuf)+1);
-	cdk_net_postsend(conn);
+	cdk_net_postsend(conn);*/
 }
 
 int main(void) {

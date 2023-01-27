@@ -74,13 +74,13 @@ static void __poller_builtin_splicer1(poller_conn_t* conn) {
 
 	while (true) {
 
-		if (accumulated < conn->splicer.preset.len) {
+		if (accumulated < conn->splicer.fixed.len) {
 			break;
 		}
-		conn->h->on_read(conn, tmp, conn->splicer.preset.len);
+		conn->h->on_read(conn, tmp, conn->splicer.fixed.len);
 
-		tmp         += conn->splicer.preset.len;
-		accumulated -= conn->splicer.preset.len;
+		tmp         += conn->splicer.fixed.len;
+		accumulated -= conn->splicer.fixed.len;
 	}
 	if (tmp == head) {
 		return;
@@ -232,7 +232,7 @@ static void __poller_splicer(poller_conn_t* conn) {
 
 	switch (conn->splicer.type)
 	{
-	case SPLICE_TYPE_PRESET: {
+	case SPLICE_TYPE_FIXED: {
 		__poller_builtin_splicer1(conn);
 		break;
 	}
@@ -385,10 +385,6 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 		conn->ibufs.buf = cdk_malloc(conn->ibufs.len);
 		conn->ibufs.off = 0;
 	}
-	/* setup default splicer */
-	conn->splicer.type       = SPLICE_TYPE_PRESET;
-	conn->splicer.preset.len = MAX_IOBUF_SIZE;
-
 	cdk_queue_create(&conn->obufs);
 	cdk_list_init_node(&conn->n);
 
@@ -539,16 +535,6 @@ void _poller_post_send(poller_conn_t* conn) {
 	_poller_conn_modify(conn);
 }
 
-void _poller_recv(poller_conn_t* conn, void* data, size_t size) {
-
-	if (size > MAX_IOBUF_SIZE) {
-		abort();
-	}
-	/*memset(data, 0, size);
-	memcpy(data, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
-	memset(conn->iobuf.buffer.buf, 0, MAX_IOBUF_SIZE);*/
-}
-
 void _poller_send(poller_conn_t* conn, void* data, size_t size) {
 
 	/**
@@ -562,6 +548,33 @@ void _poller_send(poller_conn_t* conn, void* data, size_t size) {
 
 	memset(conn->iobuf.buffer.buf, 0, MAX_IOBUF_SIZE);
 	memcpy(conn->iobuf.buffer.buf, data, size);*/
+
+	/*if (conn->iobuf.buffer.buf == NULL) {
+		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
+	}
+	if (conn->iobuf.sent < conn->iobuf.buffer.len) {
+
+		ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.buffer.len - conn->iobuf.sent);
+		if (n == -1) {
+			cdk_list_remove(&conn->n);
+			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+				_poller_conn_destroy(conn);
+			}
+			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+				_poller_post_send(conn);
+			}
+			return false;
+		}
+		if (n == 0) {
+			cdk_list_remove(&conn->n);
+			_poller_conn_destroy(conn);
+			return false;
+		}
+		conn->iobuf.sent += n;
+	}
+	else {
+		conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
+	}*/
 }
 
 #endif

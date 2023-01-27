@@ -100,11 +100,10 @@ extern void cdk_net_listen(const char* restrict t, const char* restrict h, const
 
 extern void cdk_net_poller(void);
 
-extern void cdk_net_postsend(poller_conn_t* conn);
+extern void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size);
 extern void cdk_net_postrecv(poller_conn_t* conn);
 
-extern void cdk_net_read(poller_conn_t* conn, void* data, size_t size);
-extern void cdk_net_write(poller_conn_t* conn, void* data, size_t size);
+extern void cdk_net_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer);
 
 /**
  *  create a tcp blocking socket and connect.

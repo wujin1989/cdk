@@ -70,7 +70,7 @@ typedef struct _ringbuf_t {
 
 typedef enum _splicer_t {
 
-	SPLICE_TYPE_PRESET       = 0   ,
+	SPLICE_TYPE_FIXED        = 0   ,
 	SPLICE_TYPE_TEXTPLAIN    = 1   ,
 	SPLICE_TYPE_BINARY       = 2   ,
 	SPLICE_TYPE_USER_DEFINED = 3
@@ -82,7 +82,7 @@ typedef struct _splicer_profile_t {
 	union {
 		struct {
 			uint32_t    len;
-		}preset;
+		}fixed;
 
 		struct {
 			char        delimiter[8];
