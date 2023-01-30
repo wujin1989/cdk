@@ -1,97 +1,60 @@
 #include "cdk.h"
+#include <string.h>
 
-typedef enum _status_t{
-	LOGIN_REQ,
-	LOGIN_RSP,
-	LOGOUT_REQ,
-	LOGOUT_RSP
-}status_t;
+typedef struct _net_msg_hdr_t {
 
-typedef struct _userdata_t {
-	status_t s;
-}userdata_t;
+	uint32_t      p_s;   /* payload size */
+	uint32_t      p_t;   /* payload type */
+}net_msg_hdr_t;
 
-typedef struct _login_req_t {
-	char      name[64];
-	uint32_t  age;
-}login_req_t;
+typedef struct _net_msg_t {
 
-typedef struct _logout_req_t {
-	char      name[64];
-}logout_req_t;
+	net_msg_hdr_t      h;
+	char               p[];
+}net_msg_t;
 
-typedef struct _common_rsp_t {
-	char      desc[64];
-}common_rsp_t;
-
-msg_t* _marshaller(char* restrict b, int tp, int sz) {
-
-	msg_t* m = cdk_malloc(sizeof(msg_t) + sz);
-
-	if (!cdk_byteorder()) {
-		m->h.p_s = htonl(sz);
-		m->h.p_t = htonl(tp);
-	}
-	if (cdk_byteorder()) {
-		m->h.p_s = sz;
-		m->h.p_t = tp;
-	}
-	memcpy(m->p, b, sz);
-	return m;
-}
-void _demarshaller(msg_t* m, char* restrict b) {
-
-	memcpy(b, m->p, m->h.p_s);
-	cdk_free(m);
-}
-
-msg_t* cdk_tcp_recv(sock_t s) {
-
-	int      r;
-	hdr_t    h;
-	msg_t*   m;
-
-	r = recv(s, (char*)&h, sizeof(hdr_t), MSG_WAITALL);
-	if (r <= 0) { return NULL; }
-
-	if (!cdk_byteorder()) {
-		h.p_s = ntohl(h.p_s);
-		h.p_t = ntohl(h.p_t);
-	}
-
-	m = cdk_malloc(sizeof(msg_t) + h.p_s);
-
-	m->h = h;
-	r = recv(s, m->p, h.p_s, MSG_WAITALL);
-	if (r <= 0) { return NULL; }
-
-	return m;
-}
 static void handle_connect(poller_conn_t* conn) {
 	printf("[%d]has connected to remote...\n", (int)conn->fd);
 
-	set_unpacking_mode(conn, );
-	login_req_t login = { "aaa", 10 };
-	msg_t* login_msg = _marshaller(&login, LOGIN_REQ, sizeof(login_req_t));
-	cdk_net_write(conn, login_msg, sizeof(msg_t) + ntohl(login_msg->h.p_s));
-	cdk_net_postsend(conn);
+	splicer_profile_t profile1 = {
+		.type = SPLICE_TYPE_FIXED,
+		.mfs = 4096,
+		.fixed.len = 6
+	};
+	splicer_profile_t profile2 = {
+		.type = SPLICE_TYPE_TEXTPLAIN,
+		.mfs = 4096,
+		.textplain.delimiter = "\r\n\r\n"
+	};
+	splicer_profile_t profile3 = {
+		.type = SPLICE_TYPE_BINARY,
+		.mfs = 4096,
+		.binary.adj = 0,
+		.binary.coding = LEN_FIELD_FIXEDINT,
+		.binary.offset = 0,
+		.binary.payload = 8,
+		.binary.size = 4
+	};
+	cdk_net_setup_splicer(conn, &profile3);
+
+	net_msg_t* smsg = cdk_malloc(sizeof(net_msg_t) + strlen("hello") + 1);
+	smsg->h.p_s = htonl(strlen("hello") + 1);
+	smsg->h.p_t = htonl(1);
+	memcpy(smsg->p, "hello", strlen("hello") + 1);
+
+	cdk_net_postsend(conn, smsg, sizeof(net_msg_t) + strlen("hello") + 1);
 }
 
 static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 
-	msg_t* msg = buf;
-	if (msg->h.p_t == LOGIN_REQ) {
-		cdk_net_postrecv(conn);
-	}
-}
-
-static int handle_unpack(void* p) {
-
-	
+	net_msg_t* msg = (net_msg_t*)buf;
+	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
+	cdk_net_postrecv(conn);
 }
 
 static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
-	
+	net_msg_t* rmsg = (net_msg_t*)buf;
+	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
 }
 
 int main(void) {

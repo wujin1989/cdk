@@ -22,6 +22,8 @@
 #ifndef __CDK_NET_H__
 #define __CDK_NET_H__
 
+#define MAX_IOBUF_SIZE 4096
+
 #include "cdk-types.h"
 /* //////////////////////////////////////////common////////////////////////////////////////////// */
 

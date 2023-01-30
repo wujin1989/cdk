@@ -176,14 +176,32 @@ void cdk_net_poller(void) {
 }
 
 void cdk_net_postrecv(poller_conn_t* conn) {
-    
+
+    if (conn->ibuf.buf == NULL) {
+
+        conn->ibuf.len = MAX_IOBUF_SIZE;
+        conn->ibuf.off = 0;
+        conn->ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+    }
+    if (conn->splicer.mfs > conn->ibuf.len) {
+        abort();
+    }
     _poller_post_recv(conn);
 }
 
 void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size) {
 
-    _poller_send(conn, data, size);
-    _poller_post_send(conn);
+    conn->obuf.len = size;
+    conn->obuf.off = 0;
+
+    if (conn->obuf.buf == NULL) {
+        conn->obuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+    }
+    if (conn->obuf.len > conn->splicer.mfs) {
+        abort();
+    }
+    memcpy(conn->obuf.buf, data, size);
+    _poller_send(conn, conn->obuf.buf, conn->obuf.len);
 }
 
 void cdk_net_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer) {

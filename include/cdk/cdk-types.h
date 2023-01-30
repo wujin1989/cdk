@@ -24,6 +24,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct _poller_conn_t    poller_conn_t;
 typedef struct _poller_handler_t poller_handler_t;
@@ -79,6 +80,7 @@ typedef enum _splicer_t {
 typedef struct _splicer_profile_t {
 
 	splicer_t           type;
+	size_t              mfs;     /* max frame size */
 	union {
 		struct {
 			uint32_t    len;
@@ -97,10 +99,6 @@ typedef struct _splicer_profile_t {
 				LEN_FIELD_VARINT        ,
 				LEN_FIELD_FIXEDINT
 			}coding;             /* length field coding     */
-			enum {
-				LEN_FIELD_LITTLE_ENDIAN ,
-				LEN_FIELD_BIG_ENDIAN
-			}order;              /* length field byteorder  */
 		}binary;
 
 		struct {
@@ -132,13 +130,6 @@ typedef pthread_cond_t                   cnd_t;
 typedef atomic_llong                     atomic_t;
 typedef int                              sock_t;
 
-typedef struct _iobuf_t {
-
-	fifo_node_t node;
-	uint32_t    len;
-	char        buf[];
-}iobuf_t;
-
 typedef struct _poller_conn_t {
 
 	sock_t               fd;
@@ -149,9 +140,14 @@ typedef struct _poller_conn_t {
 		void*    buf;
 		uint32_t len;
 		uint32_t off;
-	}ibufs;
+	}ibuf;
 
-	fifo_t               obufs;
+	struct {
+		void*    buf;
+		uint32_t len;
+		uint32_t off;
+	}obuf;
+
 	splicer_profile_t    splicer;
 	list_node_t          n;
 }poller_conn_t;

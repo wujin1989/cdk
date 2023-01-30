@@ -18,31 +18,45 @@ static void handle_accept(poller_conn_t* conn) {
 
 	splicer_profile_t profile1 = {
 		.type = SPLICE_TYPE_FIXED,
+		.mfs  = 4096,
 		.fixed.len = 6
 	};
 	splicer_profile_t profile2 = {
 		.type = SPLICE_TYPE_TEXTPLAIN,
+		.mfs = 4096,
 		.textplain.delimiter = "\r\n\r\n"
 	};
-	cdk_net_setup_splicer(conn, &profile2);
+	splicer_profile_t profile3 = {
+		.type = SPLICE_TYPE_BINARY,
+		.mfs = 4096,
+		.binary.adj = 0,
+		.binary.coding = LEN_FIELD_FIXEDINT,
+		.binary.offset = 0,
+		.binary.payload = 8,
+		.binary.size = 4
+	};
+	cdk_net_setup_splicer(conn, &profile3);
 	cdk_net_postrecv(conn);
 }
 
 static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 
-	printf("recv write complete, %s\n", (char*)buf);
+	net_msg_t* msg = (net_msg_t*)buf;
+	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
 	cdk_net_postrecv(conn);
 }
 static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
 
-	char str[4096] = {0};
-	memcpy(str, buf, len);
-	printf("recv buf: %s\n", str);
-	cdk_net_postsend(conn, str, strlen(str) + 1);
-	
-	/*char* outbuf = "hello world\n";
-	cdk_net_write(conn, outbuf, strlen(outbuf)+1);
-	cdk_net_postsend(conn);*/
+	net_msg_t* rmsg = (net_msg_t*)buf;
+	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
+
+
+	net_msg_t* smsg = cdk_malloc(sizeof(net_msg_t) + strlen("world") + 1);
+	smsg->h.p_s = htonl(strlen("world") + 1);
+	smsg->h.p_t = htonl(2);
+	memcpy(smsg->p, "world", strlen("world") + 1);
+
+	cdk_net_postsend(conn, smsg, sizeof(net_msg_t) + strlen("world") + 1);
 }
 
 int main(void) {

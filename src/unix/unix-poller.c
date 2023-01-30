@@ -37,7 +37,6 @@
 #define _POLLER_CMD_A    0x4
 #define _POLLER_CMD_C    0x8
 
-#define MAX_IOBUF_SIZE     4096
 #define MAX_PROCESS_EVENTS 1024
 #define YIELDTIME          10
 
@@ -66,8 +65,8 @@ void _poller_destroy(void) {
 
 static void __poller_builtin_splicer1(poller_conn_t* conn) {
 
-	char* head = conn->ibufs.buf;
-	char* tail = conn->ibufs.buf + conn->ibufs.off;
+	char* head = conn->ibuf.buf;
+	char* tail = conn->ibuf.buf + conn->ibuf.off;
 	char* tmp  = head;
 
 	uint32_t accumulated = tail - head;
@@ -85,17 +84,17 @@ static void __poller_builtin_splicer1(poller_conn_t* conn) {
 	if (tmp == head) {
 		return;
 	}
-	conn->ibufs.off = accumulated;
+	conn->ibuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->ibufs.buf, tmp, accumulated);
+		memmove(conn->ibuf.buf, tmp, accumulated);
 	}
 	return;
 }
 
 static void __poller_builtin_splicer2(poller_conn_t* conn) {
 
-	char* head  = conn->ibufs.buf;
-	char* tail  = conn->ibufs.buf + conn->ibufs.off;
+	char* head  = conn->ibuf.buf;
+	char* tail  = conn->ibuf.buf + conn->ibuf.off;
 	char* tmp   = head;
 
 	size_t dlen = strlen(conn->splicer.textplain.delimiter);
@@ -144,9 +143,9 @@ static void __poller_builtin_splicer2(poller_conn_t* conn) {
 	if (tmp == head) {
 		return;
 	}
-	conn->ibufs.off = accumulated;
+	conn->ibuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->ibufs.buf, tmp, accumulated);
+		memmove(conn->ibuf.buf, tmp, accumulated);
 	}
 	return;
 }
@@ -157,8 +156,8 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 	uint32_t hs; /* header size  */
 	uint32_t ps; /* payload size */
 
-	char* head = conn->ibufs.buf;
-	char* tail = conn->ibufs.buf + conn->ibufs.off;
+	char* head = conn->ibuf.buf;
+	char* tail = conn->ibuf.buf + conn->ibuf.off;
 	char* tmp  = head;
 
 	uint32_t accumulated = tail - head;
@@ -172,38 +171,26 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 
 		if (conn->splicer.binary.coding == LEN_FIELD_FIXEDINT) {
 
-			if (conn->splicer.binary.order == LEN_FIELD_BIG_ENDIAN) {
+			ps = *((uint32_t*)(tmp + conn->splicer.binary.offset));
 
-				for (int i = 0; i < conn->splicer.binary.size; i++) {
-					ps = (ps << 8) | (uint32_t)(*(tmp + conn->splicer.binary.offset + i));
-				}
-				if (!cdk_byteorder()) {
-					ps = ntohl(ps);
-				}
-			}
-			if (conn->splicer.binary.order == LEN_FIELD_LITTLE_ENDIAN) {
-
-				for (int i = 0; i < conn->splicer.binary.size; i++) {
-					ps |= (uint32_t)(*(tmp + conn->splicer.binary.offset + i)) << (i * 8);
-				}
-				if (cdk_byteorder()) {
-					ps = ntohl(ps);
-				}
+			if (!cdk_byteorder()) {
+				ps = ntohl(ps);
 			}
 		}
 		if (conn->splicer.binary.coding == LEN_FIELD_VARINT) {
 
 			size_t flexible = (tail - (tmp + conn->splicer.binary.offset));
-			/**
-			 * since the varint is encoded as a byte stream
-			 * , thus no need to consider the endianness.
-			 */
+
 			ps = cdk_varint_decode(tmp + conn->splicer.binary.offset, &flexible);
+
+			if (!cdk_byteorder()) {
+				ps = ntohl(ps);
+			}
 			hs = conn->splicer.binary.payload + flexible - conn->splicer.binary.size;
 		}
 		fs = hs + ps + conn->splicer.binary.adj;
 
-		if (fs > conn->ibufs.len) {
+		if (fs > conn->ibuf.len) {
 			abort();
 		}
 		if (accumulated < fs) {
@@ -216,9 +203,9 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 	if (tmp == head) {
 		return;
 	}
-	conn->ibufs.off = accumulated;
+	conn->ibuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->ibufs.buf, tmp, accumulated);
+		memmove(conn->ibuf.buf, tmp, accumulated);
 	}
 	return;
 }
@@ -293,7 +280,7 @@ static bool __poller_handle_connect(poller_conn_t* conn) {
 
 static bool __poller_handle_recv(poller_conn_t* conn) {
 
-	ssize_t n = _net_recv(conn->fd, conn->ibufs.buf + conn->ibufs.off, MAX_IOBUF_SIZE);
+	ssize_t n = _net_recv(conn->fd, conn->ibuf.buf + conn->ibuf.off, MAX_IOBUF_SIZE);
 	if (n == -1) {
 		cdk_list_remove(&conn->n);
 		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -309,7 +296,7 @@ static bool __poller_handle_recv(poller_conn_t* conn) {
 		_poller_conn_destroy(conn);
 		return false;
 	}
-	conn->ibufs.off += n;
+	conn->ibuf.off += n;
 	__poller_splicer(conn);
 
 	return true;
@@ -317,12 +304,9 @@ static bool __poller_handle_recv(poller_conn_t* conn) {
 
 static bool __poller_handle_send(poller_conn_t* conn) {
 
-	/*if (conn->iobuf.buffer.buf == NULL) {
-		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
-	}
-	if (conn->iobuf.sent < conn->iobuf.buffer.len) {
+	while (conn->obuf.off < conn->obuf.len) {
 
-		ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.buffer.len - conn->iobuf.sent);
+		ssize_t n = _net_send(conn->fd, conn->obuf.buf + conn->obuf.off, conn->obuf.len - conn->obuf.off);
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -338,11 +322,11 @@ static bool __poller_handle_send(poller_conn_t* conn) {
 			_poller_conn_destroy(conn);
 			return false;
 		}
-		conn->iobuf.sent += n;
+		conn->obuf.off += n;
 	}
-	else {
-		conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
-	}*/
+	conn->h->on_write(conn, conn->obuf.buf, conn->obuf.len);
+
+	return true;
 }
 
 static bool __poller_process_connection(poller_conn_t* conn, uint32_t cmd) {
@@ -375,17 +359,10 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 
 	poller_conn_t* conn = cdk_malloc(sizeof(poller_conn_t));
 
-	conn->cmd    = c;
-	conn->fd     = s;
-	conn->h      = h;
+	conn->cmd = c;
+	conn->fd  = s;
+	conn->h   = h;
 
-	if (c & _POLLER_CMD_R) {
-		
-		conn->ibufs.len = (MAX_IOBUF_SIZE * 2);
-		conn->ibufs.buf = cdk_malloc(conn->ibufs.len);
-		conn->ibufs.off = 0;
-	}
-	cdk_queue_create(&conn->obufs);
 	cdk_list_init_node(&conn->n);
 
 	struct epoll_event ee;
@@ -444,7 +421,8 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 
 	epoll_ctl(epfd, EPOLL_CTL_DEL, conn->fd, NULL);
 	_net_close(conn->fd);
-	cdk_free(conn->ibufs.buf);
+	cdk_free(conn->ibuf.buf);
+	cdk_free(conn->obuf.buf);
 	cdk_free(conn);
 }
 
@@ -536,25 +514,10 @@ void _poller_post_send(poller_conn_t* conn) {
 }
 
 void _poller_send(poller_conn_t* conn, void* data, size_t size) {
-
-	/**
-	 * the application layer guarantees read, write size.
-	 */
-	if (size > MAX_IOBUF_SIZE) {
-		abort();
-	}
-	/*conn->iobuf.buffer.len = size;
-	conn->iobuf.sent       = 0;
-
-	memset(conn->iobuf.buffer.buf, 0, MAX_IOBUF_SIZE);
-	memcpy(conn->iobuf.buffer.buf, data, size);*/
-
-	/*if (conn->iobuf.buffer.buf == NULL) {
-		conn->iobuf.buffer.buf = cdk_malloc(MAX_IOBUF_SIZE);
-	}
-	if (conn->iobuf.sent < conn->iobuf.buffer.len) {
-
-		ssize_t n = _net_send(conn->fd, &conn->iobuf.buffer.buf[conn->iobuf.sent], conn->iobuf.buffer.len - conn->iobuf.sent);
+	
+	while (conn->obuf.off < conn->obuf.len) {
+		
+		ssize_t n = _net_send(conn->fd, conn->obuf.buf + conn->obuf.off, conn->obuf.len - conn->obuf.off);
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -563,18 +526,16 @@ void _poller_send(poller_conn_t* conn, void* data, size_t size) {
 			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 				_poller_post_send(conn);
 			}
-			return false;
+			return;
 		}
 		if (n == 0) {
 			cdk_list_remove(&conn->n);
 			_poller_conn_destroy(conn);
-			return false;
+			return;
 		}
-		conn->iobuf.sent += n;
+		conn->obuf.off += n;
 	}
-	else {
-		conn->h->on_write(conn, conn->iobuf.buffer.buf, conn->iobuf.buffer.len);
-	}*/
+	conn->h->on_write(conn, data, size);
 }
 
 #endif
