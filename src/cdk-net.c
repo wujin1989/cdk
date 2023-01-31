@@ -58,11 +58,6 @@ static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
     }
 }
 
-void cdk_net_close(sock_t s) {
-
-    _net_close(s);
-}
-
 void cdk_net_rbuf(sock_t s, int v) {
 
     int r;
@@ -213,4 +208,9 @@ void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size) {
 void cdk_net_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer) {
 
     _poller_setup_splicer(conn, splicer);
+}
+
+void cdk_net_close(poller_conn_t* conn) {
+
+    _poller_conn_destroy(conn);
 }

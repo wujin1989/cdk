@@ -221,6 +221,7 @@ typedef struct _poller_handler_t {
 	void (*on_connect)(poller_conn_t*);
 	void (*on_read)   (poller_conn_t*, void* buf, size_t len);
 	void (*on_write)  (poller_conn_t*, void* buf, size_t len);
+	void (*on_close)  (poller_conn_t*);
 }poller_handler_t;
 
 #endif /* __CDK_TYPES_H__ */

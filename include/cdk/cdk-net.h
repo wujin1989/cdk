@@ -28,14 +28,6 @@
 /* //////////////////////////////////////////common////////////////////////////////////////////// */
 
 /**
- *  close socket.
- *
- *  @param s  [in].
- *  @return N/A.
- */
-extern void cdk_net_close(sock_t s);
-
-/**
  *  set the socket's receive buffer size to the specified v value.
  *
  *  @param s [in].
@@ -106,7 +98,7 @@ extern void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size);
 extern void cdk_net_postrecv(poller_conn_t* conn);
 
 extern void cdk_net_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer);
-
+extern void cdk_net_close(poller_conn_t* conn);
 /**
  *  create a tcp blocking socket and connect.
  *

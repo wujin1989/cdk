@@ -58,14 +58,18 @@ static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
 
 	cdk_net_postsend(conn, smsg, sizeof(net_msg_t) + strlen("world") + 1);
 }
+static void handle_close(poller_conn_t* conn) {
 
+	cdk_net_close(conn);
+}
 int main(void) {
 
 	poller_handler_t handler = {
 		.on_accept  = handle_accept,
 		.on_connect = NULL,
 		.on_read    = handle_read,
-		.on_write   = handle_write
+		.on_write   = handle_write,
+		.on_close   = handle_close
 	};
 	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 	

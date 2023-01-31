@@ -58,7 +58,7 @@ void _poller_create(void) {
 void _poller_destroy(void) {
 
 	if (epfd) {
-		cdk_net_close(epfd);
+		_net_close(epfd);
 	}
 	return;
 }
@@ -248,7 +248,6 @@ static bool __poller_check_connect_status(poller_conn_t* conn) {
 	l = sizeof(int);
 	getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, (char*)&e, &l);
 	if (e) {
-		_poller_conn_destroy(conn);
 		return false;
 	}
 	return true;
@@ -260,7 +259,7 @@ static bool __poller_handle_accept(poller_conn_t* conn) {
 	if (c == -1) {
 		cdk_list_remove(&conn->n);
 		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-			_poller_conn_destroy(conn);
+			conn->h->on_close(conn);
 		}
 		if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 			_poller_post_accept(conn);
@@ -280,7 +279,7 @@ static bool __poller_handle_connect(poller_conn_t* conn) {
 		conn->h->on_connect(conn);
 	}
 	else {
-		_poller_conn_destroy(conn);
+		conn->h->on_close(conn);
 	}
 	return false;
 }
@@ -291,7 +290,7 @@ static bool __poller_handle_recv(poller_conn_t* conn) {
 	if (n == -1) {
 		cdk_list_remove(&conn->n);
 		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-			_poller_conn_destroy(conn);
+			conn->h->on_close(conn);
 		}
 		if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 			_poller_post_recv(conn);
@@ -300,7 +299,7 @@ static bool __poller_handle_recv(poller_conn_t* conn) {
 	}
 	if (n == 0) {
 		cdk_list_remove(&conn->n);
-		_poller_conn_destroy(conn);
+		conn->h->on_close(conn);
 		return false;
 	}
 	conn->ibuf.off += n;
@@ -317,7 +316,7 @@ static bool __poller_handle_send(poller_conn_t* conn) {
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-				_poller_conn_destroy(conn);
+				conn->h->on_close(conn);
 			}
 			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 				_poller_post_send(conn);
@@ -326,7 +325,7 @@ static bool __poller_handle_send(poller_conn_t* conn) {
 		}
 		if (n == 0) {
 			cdk_list_remove(&conn->n);
-			_poller_conn_destroy(conn);
+			conn->h->on_close(conn);
 			return false;
 		}
 		conn->obuf.off += n;
@@ -542,7 +541,7 @@ void _poller_send(poller_conn_t* conn, void* data, size_t size) {
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-				_poller_conn_destroy(conn);
+				conn->h->on_close(conn);
 			}
 			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 				_poller_post_send(conn);
@@ -551,7 +550,7 @@ void _poller_send(poller_conn_t* conn, void* data, size_t size) {
 		}
 		if (n == 0) {
 			cdk_list_remove(&conn->n);
-			_poller_conn_destroy(conn);
+			conn->h->on_close(conn);
 			return;
 		}
 		conn->obuf.off += n;
