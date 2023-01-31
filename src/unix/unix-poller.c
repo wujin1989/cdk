@@ -259,10 +259,17 @@ static bool __poller_handle_accept(poller_conn_t* conn) {
 	sock_t c = _tcp_accept(conn->fd);
 	if (c == -1) {
 		cdk_list_remove(&conn->n);
+		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+			_poller_conn_destroy(conn);
+		}
+		if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+			_poller_post_accept(conn);
+		}
 		return false;
 	}
 	poller_conn_t* nconn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
 	conn->h->on_accept(nconn);
+	
 	return true;
 }
 
@@ -350,6 +357,12 @@ static bool __poller_process_connection(poller_conn_t* conn, uint32_t cmd) {
 	return false;
 }
 
+int _poller_worker(void* param) {
+
+	_poller_poll();
+	return 0;
+}
+
 void _poller_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer) {
 
 	memcpy(&conn->splicer, splicer, sizeof(splicer_profile_t));
@@ -380,9 +393,7 @@ poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 	if (c & _POLLER_CMD_W) {
 		ee.events |= EPOLLOUT;
 	}
-	if ((c & _POLLER_CMD_R) || (c & _POLLER_CMD_W)) {
-		ee.events |= EPOLLONESHOT;
-	}
+	ee.events |= EPOLLONESHOT;
 	ee.events |= EPOLLET;
 	ee.data.ptr = conn;
 
@@ -408,9 +419,7 @@ void _poller_conn_modify(poller_conn_t* conn) {
 	if (conn->cmd & _POLLER_CMD_W) {
 		ee.events |= EPOLLOUT;
 	}
-	if ((conn->cmd & _POLLER_CMD_R) || (conn->cmd & _POLLER_CMD_W)) {
-		ee.events |= EPOLLONESHOT;
-	}
+	ee.events |= EPOLLONESHOT;
 	ee.events |= EPOLLET;
 	ee.data.ptr = conn;
 
@@ -432,7 +441,7 @@ void _poller_poll(void) {
 	list_t conns;
 
 	cdk_list_create(&conns);
-
+	
 	while (true) {
 		int r;
 
@@ -499,6 +508,18 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 	if (connected) {
 		handler->on_connect(conn);
 	}
+}
+
+void _poller_post_accept(poller_conn_t* conn) {
+
+	conn->cmd = _POLLER_CMD_A;
+	_poller_conn_modify(conn);
+}
+
+void _poller_post_connect(poller_conn_t* conn) {
+
+	conn->cmd = _POLLER_CMD_C;
+	_poller_conn_modify(conn);
 }
 
 void _poller_post_recv(poller_conn_t* conn) {

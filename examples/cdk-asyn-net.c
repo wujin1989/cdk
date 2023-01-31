@@ -14,7 +14,7 @@ typedef struct _net_msg_t {
 }net_msg_t;
 
 static void handle_accept(poller_conn_t* conn) {
-	printf("[%d]new connection coming...\n", (int)conn->fd);
+	printf("tid[%d], [%d]new connection coming...\n", (int)cdk_gettid(), (int)conn->fd);
 
 	splicer_profile_t profile1 = {
 		.type = SPLICE_TYPE_FIXED,

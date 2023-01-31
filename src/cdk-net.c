@@ -162,6 +162,12 @@ int cdk_net_af(sock_t s) {
 void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
     _poller_listen(t, h, p, handler);
+
+    for (int i = 0; i < cdk_cpus(); i++) {
+        thrd_t t;
+        cdk_thrd_create(&t, _poller_worker, NULL);
+        cdk_thrd_detach(t);
+    }
 }
 
 void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
