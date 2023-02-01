@@ -139,6 +139,7 @@ typedef struct _poller_conn_t {
 
 	union {
 		struct {
+
 			struct {
 				void*    buf;
 				uint32_t len;

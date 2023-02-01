@@ -352,14 +352,11 @@ static bool __poller_handle_send(poller_conn_t* conn) {
 
 static bool __poller_process_connection(poller_conn_t* conn, uint32_t cmd) {
 
-	if (conn->type == SOCK_STREAM) {
-
-		if (cmd & _POLLER_CMD_A) {
-			return __poller_handle_accept(conn);
-		}
-		if (cmd & _POLLER_CMD_C) {
-			return __poller_handle_connect(conn);
-		}
+	if (cmd & _POLLER_CMD_A) {
+		return __poller_handle_accept(conn);
+	}
+	if (cmd & _POLLER_CMD_C) {
+		return __poller_handle_connect(conn);
 	}
 	if (cmd & _POLLER_CMD_R) {
 
@@ -517,14 +514,16 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 
 	if (!strncmp(t, "tcp", strlen("tcp"))) {
 		s = _net_dial(h, p, SOCK_STREAM, &connected);
+		conn = _poller_conn_create(s, _POLLER_CMD_C, handler);
 	}
 	if (!strncmp(t, "udp", strlen("udp"))) {
 		s = _net_dial(h, p, SOCK_DGRAM, &connected);
+		conn = _poller_conn_create(s, _POLLER_CMD_W, handler);
 	}
-	conn = _poller_conn_create(s, _POLLER_CMD_C, handler);
 	if (connected) {
-		handler->on_connect(conn);
+		conn->h->on_connect(conn);
 	}
+	return;
 }
 
 void _poller_post_accept(poller_conn_t* conn) {
