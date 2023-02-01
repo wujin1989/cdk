@@ -54,3 +54,9 @@ target_link_libraries(cdk-asyn-net PUBLIC cdk Threads::Threads)
 
 add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
 target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)
+
+add_executable(udp-client "udp-client.c")
+target_link_libraries(udp-client PUBLIC cdk Threads::Threads)
+
+add_executable(udp-server "udp-server.c")
+target_link_libraries(udp-server PUBLIC cdk Threads::Threads)

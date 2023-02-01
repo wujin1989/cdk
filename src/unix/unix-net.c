@@ -161,13 +161,13 @@ sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
     struct addrinfo* rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = t;
-    hints.ai_flags = AI_PASSIVE;
-    hints.ai_protocol = 0;
+    hints.ai_family    = AF_UNSPEC;
+    hints.ai_socktype  = t;
+    hints.ai_flags     = AI_PASSIVE;
+    hints.ai_protocol  = 0;
     hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
+    hints.ai_addr      = NULL;
+    hints.ai_next      = NULL;
 
     r = getaddrinfo(h, p, &hints, &res);
     if (r != 0) { return -1; }
@@ -286,6 +286,17 @@ int _net_af(sock_t s) {
     return ss.ss_family;
 }
 #endif
+
+int _net_socktype(sock_t s) {
+
+    int       d;
+    socklen_t l;
+
+    l = sizeof(int);
+    getsockopt(s, SOL_SOCKET, SO_TYPE, (char*)&d, (socklen_t*)&l);
+
+    return d;
+}
 
 ssize_t _net_recv(sock_t s, void* buf, size_t len) {
 

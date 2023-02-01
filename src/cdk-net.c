@@ -154,6 +154,11 @@ int cdk_net_af(sock_t s) {
     return _net_af(s);
 }
 
+int cdk_net_socktype(sock_t s) {
+
+    return _net_socktype(s);
+}
+
 void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
     _poller_listen(t, h, p, handler);
@@ -168,6 +173,12 @@ void cdk_net_listen(const char* restrict t, const char* restrict h, const char* 
 void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
     _poller_dial(t, h, p, handler);
+
+    for (int i = 0; i < cdk_cpus(); i++) {
+        thrd_t t;
+        cdk_thrd_create(&t, _poller_worker, NULL);
+        cdk_thrd_detach(t);
+    }
 }
 
 void cdk_net_poller(void) {
@@ -178,31 +189,36 @@ void cdk_net_poller(void) {
 
 void cdk_net_postrecv(poller_conn_t* conn) {
 
-    if (conn->ibuf.buf == NULL) {
+    if (conn->type == SOCK_STREAM) {
 
-        conn->ibuf.len = MAX_IOBUF_SIZE;
-        conn->ibuf.off = 0;
-        conn->ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-    }
-    if (conn->splicer.mfs > conn->ibuf.len) {
-        abort();
+        if (conn->tcp.ibuf.buf == NULL) {
+
+            conn->tcp.ibuf.len = MAX_IOBUF_SIZE;
+            conn->tcp.ibuf.off = 0;
+            conn->tcp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+        }
     }
     _poller_post_recv(conn);
 }
 
 void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size) {
 
-    conn->obuf.len = size;
-    conn->obuf.off = 0;
+    if (conn->type == SOCK_STREAM) {
 
-    if (conn->obuf.buf == NULL) {
-        conn->obuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+        conn->tcp.obuf.len = size;
+        conn->tcp.obuf.off = 0;
+
+        if (conn->tcp.obuf.buf == NULL) {
+            conn->tcp.obuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+        }
+        memcpy(conn->tcp.obuf.buf, data, size);
+        _poller_send(conn, conn->tcp.obuf.buf, conn->tcp.obuf.len);
     }
-    if (conn->obuf.len > conn->splicer.mfs) {
-        abort();
+    if (conn->type == SOCK_DGRAM) {
+
+        _poller_send(conn, data, size);
     }
-    memcpy(conn->obuf.buf, data, size);
-    _poller_send(conn, conn->obuf.buf, conn->obuf.len);
+    return;
 }
 
 void cdk_net_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer) {

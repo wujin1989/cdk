@@ -18,17 +18,14 @@ static void handle_connect(poller_conn_t* conn) {
 
 	splicer_profile_t profile1 = {
 		.type = SPLICE_TYPE_FIXED,
-		.mfs = 4096,
 		.fixed.len = 6
 	};
 	splicer_profile_t profile2 = {
 		.type = SPLICE_TYPE_TEXTPLAIN,
-		.mfs = 4096,
 		.textplain.delimiter = "\r\n\r\n"
 	};
 	splicer_profile_t profile3 = {
 		.type = SPLICE_TYPE_BINARY,
-		.mfs = 4096,
 		.binary.adj = 0,
 		.binary.coding = LEN_FIELD_FIXEDINT,
 		.binary.offset = 0,

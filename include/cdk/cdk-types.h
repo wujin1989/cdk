@@ -80,7 +80,7 @@ typedef enum _splicer_t {
 typedef struct _splicer_profile_t {
 
 	splicer_t           type;
-	size_t              mfs;     /* max frame size */
+	
 	union {
 		struct {
 			uint32_t    len;
@@ -135,20 +135,30 @@ typedef struct _poller_conn_t {
 	sock_t               fd;
 	uint32_t             cmd;
 	poller_handler_t*    h;
+	int                  type; 
 
-	struct {
-		void*    buf;
-		uint32_t len;
-		uint32_t off;
-	}ibuf;
+	union {
+		struct {
+			struct {
+				void*    buf;
+				uint32_t len;
+				uint32_t off;
+			}ibuf;
 
-	struct {
-		void*    buf;
-		uint32_t len;
-		uint32_t off;
-	}obuf;
+			struct {
+				void*    buf;
+				uint32_t len;
+				uint32_t off;
+			}obuf;
 
-	splicer_profile_t    splicer;
+			splicer_profile_t    splicer;
+		}tcp;
+
+		struct {
+			void*    ibuf;
+		}udp;
+	};
+	
 	list_node_t          n;
 }poller_conn_t;
 #endif

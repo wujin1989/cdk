@@ -34,6 +34,7 @@ extern sock_t  _net_listen(const char* restrict h, const char* restrict p, int t
 extern sock_t  _net_dial(const char* restrict h, const char* restrict p, int t, bool* connected);
 extern void    _net_close(sock_t s);
 extern int     _net_af(sock_t s);
+extern int     _net_socktype(sock_t s);
 extern ssize_t _net_recv(sock_t s, void* buf, size_t len);
 extern ssize_t _net_send(sock_t s, void* buf, size_t len);
 

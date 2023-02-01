@@ -65,39 +65,39 @@ void _poller_destroy(void) {
 
 static void __poller_builtin_splicer1(poller_conn_t* conn) {
 
-	char* head = conn->ibuf.buf;
-	char* tail = conn->ibuf.buf + conn->ibuf.off;
+	char* head = conn->tcp.ibuf.buf;
+	char* tail = conn->tcp.ibuf.buf + conn->tcp.ibuf.off;
 	char* tmp  = head;
 
 	uint32_t accumulated = tail - head;
 
 	while (true) {
 
-		if (accumulated < conn->splicer.fixed.len) {
+		if (accumulated < conn->tcp.splicer.fixed.len) {
 			break;
 		}
-		conn->h->on_read(conn, tmp, conn->splicer.fixed.len);
+		conn->h->on_read(conn, tmp, conn->tcp.splicer.fixed.len);
 
-		tmp         += conn->splicer.fixed.len;
-		accumulated -= conn->splicer.fixed.len;
+		tmp         += conn->tcp.splicer.fixed.len;
+		accumulated -= conn->tcp.splicer.fixed.len;
 	}
 	if (tmp == head) {
 		return;
 	}
-	conn->ibuf.off = accumulated;
+	conn->tcp.ibuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->ibuf.buf, tmp, accumulated);
+		memmove(conn->tcp.ibuf.buf, tmp, accumulated);
 	}
 	return;
 }
 
 static void __poller_builtin_splicer2(poller_conn_t* conn) {
 
-	char* head  = conn->ibuf.buf;
-	char* tail  = conn->ibuf.buf + conn->ibuf.off;
+	char* head  = conn->tcp.ibuf.buf;
+	char* tail  = conn->tcp.ibuf.buf + conn->tcp.ibuf.off;
 	char* tmp   = head;
 
-	size_t dlen = strlen(conn->splicer.textplain.delimiter);
+	size_t dlen = strlen(conn->tcp.splicer.textplain.delimiter);
 
 	uint32_t accumulated = tail - head;
 	if (accumulated < dlen) {
@@ -111,10 +111,10 @@ static void __poller_builtin_splicer2(poller_conn_t* conn) {
 
 	for (int i = 1; i < dlen; i++) {
 
-		while (j > 0 && conn->splicer.textplain.delimiter[i] != conn->splicer.textplain.delimiter[j]) {
+		while (j > 0 && conn->tcp.splicer.textplain.delimiter[i] != conn->tcp.splicer.textplain.delimiter[j]) {
 			j = next[j - 1];
 		}
-		if (conn->splicer.textplain.delimiter[i] == conn->splicer.textplain.delimiter[j]) {
+		if (conn->tcp.splicer.textplain.delimiter[i] == conn->tcp.splicer.textplain.delimiter[j]) {
 			j++;
 		}
 		next[i] = j;
@@ -122,10 +122,10 @@ static void __poller_builtin_splicer2(poller_conn_t* conn) {
 	j = 0;
 	for (int i = 0; i < accumulated; i++) {
 
-		while (j > 0 && tmp[i] != conn->splicer.textplain.delimiter[j]) {
+		while (j > 0 && tmp[i] != conn->tcp.splicer.textplain.delimiter[j]) {
 			j = next[j - 1];
 		}
-		if (tmp[i] == conn->splicer.textplain.delimiter[j]) {
+		if (tmp[i] == conn->tcp.splicer.textplain.delimiter[j]) {
 			j++;
 		}
 		if (j == dlen) {
@@ -143,9 +143,9 @@ static void __poller_builtin_splicer2(poller_conn_t* conn) {
 	if (tmp == head) {
 		return;
 	}
-	conn->ibuf.off = accumulated;
+	conn->tcp.ibuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->ibuf.buf, tmp, accumulated);
+		memmove(conn->tcp.ibuf.buf, tmp, accumulated);
 	}
 	return;
 }
@@ -156,41 +156,41 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 	uint32_t hs; /* header size  */
 	uint32_t ps; /* payload size */
 
-	char* head = conn->ibuf.buf;
-	char* tail = conn->ibuf.buf + conn->ibuf.off;
+	char* head = conn->tcp.ibuf.buf;
+	char* tail = conn->tcp.ibuf.buf + conn->tcp.ibuf.off;
 	char* tmp  = head;
 
 	uint32_t accumulated = tail - head;
 	
 	while (true) {
-		if (accumulated < conn->splicer.binary.payload) {
+		if (accumulated < conn->tcp.splicer.binary.payload) {
 			break;
 		}
-		hs = conn->splicer.binary.payload;
+		hs = conn->tcp.splicer.binary.payload;
 		ps = 0;
 
-		if (conn->splicer.binary.coding == LEN_FIELD_FIXEDINT) {
+		if (conn->tcp.splicer.binary.coding == LEN_FIELD_FIXEDINT) {
 
-			ps = *((uint32_t*)(tmp + conn->splicer.binary.offset));
+			ps = *((uint32_t*)(tmp + conn->tcp.splicer.binary.offset));
 
 			if (!cdk_byteorder()) {
 				ps = ntohl(ps);
 			}
 		}
-		if (conn->splicer.binary.coding == LEN_FIELD_VARINT) {
+		if (conn->tcp.splicer.binary.coding == LEN_FIELD_VARINT) {
 
-			size_t flexible = (tail - (tmp + conn->splicer.binary.offset));
+			size_t flexible = (tail - (tmp + conn->tcp.splicer.binary.offset));
 
-			ps = cdk_varint_decode(tmp + conn->splicer.binary.offset, &flexible);
+			ps = cdk_varint_decode(tmp + conn->tcp.splicer.binary.offset, &flexible);
 
 			if (!cdk_byteorder()) {
 				ps = ntohl(ps);
 			}
-			hs = conn->splicer.binary.payload + flexible - conn->splicer.binary.size;
+			hs = conn->tcp.splicer.binary.payload + flexible - conn->tcp.splicer.binary.size;
 		}
-		fs = hs + ps + conn->splicer.binary.adj;
+		fs = hs + ps + conn->tcp.splicer.binary.adj;
 
-		if (fs > conn->ibuf.len) {
+		if (fs > conn->tcp.ibuf.len) {
 			abort();
 		}
 		if (accumulated < fs) {
@@ -203,21 +203,21 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 	if (tmp == head) {
 		return;
 	}
-	conn->ibuf.off = accumulated;
+	conn->tcp.ibuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->ibuf.buf, tmp, accumulated);
+		memmove(conn->tcp.ibuf.buf, tmp, accumulated);
 	}
 	return;
 }
 
 static void __poller_userdefined_splicer(poller_conn_t* conn) {
 
-	conn->splicer.userdefined.splice(conn);
+	conn->tcp.splicer.userdefined.splice(conn);
 }
 
 static void __poller_splicer(poller_conn_t* conn) {
 
-	switch (conn->splicer.type)
+	switch (conn->tcp.splicer.type)
 	{
 	case SPLICE_TYPE_FIXED: {
 		__poller_builtin_splicer1(conn);
@@ -286,7 +286,18 @@ static bool __poller_handle_connect(poller_conn_t* conn) {
 
 static bool __poller_handle_recv(poller_conn_t* conn) {
 
-	ssize_t n = _net_recv(conn->fd, conn->ibuf.buf + conn->ibuf.off, MAX_IOBUF_SIZE);
+	ssize_t n;
+
+	if (conn->type == SOCK_STREAM) {
+		n = _net_recv(conn->fd, conn->tcp.ibuf.buf + conn->tcp.ibuf.off, MAX_IOBUF_SIZE);
+	}
+	if (conn->type == SOCK_DGRAM) {
+
+		if (conn->udp.ibuf == NULL) {
+			conn->udp.ibuf = cdk_malloc(MAX_IOBUF_SIZE);
+		}
+		n = _net_recv(conn->fd, conn->udp.ibuf, MAX_IOBUF_SIZE);
+	}
 	if (n == -1) {
 		cdk_list_remove(&conn->n);
 		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -302,17 +313,21 @@ static bool __poller_handle_recv(poller_conn_t* conn) {
 		conn->h->on_close(conn);
 		return false;
 	}
-	conn->ibuf.off += n;
-	__poller_splicer(conn);
-
+	if (conn->type == SOCK_STREAM) {
+		conn->tcp.ibuf.off += n;
+		__poller_splicer(conn);
+	}
+	if (conn->type == SOCK_DGRAM) {
+		conn->h->on_read(conn, conn->udp.ibuf, n);
+	}
 	return true;
 }
 
 static bool __poller_handle_send(poller_conn_t* conn) {
 
-	while (conn->obuf.off < conn->obuf.len) {
+	while (conn->tcp.obuf.off < conn->tcp.obuf.len) {
 
-		ssize_t n = _net_send(conn->fd, conn->obuf.buf + conn->obuf.off, conn->obuf.len - conn->obuf.off);
+		ssize_t n = _net_send(conn->fd, conn->tcp.obuf.buf + conn->tcp.obuf.off, conn->tcp.obuf.len - conn->tcp.obuf.off);
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -328,22 +343,23 @@ static bool __poller_handle_send(poller_conn_t* conn) {
 			conn->h->on_close(conn);
 			return false;
 		}
-		conn->obuf.off += n;
+		conn->tcp.obuf.off += n;
 	}
-	conn->h->on_write(conn, conn->obuf.buf, conn->obuf.len);
+	conn->h->on_write(conn, conn->tcp.obuf.buf, conn->tcp.obuf.len);
 
 	return true;
 }
 
 static bool __poller_process_connection(poller_conn_t* conn, uint32_t cmd) {
 
-	if (cmd & _POLLER_CMD_A) {
+	if (conn->type == SOCK_STREAM) {
 
-		return __poller_handle_accept(conn);
-	}
-	if (cmd & _POLLER_CMD_C) {
-
-		return __poller_handle_connect(conn);
+		if (cmd & _POLLER_CMD_A) {
+			return __poller_handle_accept(conn);
+		}
+		if (cmd & _POLLER_CMD_C) {
+			return __poller_handle_connect(conn);
+		}
 	}
 	if (cmd & _POLLER_CMD_R) {
 
@@ -364,16 +380,17 @@ int _poller_worker(void* param) {
 
 void _poller_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer) {
 
-	memcpy(&conn->splicer, splicer, sizeof(splicer_profile_t));
+	memcpy(&conn->tcp.splicer, splicer, sizeof(splicer_profile_t));
 }
 
 poller_conn_t* _poller_conn_create(sock_t s, uint32_t c, poller_handler_t* h) {
 
 	poller_conn_t* conn = cdk_malloc(sizeof(poller_conn_t));
 
-	conn->cmd = c;
-	conn->fd  = s;
-	conn->h   = h;
+	conn->cmd  = c;
+	conn->fd   = s;
+	conn->h    = h;
+	conn->type = cdk_net_socktype(s);
 
 	cdk_list_init_node(&conn->n);
 
@@ -429,8 +446,9 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 
 	epoll_ctl(epfd, EPOLL_CTL_DEL, conn->fd, NULL);
 	_net_close(conn->fd);
-	cdk_free(conn->ibuf.buf);
-	cdk_free(conn->obuf.buf);
+	cdk_free(conn->tcp.ibuf.buf);
+	cdk_free(conn->tcp.obuf.buf);
+	cdk_free(conn->udp.ibuf);
 	cdk_free(conn);
 }
 
@@ -482,11 +500,13 @@ void _poller_listen(const char* restrict t, const char* restrict h, const char* 
 
 	if (!strncmp(t, "tcp", strlen("tcp"))) {
 		s = _net_listen(h, p, SOCK_STREAM);
+		_poller_conn_create(s, _POLLER_CMD_A, handler);
 	}
 	if (!strncmp(t, "udp", strlen("udp"))) {
 		s = _net_listen(h, p, SOCK_DGRAM);
+		_poller_conn_create(s, _POLLER_CMD_R, handler);
 	}
-	_poller_conn_create(s, _POLLER_CMD_A, handler);
+	return;
 }
 
 void _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
@@ -534,10 +554,34 @@ void _poller_post_send(poller_conn_t* conn) {
 }
 
 void _poller_send(poller_conn_t* conn, void* data, size_t size) {
-	
-	while (conn->obuf.off < conn->obuf.len) {
-		
-		ssize_t n = _net_send(conn->fd, conn->obuf.buf + conn->obuf.off, conn->obuf.len - conn->obuf.off);
+
+	if (conn->type == SOCK_STREAM) {
+
+		while (conn->tcp.obuf.off < conn->tcp.obuf.len) {
+
+			ssize_t n = _net_send(conn->fd, conn->tcp.obuf.buf + conn->tcp.obuf.off, conn->tcp.obuf.len - conn->tcp.obuf.off);
+			if (n == -1) {
+				cdk_list_remove(&conn->n);
+				if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+					conn->h->on_close(conn);
+				}
+				if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+					_poller_post_send(conn);
+				}
+				return;
+			}
+			if (n == 0) {
+				cdk_list_remove(&conn->n);
+				conn->h->on_close(conn);
+				return;
+			}
+			conn->tcp.obuf.off += n;
+		}
+		conn->h->on_write(conn, data, size);
+	}
+	if (conn->type == SOCK_DGRAM) {
+
+		ssize_t n = _net_send(conn->fd, data, size);
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -553,9 +597,9 @@ void _poller_send(poller_conn_t* conn, void* data, size_t size) {
 			conn->h->on_close(conn);
 			return;
 		}
-		conn->obuf.off += n;
+		conn->h->on_write(conn, data, size);
 	}
-	conn->h->on_write(conn, data, size);
+	return;
 }
 
 #endif

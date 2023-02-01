@@ -80,6 +80,7 @@ extern void cdk_net_obtain_addr(sock_t s, addrinfo_t* ai, bool p);
  *  @return address family.
  */
 extern int cdk_net_af(sock_t s);
+extern int cdk_net_socktype(sock_t s);
 
 /* //////////////////////////////////////////tcp////////////////////////////////////////////// */
 
