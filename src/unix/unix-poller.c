@@ -375,6 +375,7 @@ static bool __poller_process_connection(poller_conn_t* conn, uint32_t cmd) {
 int _poller_worker(void* param) {
 
 	_poller_poll();
+	_poller_destroy();
 	return 0;
 }
 
@@ -496,7 +497,6 @@ void _poller_poll(void) {
 void _poller_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
 	sock_t s;
-	_poller_create();
 
 	if (!strncmp(t, "tcp", strlen("tcp"))) {
 		s = _net_listen(h, p, SOCK_STREAM);
@@ -514,8 +514,6 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 	sock_t         s;
 	bool           connected;
 	poller_conn_t* conn;
-
-	_poller_create();
 
 	if (!strncmp(t, "tcp", strlen("tcp"))) {
 		s = _net_dial(h, p, SOCK_STREAM, &connected);

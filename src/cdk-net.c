@@ -161,29 +161,34 @@ int cdk_net_socktype(sock_t s) {
 
 void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
-    _poller_listen(t, h, p, handler);
+    _poller_create();
 
     for (int i = 0; i < cdk_cpus(); i++) {
         thrd_t t;
         cdk_thrd_create(&t, _poller_worker, NULL);
         cdk_thrd_detach(t);
     }
+    _poller_listen(t, h, p, handler);
+    return;
 }
 
 void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
-    _poller_dial(t, h, p, handler);
+    _poller_create();
 
     for (int i = 0; i < cdk_cpus(); i++) {
         thrd_t t;
         cdk_thrd_create(&t, _poller_worker, NULL);
         cdk_thrd_detach(t);
     }
+    _poller_dial(t, h, p, handler);
+    return;
 }
 
 void cdk_net_poller(void) {
 
     _poller_poll();
+    _poller_destroy();
     return;
 }
 

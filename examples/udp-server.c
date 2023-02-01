@@ -7,7 +7,7 @@ static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
 
 	printf("recv %s\n", (char*)buf);
-	cdk_net_postrecv(conn);
+	//cdk_net_postrecv(conn);
 }
 static void handle_close(poller_conn_t* conn) {
 
