@@ -255,19 +255,24 @@ static bool __poller_check_connect_status(poller_conn_t* conn) {
 
 static bool __poller_handle_accept(poller_conn_t* conn) {
 
-	sock_t c = _tcp_accept(conn->fd);
-	if (c == -1) {
-		cdk_list_remove(&conn->n);
-		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-			conn->h->on_close(conn);
+	if (conn->type == SOCK_STREAM) {
+		sock_t c = _tcp_accept(conn->fd);
+		if (c == -1) {
+			cdk_list_remove(&conn->n);
+			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+				conn->h->on_close(conn);
+			}
+			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+				_poller_post_accept(conn);
+			}
+			return false;
 		}
-		if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-			_poller_post_accept(conn);
-		}
-		return false;
+		poller_conn_t* nconn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
+		conn->h->on_accept(nconn);
 	}
-	poller_conn_t* nconn = _poller_conn_create(c, _POLLER_CMD_R, conn->h);
-	conn->h->on_accept(nconn);
+	if (conn->type == SOCK_DGRAM) {
+		conn->h->on_accept(conn);
+	}
 	
 	return true;
 }
@@ -518,32 +523,26 @@ void _poller_listen(const char* restrict t, const char* restrict h, const char* 
 
 	if (!strncmp(t, "tcp", strlen("tcp"))) {
 		s = _net_listen(h, p, SOCK_STREAM);
-		_poller_conn_create(s, _POLLER_CMD_A, handler);
 	}
 	if (!strncmp(t, "udp", strlen("udp"))) {
 		s = _net_listen(h, p, SOCK_DGRAM);
-		_poller_conn_create(s, _POLLER_CMD_R, handler);
 	}
+	_poller_conn_create(s, _POLLER_CMD_A, handler);
 	return;
 }
 
 void _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
 	sock_t         s;
-	bool           connected;
 	poller_conn_t* conn;
 
 	if (!strncmp(t, "tcp", strlen("tcp"))) {
-		s = _net_dial(h, p, SOCK_STREAM, &connected);
-		conn = _poller_conn_create(s, _POLLER_CMD_C, handler);
+		s = _net_dial(h, p, SOCK_STREAM);
 	}
 	if (!strncmp(t, "udp", strlen("udp"))) {
-		s = _net_dial(h, p, SOCK_DGRAM, &connected);
-		conn = _poller_conn_create(s, _POLLER_CMD_W, handler);
+		s = _net_dial(h, p, SOCK_DGRAM);
 	}
-	if (connected) {
-		conn->h->on_connect(conn);
-	}
+	conn = _poller_conn_create(s, _POLLER_CMD_C, handler);
 	return;
 }
 

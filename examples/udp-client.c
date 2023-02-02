@@ -1,11 +1,26 @@
 #include "cdk.h"
 #include <string.h>
 
-char* str = "hello";
+char str[4096] = "hello";
 
+thrd_t wthrd;
+
+int send_thread(void* p) {
+	poller_conn_t* conn = p;
+
+	while (true) {
+		cdk_net_postsend(conn, str, sizeof(str));
+		cdk_sleep(40);
+		break;
+	}
+	return 0;
+}
 static void handle_connect(poller_conn_t* conn) {
 	printf("tid[%d],[%d]has connected to remote...\n", (int)cdk_gettid(), (int)conn->fd);
-	cdk_net_postsend(conn, str, strlen(str) + 1);
+	
+
+	cdk_thrd_create(&wthrd, send_thread, conn);
+	cdk_thrd_detach(wthrd);
 }
 
 static void handle_write(poller_conn_t* conn, void* buf, size_t len) {

@@ -31,7 +31,7 @@ extern void    _net_nonblock(sock_t s);
 extern void    _net_reuse_addr(sock_t s);
 extern void    _net_reuse_port(sock_t s);
 extern sock_t  _net_listen(const char* restrict h, const char* restrict p, int t);
-extern sock_t  _net_dial(const char* restrict h, const char* restrict p, int t, bool* connected);
+extern sock_t  _net_dial(const char* restrict h, const char* restrict p, int t);
 extern void    _net_close(sock_t s);
 extern int     _net_af(sock_t s);
 extern int     _net_socktype(sock_t s);

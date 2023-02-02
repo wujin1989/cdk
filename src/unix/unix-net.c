@@ -207,21 +207,21 @@ sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
     return s;
 }
 
-sock_t _net_dial(const char* restrict h, const char* restrict p, int t, bool* connected) {
+sock_t _net_dial(const char* restrict h, const char* restrict p, int t) {
     int                 r;
     int                 s;
     struct addrinfo     hints;
-    struct addrinfo* res;
-    struct addrinfo* rp;
+    struct addrinfo*    res;
+    struct addrinfo*    rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = t;
-    hints.ai_flags = 0;
-    hints.ai_protocol = 0;
+    hints.ai_family    = AF_UNSPEC;
+    hints.ai_socktype  = t;
+    hints.ai_flags     = 0;
+    hints.ai_protocol  = 0;
     hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
+    hints.ai_addr      = NULL;
+    hints.ai_next      = NULL;
 
     r = getaddrinfo(h, p, &hints, &res);
     if (r != 0) { return -1; }
@@ -245,10 +245,8 @@ sock_t _net_dial(const char* restrict h, const char* restrict p, int t, bool* co
             continue;
         }
         if (r == -1 && errno == EINPROGRESS) {
-            *connected = false;
             break;
         }
-        *connected = true;
         break;
     }
     if (rp == NULL) { return -1; }
