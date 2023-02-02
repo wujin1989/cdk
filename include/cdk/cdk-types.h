@@ -157,6 +157,7 @@ typedef struct _poller_conn_t {
 
 		struct {
 			void*    ibuf;
+			void*    obuf;
 		}udp;
 	};
 	

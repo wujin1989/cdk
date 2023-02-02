@@ -5,11 +5,11 @@ char* str = "hello";
 
 static void handle_connect(poller_conn_t* conn) {
 	printf("tid[%d],[%d]has connected to remote...\n", (int)cdk_gettid(), (int)conn->fd);
-	//cdk_net_postsend(conn, str, strlen(str) + 1);
+	cdk_net_postsend(conn, str, strlen(str) + 1);
 }
 
 static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
-	//printf("%s  ----> send ok.\n", (char*)buf);
+	printf("%s  ----> send ok.\n", (char*)buf);
 
 	//cdk_net_postsend(conn, str, strlen(str) + 1);
 }

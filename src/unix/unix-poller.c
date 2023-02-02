@@ -325,9 +325,32 @@ static bool __poller_handle_recv(poller_conn_t* conn) {
 
 static bool __poller_handle_send(poller_conn_t* conn) {
 
-	while (conn->tcp.obuf.off < conn->tcp.obuf.len) {
+	if (conn->type == SOCK_STREAM) {
+		while (conn->tcp.obuf.off < conn->tcp.obuf.len) {
 
-		ssize_t n = _net_send(conn->fd, conn->tcp.obuf.buf + conn->tcp.obuf.off, conn->tcp.obuf.len - conn->tcp.obuf.off);
+			ssize_t n = _net_send(conn->fd, conn->tcp.obuf.buf + conn->tcp.obuf.off, conn->tcp.obuf.len - conn->tcp.obuf.off);
+			if (n == -1) {
+				cdk_list_remove(&conn->n);
+				if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+					conn->h->on_close(conn);
+				}
+				if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+					_poller_post_send(conn);
+				}
+				return false;
+			}
+			if (n == 0) {
+				cdk_list_remove(&conn->n);
+				conn->h->on_close(conn);
+				return false;
+			}
+			conn->tcp.obuf.off += n;
+		}
+		conn->h->on_write(conn, conn->tcp.obuf.buf, conn->tcp.obuf.len);
+	}
+	/*if (conn->type == SOCK_DGRAM) {
+
+		ssize_t n = _net_send(conn->fd, data, size);
 		if (n == -1) {
 			cdk_list_remove(&conn->n);
 			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
@@ -336,17 +359,15 @@ static bool __poller_handle_send(poller_conn_t* conn) {
 			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 				_poller_post_send(conn);
 			}
-			return false;
+			return;
 		}
 		if (n == 0) {
 			cdk_list_remove(&conn->n);
 			conn->h->on_close(conn);
-			return false;
+			return;
 		}
-		conn->tcp.obuf.off += n;
-	}
-	conn->h->on_write(conn, conn->tcp.obuf.buf, conn->tcp.obuf.len);
-
+		conn->h->on_write(conn, data, size);
+	}*/
 	return true;
 }
 
