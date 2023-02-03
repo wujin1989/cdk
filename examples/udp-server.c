@@ -3,7 +3,7 @@
 
 static void handle_accept(poller_conn_t* conn) {
 	printf("tid[%d], [%d]new connection coming...\n", (int)cdk_gettid(), (int)conn->fd);
-	cdk_net_postrecv(conn);
+	//cdk_net_postrecv(conn);
 }
 static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 

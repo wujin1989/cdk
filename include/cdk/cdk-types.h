@@ -107,6 +107,12 @@ typedef struct _splicer_profile_t {
 	};
 }splicer_profile_t;
 
+typedef struct _offset_buf_t{
+	void*    buf;
+	uint32_t len;
+	uint32_t off;
+}offset_buf_t;
+
 #if defined(__linux__) || defined(__APPLE__)
 
 #include <stdatomic.h>
@@ -140,24 +146,14 @@ typedef struct _poller_conn_t {
 	union {
 		struct {
 
-			struct {
-				void*    buf;
-				uint32_t len;
-				uint32_t off;
-			}ibuf;
-
-			struct {
-				void*    buf;
-				uint32_t len;
-				uint32_t off;
-			}obuf;
-
-			splicer_profile_t    splicer;
+			offset_buf_t      ibuf;
+			offset_buf_t      obuf;
+			splicer_profile_t splicer;
 		}tcp;
 
 		struct {
-			void*    ibuf;
-			void*    obuf;
+			offset_buf_t      ibuf;
+			offset_buf_t      obuf;
 		}udp;
 	};
 	

@@ -35,7 +35,5 @@ extern void           _poller_post_accept(poller_conn_t* conn);
 extern void           _poller_post_connect(poller_conn_t* conn);
 extern void           _poller_post_recv(poller_conn_t* conn);
 extern void           _poller_post_send(poller_conn_t* conn);
-extern void           _poller_recv(poller_conn_t* conn, void* data, size_t size);
-extern void           _poller_send(poller_conn_t* conn, void* data, size_t size);
 extern void           _poller_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer);
 extern int            _poller_worker(void* param);

@@ -203,6 +203,15 @@ void cdk_net_postrecv(poller_conn_t* conn) {
             conn->tcp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
         }
     }
+    if (conn->type == SOCK_DGRAM) {
+
+        if (conn->udp.ibuf.buf == NULL) {
+
+            conn->udp.ibuf.len = MAX_IOBUF_SIZE;
+            conn->udp.ibuf.off = 0;
+            conn->udp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+        }
+    }
     _poller_post_recv(conn);
 }
 
@@ -217,12 +226,18 @@ void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size) {
             conn->tcp.obuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
         }
         memcpy(conn->tcp.obuf.buf, data, size);
-        _poller_send(conn, conn->tcp.obuf.buf, conn->tcp.obuf.len);
     }
     if (conn->type == SOCK_DGRAM) {
 
-        _poller_send(conn, data, size);
+        conn->udp.obuf.len = size;
+        conn->udp.obuf.off = 0;
+
+        if (conn->udp.obuf.buf == NULL) {
+            conn->udp.obuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+        }
+        memcpy(conn->udp.obuf.buf, data, size);
     }
+    _poller_post_send(conn);
     return;
 }
 
