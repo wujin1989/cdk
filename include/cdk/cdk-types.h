@@ -156,8 +156,6 @@ typedef struct _poller_conn_t {
 			offset_buf_t      obuf;
 		}udp;
 	};
-	
-	list_node_t          n;
 }poller_conn_t;
 #endif
 

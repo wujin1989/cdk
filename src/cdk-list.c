@@ -72,8 +72,6 @@ void cdk_list_remove(list_node_t* x) {
 
 	(x)->n->p   = (x)->p;
 	(x)->p->n   = (x)->n;
-	(x)->p      = NULL;
-	(x)->n      = NULL;
 }
 
 list_node_t* cdk_list_next(list_node_t* x) {
