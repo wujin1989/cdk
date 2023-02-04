@@ -476,7 +476,9 @@ void _poller_conn_modify(poller_conn_t* conn) {
 	if (conn->cmd & _POLLER_CMD_W) {
 		ee.events |= EPOLLOUT;
 	}
-	ee.events |= EPOLLONESHOT;
+	if ((conn->cmd & _POLLER_CMD_R) || (conn->cmd & _POLLER_CMD_W)) {
+		ee.events |= EPOLLONESHOT;
+	}
 	ee.events |= EPOLLET;
 	ee.data.ptr = conn;
 
