@@ -47,6 +47,7 @@
 #define SNDRCV_BUFFER_SIZE_MIN  32767
 #define SNDRCV_BUFFER_SIZE_STEP 16384
 
+static once_flag __once = ONCE_FLAG_INIT;
 
 static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
 
@@ -161,26 +162,14 @@ int cdk_net_socktype(sock_t s) {
 
 void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
-    _poller_create();
-
-    for (int i = 0; i < cdk_cpus(); i++) {
-        thrd_t t;
-        cdk_thrd_create(&t, _poller_worker, NULL);
-        cdk_thrd_detach(t);
-    }
+    cdk_thrd_once(&__once, _poller_create);
     _poller_listen(t, h, p, handler);
     return;
 }
 
 void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
-    _poller_create();
-
-    for (int i = 0; i < cdk_cpus(); i++) {
-        thrd_t t;
-        cdk_thrd_create(&t, _poller_worker, NULL);
-        cdk_thrd_detach(t);
-    }
+    cdk_thrd_once(&__once, _poller_create);
     _poller_dial(t, h, p, handler);
     return;
 }

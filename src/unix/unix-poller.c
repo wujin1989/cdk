@@ -29,6 +29,9 @@
 #include "cdk/cdk-ringbuffer.h"
 #include "cdk/cdk-systeminfo.h"
 #include "cdk/cdk-varint.h"
+#include "cdk/cdk-thread.h"
+#include "cdk/cdk-sync.h"
+#include "cdk/cdk-rbtree.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,17 +47,83 @@
 #include <sys/epoll.h>
 #include <errno.h>
 
-static int epfd;
-
 typedef struct _poller_conn_priv_t{
 	poller_conn_t* c;
 	list_node_t    n;
 }poller_conn_priv_t;
 
+static mtx_t     __mutex;
+static rb_tree_t __epfdmap;
+
+typedef struct _epfd_entry_t {
+
+	tid_t     tid;
+	int       epfd;
+	rb_node_t rb_node;
+}epfd_entry_t;
+
+static inline void cdk_rb_insert(rb_tree_t* tree, tid_t tid, rb_node_t* node) {
+
+	rb_node_t** p = &(tree->rb_root);
+	rb_node_t* parent = NULL;
+
+	while (*p) {
+
+		parent = *p;
+		epfd_entry_t* t = cdk_rb_entry(parent, epfd_entry_t, rb_node);
+
+		if (tid < t->tid) {
+			p = &(*p)->rb_left;
+		}
+		else if (tid > t->tid) {
+			p = &(*p)->rb_right;
+		}
+		else {
+			return;
+		}
+	}
+	cdk_rb_link_node(node, parent, p);
+	cdk_rb_insert_color(tree, node);
+}
+
+static inline epfd_entry_t* cdk_rb_find(rb_tree_t* tree, const tid_t tid) {
+
+	rb_node_t* n = tree->rb_root;
+
+	while (n) {
+		epfd_entry_t* t = cdk_rb_entry(n, epfd_entry_t, rb_node);
+
+		if (tid < t->tid) {
+			n = n->rb_left;
+		}
+		else if (tid > t->tid) {
+			n = n->rb_right;
+		}
+		else {
+			return t;
+		}
+	}
+	return NULL;
+}
+
 void _poller_create(void) {
 
-	if (!epfd) {
-		epfd = epoll_create1(0);
+	thrd_t t;
+	int    ncpus;
+
+	ncpus = cdk_cpus();
+	
+	cdk_mtx_init(&__mutex);
+	cdk_rb_create(&__epfdmap);
+
+	if (!__mepfd) {
+		__mepfd = epoll_create1(0);
+	}
+	
+	for (int i = 0; i < ncpus; i++) {
+
+		cdk_thrd_create(&t, _poller_worker, NULL);
+		cdk_thrd_detach(t);
 	}
 	return;
 }
@@ -64,6 +133,7 @@ void _poller_destroy(void) {
 	if (epfd) {
 		_net_close(epfd);
 	}
+	cdk_mtx_destroy(&__mutex);
 	return;
 }
 
@@ -417,6 +487,13 @@ int _poller_worker(void* param) {
 	_poller_poll();
 	_poller_destroy();
 	return 0;
+}
+
+void _poller_acceptor(void) {
+
+	_poller_poll();
+	_poller_destroy();
+	return;
 }
 
 void _poller_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer) {
