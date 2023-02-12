@@ -32,6 +32,7 @@
 #include "cdk/cdk-thread.h"
 #include "cdk/cdk-sync.h"
 #include "cdk/cdk-rbtree.h"
+#include "cdk/cdk-atomic.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -52,77 +53,31 @@ typedef struct _poller_conn_priv_t{
 	list_node_t    n;
 }poller_conn_priv_t;
 
-static mtx_t     __mutex;
-static rb_tree_t __epfdmap;
-
-typedef struct _epfd_entry_t {
-
-	tid_t     tid;
-	int       epfd;
-	rb_node_t rb_node;
-}epfd_entry_t;
-
-static inline void cdk_rb_insert(rb_tree_t* tree, tid_t tid, rb_node_t* node) {
-
-	rb_node_t** p = &(tree->rb_root);
-	rb_node_t* parent = NULL;
-
-	while (*p) {
-
-		parent = *p;
-		epfd_entry_t* t = cdk_rb_entry(parent, epfd_entry_t, rb_node);
-
-		if (tid < t->tid) {
-			p = &(*p)->rb_left;
-		}
-		else if (tid > t->tid) {
-			p = &(*p)->rb_right;
-		}
-		else {
-			return;
-		}
-	}
-	cdk_rb_link_node(node, parent, p);
-	cdk_rb_insert_color(tree, node);
-}
-
-static inline epfd_entry_t* cdk_rb_find(rb_tree_t* tree, const tid_t tid) {
-
-	rb_node_t* n = tree->rb_root;
-
-	while (n) {
-		epfd_entry_t* t = cdk_rb_entry(n, epfd_entry_t, rb_node);
-
-		if (tid < t->tid) {
-			n = n->rb_left;
-		}
-		else if (tid > t->tid) {
-			n = n->rb_right;
-		}
-		else {
-			return t;
-		}
-	}
-	return NULL;
-}
+static mtx_t       __mutex;
+static atomic_t    __nslaves = ATOMIC_VAR_INIT(0);
+static int*        __epfds;
+static int         __nepfds;
 
 void _poller_create(void) {
 
 	thrd_t t;
-	int    ncpus;
+	int    n;
 
-	ncpus = cdk_cpus();
-	
 	cdk_mtx_init(&__mutex);
-	cdk_rb_create(&__epfdmap);
 
-	if (!__mepfd) {
-		__mepfd = epoll_create1(0);
+	if ((n = cdk_atomic_load(&__nslaves)) == 0) {
+		n = cdk_cpus();
 	}
-	
-	for (int i = 0; i < ncpus; i++) {
+	__nepfds = n + 1; /** plus master epfd */
+	__epfds = cdk_malloc(sizeof(int) * __nepfds);
 
-		cdk_thrd_create(&t, _poller_worker, NULL);
+	for (int i = 0; i < __nepfds; i++) {
+
+		*(__epfds + i) = epoll_create1(0);
+	}
+	for (int i = 1; i < __nepfds; i++) {
+
+		cdk_thrd_create(&t, _poller_slave, (__epfds + i));
 		cdk_thrd_detach(t);
 	}
 	return;
@@ -130,10 +85,15 @@ void _poller_create(void) {
 
 void _poller_destroy(void) {
 
-	if (epfd) {
-		_net_close(epfd);
-	}
 	cdk_mtx_destroy(&__mutex);
+
+	for (int i = 0; i < __nepfds; i++) {
+
+		_net_close(*(__epfds + i));
+	}
+	if (__epfds) {
+		cdk_free(__epfds);
+	}
 	return;
 }
 
@@ -482,17 +442,26 @@ static void __poller_process_connection(poller_conn_priv_t* priv) {
 	}
 }
 
-int _poller_worker(void* param) {
+void _poller_concurrent_slaves(int64_t num) {
 
-	_poller_poll();
-	_poller_destroy();
+	if (num < 0) {
+		num = 0;
+	}
+	cdk_atomic_store(&__nslaves, num);
+}
+
+int _poller_slave(void* param) {
+
+	int* p   = param;
+	int epfd = *p;
+
+	_poller_poll(epfd);
 	return 0;
 }
 
-void _poller_acceptor(void) {
+void _poller_master(void) {
 
-	_poller_poll();
-	_poller_destroy();
+	_poller_poll(*(__epfds));
 	return;
 }
 
@@ -578,7 +547,7 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 	cdk_free(conn);
 }
 
-void _poller_poll(void) {
+void _poller_poll(int epfd) {
 
 	struct epoll_event events[MAX_PROCESS_EVENTS];
 	list_t conns;
@@ -625,7 +594,7 @@ void _poller_listen(const char* restrict t, const char* restrict h, const char* 
 	if (!strncmp(t, "udp", strlen("udp"))) {
 		s = _net_listen(h, p, SOCK_DGRAM);
 	}
-	_poller_conn_create(s, _POLLER_CMD_A, handler);
+	_poller_conn_create(*(__epfds), s, _POLLER_CMD_A, handler);
 	return;
 }
 
@@ -640,7 +609,7 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 	if (!strncmp(t, "udp", strlen("udp"))) {
 		s = _net_dial(h, p, SOCK_DGRAM);
 	}
-	_poller_conn_create(s, _POLLER_CMD_C, handler);
+	_poller_conn_create(retrive_slave, s, _POLLER_CMD_C, handler);
 	return;
 }
 
