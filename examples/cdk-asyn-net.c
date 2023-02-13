@@ -57,6 +57,7 @@ static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
 }
 static void handle_close(poller_conn_t* conn) {
 
+	printf("recv close\n");
 	cdk_net_close(conn);
 }
 int main(void) {
@@ -70,6 +71,5 @@ int main(void) {
 	};
 	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 	
-	cdk_net_poller();
 	return 0;
 }

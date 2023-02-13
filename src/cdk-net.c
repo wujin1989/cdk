@@ -48,9 +48,6 @@
 #define SNDRCV_BUFFER_SIZE_MIN  32767
 #define SNDRCV_BUFFER_SIZE_STEP 16384
 
-static once_flag   __once_create = ONCE_FLAG_INIT;
-static atomic_flag __one_master  = ATOMIC_FLAG_INIT;
-
 static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
 
     if (af == AF_INET) {
@@ -170,24 +167,22 @@ void cdk_net_concurrent_slaves(int64_t num) {
 
 void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
-    cdk_thrd_once(&__once_create, _poller_create);
+    _poller_create();
+
     _poller_listen(t, h, p, handler);
+    _poller_master();
+
+    _poller_destroy();
     return;
 }
 
 void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
-    cdk_thrd_once(&__once_create, _poller_create);
+    _poller_create();
+
     _poller_dial(t, h, p, handler);
-    return;
-}
-
-void cdk_net_poller(void) {
-
-    if (cdk_atomic_flag_test_and_set(&__one_master)) {
-        return;
-    }
     _poller_master();
+
     _poller_destroy();
     return;
 }

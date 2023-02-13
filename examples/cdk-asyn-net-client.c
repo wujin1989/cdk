@@ -64,6 +64,5 @@ int main(void) {
 	};
 	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 
-	cdk_net_poller();
 	return 0;
 }

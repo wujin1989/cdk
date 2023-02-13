@@ -141,7 +141,8 @@ typedef struct _poller_conn_t {
 	sock_t               fd;
 	uint32_t             cmd;
 	poller_handler_t*    h;
-	int                  type; 
+	int                  type;
+	int                  pfd;
 
 	union {
 		struct {
@@ -156,6 +157,7 @@ typedef struct _poller_conn_t {
 			offset_buf_t      obuf;
 		}udp;
 	};
+	list_node_t n;
 }poller_conn_t;
 #endif
 
