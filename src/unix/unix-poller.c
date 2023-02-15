@@ -337,6 +337,8 @@ static void __poller_handle_recv(poller_conn_t* conn) {
 		n = _net_recv(conn->fd, conn->tcp.ibuf.buf + conn->tcp.ibuf.off, MAX_IOBUF_SIZE);
 	}
 	if (conn->type == SOCK_DGRAM) {
+
+		conn->udp.peer.sslen = sizeof(struct sockaddr_storage);
 		n = _net_recvfrom(conn->fd, conn->udp.ibuf.buf, MAX_IOBUF_SIZE, &conn->udp.peer.ss, &conn->udp.peer.sslen);
 	}
 	if (n == -1) {
@@ -404,14 +406,9 @@ static void __poller_handle_send(poller_conn_t* conn) {
 		}
 	}
 	if (conn->type == SOCK_DGRAM) {
-
+		
 		conn->h->on_write(conn, NULL, 0);
 
-		while (cdk_queue_empty(&(conn->udp.olist))) {
-
-			cdk_list_remove(&conn->n);
-			return;
-		}
 		while (!cdk_queue_empty(&(conn->udp.olist))) {
 			
 			inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->udp.olist)), inner_offset_buf_t, n);
@@ -432,7 +429,10 @@ static void __poller_handle_send(poller_conn_t* conn) {
 				conn->h->on_close(conn);
 				return;
 			}
+			cdk_list_remove(&(e->n));
+			cdk_free(e);
 		}
+		cdk_list_remove(&conn->n);
 	}
 	return;
 }
@@ -725,17 +725,16 @@ void _poller_postsend(poller_conn_t* conn, void* data, size_t size) {
 
 	inner_offset_buf_t* buffer = cdk_malloc(sizeof(inner_offset_buf_t) + size);
 
+	memcpy(buffer->buf, data, size);
+	buffer->len = size;
+	buffer->off = 0;
+	cdk_list_init_node(&(buffer->n));
+
 	if (conn->type == SOCK_STREAM) {
-
-		memcpy(buffer->buf, data, size);
-		buffer->len = size;
-		buffer->off = 0;
-		cdk_list_init_node(&(buffer->n));
-
 		cdk_list_insert_tail(&(conn->tcp.olist), &(buffer->n));
 	}
 	if (conn->type == SOCK_DGRAM) {
-
+		cdk_list_insert_tail(&(conn->udp.olist), &(buffer->n));
 	}
 	__poller_post_send(conn);
 	return;

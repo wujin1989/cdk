@@ -154,9 +154,9 @@ void _net_reuse_port(sock_t s) {
 }
 
 sock_t _net_listen(const char* restrict h, const char* restrict p, int t) {
-    int                 r;
-    int                 s;
-    struct addrinfo     hints;
+    int              r;
+    int              s;
+    struct addrinfo  hints;
     struct addrinfo* res;
     struct addrinfo* rp;
 

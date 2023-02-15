@@ -2,7 +2,6 @@
 #include <string.h>
 
 static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
-	printf("%s  ----> send ok.\n", (char*)buf);
 
 	cdk_net_postsend(conn, "hello", strlen("hello") + 1);
 }
