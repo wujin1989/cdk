@@ -92,8 +92,8 @@ extern int cdk_net_socktype(sock_t s);
  *  @return tcp socket fd.
  */
 extern void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
-
-extern void cdk_net_poller(void);
+extern void cdk_net_concurrent_slaves(int64_t num);
+extern void cdk_net_poll(void);
 
 extern void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size);
 extern void cdk_net_postrecv(poller_conn_t* conn);

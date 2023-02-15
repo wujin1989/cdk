@@ -56,6 +56,42 @@ static int*        __slaves;
 static int         __master;
 static uint32_t    __idx;
 
+typedef struct _inner_offset_buf_t {
+
+	fifo_node_t  n;
+	uint32_t     len;
+	uint32_t     off;
+	char         buf[];
+}inner_offset_buf_t;
+
+static void __poller_post_accept(poller_conn_t* conn) {
+
+	conn->cmd = _POLLER_CMD_A;
+	_poller_conn_modify(conn);
+}
+
+static void __poller_post_connect(poller_conn_t* conn) {
+
+	conn->cmd = _POLLER_CMD_C;
+	_poller_conn_modify(conn);
+}
+
+static void __poller_post_recv(poller_conn_t* conn) {
+
+	conn->cmd = _POLLER_CMD_R;
+	_poller_conn_modify(conn);
+
+	return;
+}
+
+static void __poller_post_send(poller_conn_t* conn) {
+
+	conn->cmd = _POLLER_CMD_W;
+	_poller_conn_modify(conn);
+
+	return;
+}
+
 static int __poller_loadbalance(void) {
 
 	int pfd;
@@ -264,26 +300,19 @@ static bool __poller_check_connect_status(poller_conn_t* conn) {
 
 static void __poller_handle_accept(poller_conn_t* conn) {
 
-	if (conn->type == SOCK_STREAM) {
-
-		sock_t c = _tcp_accept(conn->fd);
-		if (c == -1) {
-			cdk_list_remove(&conn->n);
-			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-				conn->h->on_close(conn);
-			}
-			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-				_poller_post_accept(conn);
-			}
-			return;
+	sock_t c = _tcp_accept(conn->fd);
+	if (c == -1) {
+		cdk_list_remove(&conn->n);
+		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+			conn->h->on_close(conn);
 		}
-		poller_conn_t* nconn = _poller_conn_create(__poller_loadbalance(), c, _POLLER_CMD_R, conn->h);
-		conn->h->on_accept(nconn);
+		if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+			__poller_post_accept(conn);
+		}
+		return;
 	}
-	if (conn->type == SOCK_DGRAM) {
-
-		conn->h->on_accept(conn);
-	}
+	poller_conn_t* nconn = _poller_conn_create(__poller_loadbalance(), c, _POLLER_CMD_R, conn->h);
+	conn->h->on_accept(nconn);
 	return;
 }
 
@@ -291,18 +320,11 @@ static void __poller_handle_connect(poller_conn_t* conn) {
 
 	cdk_list_remove(&conn->n);
 
-	if (conn->type == SOCK_STREAM) {
-
-		if (__poller_check_connect_status(conn)) {
-			conn->h->on_connect(conn);
-		}
-		else {
-			conn->h->on_close(conn);
-		}
-	}
-	if (conn->type == SOCK_DGRAM) {
-
+	if (__poller_check_connect_status(conn)) {
 		conn->h->on_connect(conn);
+	}
+	else {
+		conn->h->on_close(conn);
 	}
 	return;
 }
@@ -315,7 +337,7 @@ static void __poller_handle_recv(poller_conn_t* conn) {
 		n = _net_recv(conn->fd, conn->tcp.ibuf.buf + conn->tcp.ibuf.off, MAX_IOBUF_SIZE);
 	}
 	if (conn->type == SOCK_DGRAM) {
-		n = _net_recv(conn->fd, conn->udp.ibuf.buf, MAX_IOBUF_SIZE);
+		n = _net_recvfrom(conn->fd, conn->udp.ibuf.buf, MAX_IOBUF_SIZE, &conn->udp.peer.ss, &conn->udp.peer.sslen);
 	}
 	if (n == -1) {
 		cdk_list_remove(&conn->n);
@@ -323,7 +345,7 @@ static void __poller_handle_recv(poller_conn_t* conn) {
 			conn->h->on_close(conn);
 		}
 		if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-			_poller_post_recv(conn);
+			__poller_post_recv(conn);
 		}
 		return;
 	}
@@ -346,16 +368,62 @@ static void __poller_handle_send(poller_conn_t* conn) {
 
 	if (conn->type == SOCK_STREAM) {
 
-		while (conn->tcp.obuf.off < conn->tcp.obuf.len) {
+		while (cdk_queue_empty(&(conn->tcp.olist))) {
 
-			ssize_t n = _net_send(conn->fd, conn->tcp.obuf.buf + conn->tcp.obuf.off, conn->tcp.obuf.len - conn->tcp.obuf.off);
+			cdk_list_remove(&conn->n);
+			return;
+		}
+		while (!cdk_queue_empty(&(conn->tcp.olist))) {
+
+			inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->tcp.olist)), inner_offset_buf_t, n);
+
+			while (e->off < e->len) {
+
+				ssize_t n = _net_send(conn->fd, e->buf + e->off, e->len - e->off);
+				if (n == -1) {
+					cdk_list_remove(&conn->n);
+					if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+						conn->h->on_close(conn);
+					}
+					if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+						__poller_post_send(conn);
+					}
+					return;
+				}
+				if (n == 0) {
+					cdk_list_remove(&conn->n);
+					conn->h->on_close(conn);
+					return;
+				}
+				e->off += n;
+			}
+			conn->h->on_write(conn, e->buf, e->len);
+
+			cdk_list_remove(&(e->n));
+			cdk_free(e);
+		}
+	}
+	if (conn->type == SOCK_DGRAM) {
+
+		conn->h->on_write(conn, NULL, 0);
+
+		while (cdk_queue_empty(&(conn->udp.olist))) {
+
+			cdk_list_remove(&conn->n);
+			return;
+		}
+		while (!cdk_queue_empty(&(conn->udp.olist))) {
+			
+			inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->udp.olist)), inner_offset_buf_t, n);
+
+			ssize_t n = _net_sendto(conn->fd, e->buf, e->len, &(conn->udp.peer.ss), conn->udp.peer.sslen);
 			if (n == -1) {
 				cdk_list_remove(&conn->n);
 				if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
 					conn->h->on_close(conn);
 				}
 				if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-					_poller_post_send(conn);
+					__poller_post_send(conn);
 				}
 				return;
 			}
@@ -364,29 +432,7 @@ static void __poller_handle_send(poller_conn_t* conn) {
 				conn->h->on_close(conn);
 				return;
 			}
-			conn->tcp.obuf.off += n;
 		}
-		conn->h->on_write(conn, conn->tcp.obuf.buf, conn->tcp.obuf.len);
-	}
-	if (conn->type == SOCK_DGRAM) {
-
-		ssize_t n = _net_send(conn->fd, conn->udp.obuf.buf, conn->udp.obuf.len);
-		if (n == -1) {
-			cdk_list_remove(&conn->n);
-			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-				conn->h->on_close(conn);
-			}
-			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-				_poller_post_send(conn);
-			}
-			return;
-		}
-		if (n == 0) {
-			cdk_list_remove(&conn->n);
-			conn->h->on_close(conn);
-			return;
-		}
-		conn->h->on_write(conn, conn->udp.obuf.buf, conn->udp.obuf.len);
 	}
 	return;
 }
@@ -524,6 +570,22 @@ poller_conn_t* _poller_conn_create(int pfd, sock_t s, uint32_t c, poller_handler
 	conn->type = cdk_net_socktype(s);
 	conn->pfd  = pfd;
 
+	if (conn->type == SOCK_STREAM) {
+
+		conn->tcp.ibuf.len = MAX_IOBUF_SIZE;
+		conn->tcp.ibuf.off = 0;
+		conn->tcp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+
+		cdk_list_create(&(conn->tcp.olist));
+	}
+	if (conn->type == SOCK_DGRAM) {
+
+		conn->udp.ibuf.len = MAX_IOBUF_SIZE;
+		conn->udp.ibuf.off = 0;
+		conn->udp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+
+		cdk_list_create(&(conn->udp.olist));
+	}
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
 
@@ -583,11 +645,21 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 	
 	if (conn->type == SOCK_STREAM) {
 		cdk_free(conn->tcp.ibuf.buf);
-		cdk_free(conn->tcp.obuf.buf);
+		
+		while (!cdk_list_empty(&(conn->tcp.olist))) {
+			inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->tcp.olist)), inner_offset_buf_t, n);
+			cdk_list_remove(&(e->n));
+			cdk_free(e);
+		}
 	}
 	if (conn->type == SOCK_DGRAM) {
 		cdk_free(conn->udp.ibuf.buf);
-		cdk_free(conn->udp.obuf.buf);
+
+		while (!cdk_list_empty(&(conn->udp.olist))) {
+			inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->udp.olist)), inner_offset_buf_t, n);
+			cdk_list_remove(&(e->n));
+			cdk_free(e);
+		}
 	}
 	cdk_free(conn);
 }
@@ -612,9 +684,14 @@ void _poller_listen(const char* restrict t, const char* restrict h, const char* 
 
 void _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
-	int            pfd;
-	sock_t         s;
-	poller_conn_t* conn;
+	int						pfd;
+	sock_t					s;
+	poller_conn_t*			conn;
+	addrinfo_t				ai;
+	struct sockaddr_storage ss;
+
+	memset(&ai, 0, sizeof(addrinfo_t));
+	memset(&ss, 0, sizeof(struct sockaddr_storage));
 
 	if (!strncmp(t, "tcp", strlen("tcp"))) {
 
@@ -623,35 +700,45 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 	}
 	if (!strncmp(t, "udp", strlen("udp"))) {
 
-		s = _net_dial(h, p, SOCK_DGRAM);
-		_poller_conn_create(__poller_loadbalance(), s, _POLLER_CMD_W, handler);
+		s    = _net_dial(h, p, SOCK_DGRAM);
+		conn = _poller_conn_create(__poller_loadbalance(), s, _POLLER_CMD_W, handler);
+
+		memcpy(ai.a, h, strlen(h));
+		ai.p = strtoul(p, NULL, 10);
+		ai.f = cdk_net_af(s);
+
+		cdk_net_inet_pton(&ai, &ss);
+
+		conn->udp.peer.ss    = ss;
+		conn->udp.peer.sslen = sizeof(struct sockaddr_storage);
 	}
-	
 	return;
 }
 
-void _poller_post_accept(poller_conn_t* conn) {
+void _poller_postrecv(poller_conn_t* conn) {
 
-	conn->cmd = _POLLER_CMD_A;
-	_poller_conn_modify(conn);
+	__poller_post_recv(conn);
+	return;
 }
 
-void _poller_post_connect(poller_conn_t* conn) {
+void _poller_postsend(poller_conn_t* conn, void* data, size_t size) {
 
-	conn->cmd = _POLLER_CMD_C;
-	_poller_conn_modify(conn);
-}
+	inner_offset_buf_t* buffer = cdk_malloc(sizeof(inner_offset_buf_t) + size);
 
-void _poller_post_recv(poller_conn_t* conn) {
+	if (conn->type == SOCK_STREAM) {
 
-	conn->cmd = _POLLER_CMD_R;
-	_poller_conn_modify(conn);
-}
+		memcpy(buffer->buf, data, size);
+		buffer->len = size;
+		buffer->off = 0;
+		cdk_list_init_node(&(buffer->n));
 
-void _poller_post_send(poller_conn_t* conn) {
+		cdk_list_insert_tail(&(conn->tcp.olist), &(buffer->n));
+	}
+	if (conn->type == SOCK_DGRAM) {
 
-	conn->cmd = _POLLER_CMD_W;
-	_poller_conn_modify(conn);
+	}
+	__poller_post_send(conn);
+	return;
 }
 
 #endif

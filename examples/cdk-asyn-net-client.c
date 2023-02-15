@@ -62,7 +62,9 @@ int main(void) {
 		.on_read    = handle_read,
 		.on_write   = handle_write
 	};
+	cdk_net_concurrent_slaves(4);
 	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 
+	cdk_net_poll();
 	return 0;
 }

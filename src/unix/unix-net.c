@@ -315,3 +315,23 @@ ssize_t _net_send(sock_t s, void* buf, size_t len) {
 
     return n;
 }
+
+ssize_t _net_recvfrom(sock_t s, void* buf, size_t len, struct sockaddr_storage* ss, socklen_t* lp) {
+
+    ssize_t n;
+    do {
+        n = recvfrom(s, buf, len, 0, (struct sockaddr*)ss, lp);
+    } while (n == -1 && errno == EINTR);
+
+    return n;
+}
+
+ssize_t _net_sendto(sock_t s, void* buf, size_t len, struct sockaddr_storage* ss, socklen_t l) {
+
+    ssize_t n;
+    do {
+        n = sendto(s, buf, len, 0, (struct sockaddr*)ss, l);
+    } while (n == -1 && errno == EINTR);
+
+    return n;
+}

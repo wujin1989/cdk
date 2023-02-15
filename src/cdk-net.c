@@ -168,71 +168,36 @@ void cdk_net_concurrent_slaves(int64_t num) {
 void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
     _poller_create();
-
     _poller_listen(t, h, p, handler);
-    _poller_master();
 
-    _poller_destroy();
     return;
 }
 
 void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
     _poller_create();
-
     _poller_dial(t, h, p, handler);
-    _poller_master();
+    
+    return;
+}
 
+void cdk_net_poll(void) {
+
+    _poller_master();
     _poller_destroy();
+
     return;
 }
 
 void cdk_net_postrecv(poller_conn_t* conn) {
 
-    if (conn->type == SOCK_STREAM) {
-
-        if (conn->tcp.ibuf.buf == NULL) {
-
-            conn->tcp.ibuf.len = MAX_IOBUF_SIZE;
-            conn->tcp.ibuf.off = 0;
-            conn->tcp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-        }
-    }
-    if (conn->type == SOCK_DGRAM) {
-
-        if (conn->udp.ibuf.buf == NULL) {
-
-            conn->udp.ibuf.len = MAX_IOBUF_SIZE;
-            conn->udp.ibuf.off = 0;
-            conn->udp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-        }
-    }
-    _poller_post_recv(conn);
+    _poller_postrecv(conn);
+    return;
 }
 
 void cdk_net_postsend(poller_conn_t* conn, void* data, size_t size) {
 
-    if (conn->type == SOCK_STREAM) {
-
-        conn->tcp.obuf.len = size;
-        conn->tcp.obuf.off = 0;
-
-        if (conn->tcp.obuf.buf == NULL) {
-            conn->tcp.obuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-        }
-        memcpy(conn->tcp.obuf.buf, data, size);
-    }
-    if (conn->type == SOCK_DGRAM) {
-
-        conn->udp.obuf.len = size;
-        conn->udp.obuf.off = 0;
-
-        if (conn->udp.obuf.buf == NULL) {
-            conn->udp.obuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-        }
-        memcpy(conn->udp.obuf.buf, data, size);
-    }
-    _poller_post_send(conn);
+    _poller_postsend(conn, data, size);
     return;
 }
 

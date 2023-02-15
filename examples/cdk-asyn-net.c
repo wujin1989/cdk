@@ -69,7 +69,9 @@ int main(void) {
 		.on_write   = handle_write,
 		.on_close   = handle_close
 	};
+	cdk_net_concurrent_slaves(4);
 	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 	
+	cdk_net_poll();
 	return 0;
 }

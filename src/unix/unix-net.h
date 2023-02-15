@@ -37,5 +37,7 @@ extern int     _net_af(sock_t s);
 extern int     _net_socktype(sock_t s);
 extern ssize_t _net_recv(sock_t s, void* buf, size_t len);
 extern ssize_t _net_send(sock_t s, void* buf, size_t len);
+extern ssize_t _net_recvfrom(sock_t s, void* buf, size_t len, struct sockaddr_storage* ss, socklen_t* lp);
+extern ssize_t _net_sendto(sock_t s, void* buf, size_t len, struct sockaddr_storage* ss, socklen_t l);
 
 

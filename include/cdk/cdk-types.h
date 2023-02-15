@@ -148,13 +148,17 @@ typedef struct _poller_conn_t {
 		struct {
 
 			offset_buf_t      ibuf;
-			offset_buf_t      obuf;
+			list_t            olist;
 			splicer_profile_t splicer;
 		}tcp;
 
 		struct {
 			offset_buf_t      ibuf;
-			offset_buf_t      obuf;
+			list_t            olist;
+			struct {
+				struct sockaddr_storage ss;
+				socklen_t               sslen;
+			}peer;
 		}udp;
 	};
 	list_node_t n;
