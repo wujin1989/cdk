@@ -29,7 +29,9 @@ void _cdk_mtx_init(mtx_t* restrict m) {
 
 void _cdk_mtx_destroy(mtx_t* m) {
 
-	if (pthread_mutex_destroy(m)) { abort(); }
+	if (pthread_mutex_destroy(m)) { 
+		abort(); 
+	}
 }
 
 void _cdk_mtx_lock(mtx_t* m) {

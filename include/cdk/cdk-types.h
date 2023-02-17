@@ -143,6 +143,9 @@ typedef struct _poller_conn_t {
 	poller_handler_t*    h;
 	int                  type;
 	int                  pfd;
+	bool                 state;
+	list_t               owners;
+	mtx_t                olist_mutex;
 
 	union {
 		struct {

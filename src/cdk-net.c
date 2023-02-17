@@ -165,20 +165,16 @@ void cdk_net_concurrent_slaves(int64_t num) {
     _poller_concurrent_slaves(num);
 }
 
-void cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
+poller_conn_t* cdk_net_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
     _poller_create();
-    _poller_listen(t, h, p, handler);
-
-    return;
+    return _poller_listen(t, h, p, handler);
 }
 
-void cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
+poller_conn_t* cdk_net_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
     _poller_create();
-    _poller_dial(t, h, p, handler);
-    
-    return;
+    return _poller_dial(t, h, p, handler);
 }
 
 void cdk_net_poll(void) {

@@ -64,6 +64,12 @@ typedef struct _inner_offset_buf_t {
 	char         buf[];
 }inner_offset_buf_t;
 
+typedef struct _inner_owner_t {
+
+	tid_t		id;
+	list_node_t n;
+}inner_owner_t;
+
 static void __poller_post_accept(poller_conn_t* conn) {
 
 	conn->cmd = _POLLER_CMD_A;
@@ -335,32 +341,40 @@ static void __poller_handle_recv(poller_conn_t* conn) {
 
 	if (conn->type == SOCK_STREAM) {
 		n = _net_recv(conn->fd, conn->tcp.ibuf.buf + conn->tcp.ibuf.off, MAX_IOBUF_SIZE);
+
+		if (n == -1) {
+			cdk_list_remove(&conn->n);
+			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+				conn->h->on_close(conn);
+			}
+			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+				__poller_post_recv(conn);
+			}
+			return;
+		}
+		if (n == 0) {
+			cdk_list_remove(&conn->n);
+			conn->h->on_close(conn);
+			return;
+		}
+		conn->tcp.ibuf.off += n;
+		__poller_splicer(conn);
 	}
 	if (conn->type == SOCK_DGRAM) {
 
 		conn->udp.peer.sslen = sizeof(struct sockaddr_storage);
 		n = _net_recvfrom(conn->fd, conn->udp.ibuf.buf, MAX_IOBUF_SIZE, &conn->udp.peer.ss, &conn->udp.peer.sslen);
-	}
-	if (n == -1) {
-		cdk_list_remove(&conn->n);
-		if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-			conn->h->on_close(conn);
+
+		if (n == -1) {
+			cdk_list_remove(&conn->n);
+			if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
+				conn->h->on_close(conn);
+			}
+			if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+				__poller_post_recv(conn);
+			}
+			return;
 		}
-		if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-			__poller_post_recv(conn);
-		}
-		return;
-	}
-	if (n == 0) {
-		cdk_list_remove(&conn->n);
-		conn->h->on_close(conn);
-		return;
-	}
-	if (conn->type == SOCK_STREAM) {
-		conn->tcp.ibuf.off += n;
-		__poller_splicer(conn);
-	}
-	if (conn->type == SOCK_DGRAM) {
 		conn->h->on_read(conn, conn->udp.ibuf.buf, n);
 	}
 	return;
@@ -370,9 +384,12 @@ static void __poller_handle_send(poller_conn_t* conn) {
 
 	if (conn->type == SOCK_STREAM) {
 
+		cdk_mtx_lock(&conn->olist_mutex);
+
 		while (cdk_queue_empty(&(conn->tcp.olist))) {
 
 			cdk_list_remove(&conn->n);
+			cdk_mtx_unlock(&conn->olist_mutex);
 			return;
 		}
 		while (!cdk_queue_empty(&(conn->tcp.olist))) {
@@ -384,11 +401,13 @@ static void __poller_handle_send(poller_conn_t* conn) {
 				ssize_t n = _net_send(conn->fd, e->buf + e->off, e->len - e->off);
 				if (n == -1) {
 					cdk_list_remove(&conn->n);
+
 					if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
 						conn->h->on_close(conn);
 					}
 					if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 						__poller_post_send(conn);
+						cdk_mtx_unlock(&conn->olist_mutex);
 					}
 					return;
 				}
@@ -404,11 +423,18 @@ static void __poller_handle_send(poller_conn_t* conn) {
 			cdk_list_remove(&(e->n));
 			cdk_free(e);
 		}
+		cdk_mtx_unlock(&conn->olist_mutex);
 	}
 	if (conn->type == SOCK_DGRAM) {
 		
-		conn->h->on_write(conn, NULL, 0);
+		cdk_mtx_lock(&conn->olist_mutex);
 
+		while (cdk_queue_empty(&(conn->udp.olist))) {
+
+			cdk_list_remove(&conn->n);
+			cdk_mtx_unlock(&conn->olist_mutex);
+			return;
+		}
 		while (!cdk_queue_empty(&(conn->udp.olist))) {
 			
 			inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->udp.olist)), inner_offset_buf_t, n);
@@ -416,11 +442,13 @@ static void __poller_handle_send(poller_conn_t* conn) {
 			ssize_t n = _net_sendto(conn->fd, e->buf, e->len, &(conn->udp.peer.ss), conn->udp.peer.sslen);
 			if (n == -1) {
 				cdk_list_remove(&conn->n);
+
 				if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
 					conn->h->on_close(conn);
 				}
 				if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 					__poller_post_send(conn);
+					cdk_mtx_unlock(&conn->olist_mutex);
 				}
 				return;
 			}
@@ -429,10 +457,12 @@ static void __poller_handle_send(poller_conn_t* conn) {
 				conn->h->on_close(conn);
 				return;
 			}
+			conn->h->on_write(conn, e->buf, e->len);
+
 			cdk_list_remove(&(e->n));
 			cdk_free(e);
 		}
-		cdk_list_remove(&conn->n);
+		cdk_mtx_unlock(&conn->olist_mutex);
 	}
 	return;
 }
@@ -474,6 +504,13 @@ static void __poller_poll(int pfd) {
 		for (int i = 0; i < r; i++) {
 
 			poller_conn_t* conn = events[i].data.ptr;
+
+			if (cdk_list_empty(&conn->owners)) {
+
+				inner_owner_t* owner = cdk_malloc(sizeof(inner_owner_t));
+				owner->id = cdk_gettid();
+				cdk_list_init_node(&owner->n);
+			}
 			cdk_list_insert_tail(&conns, &conn->n);
 		}
 		while (!cdk_list_empty(&conns)) {
@@ -564,11 +601,15 @@ poller_conn_t* _poller_conn_create(int pfd, sock_t s, uint32_t c, poller_handler
 
 	poller_conn_t* conn = cdk_malloc(sizeof(poller_conn_t));
 
-	conn->cmd  = c;
-	conn->fd   = s;
-	conn->h    = h;
-	conn->type = cdk_net_socktype(s);
-	conn->pfd  = pfd;
+	conn->cmd   = c;
+	conn->fd    = s;
+	conn->h     = h;
+	conn->type  = cdk_net_socktype(s);
+	conn->pfd   = pfd;
+	conn->state = true;
+
+	cdk_list_create(&(conn->owners));
+	cdk_mtx_init(&conn->olist_mutex);
 
 	if (conn->type == SOCK_STREAM) {
 
@@ -643,6 +684,18 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 	epoll_ctl(conn->pfd, EPOLL_CTL_DEL, conn->fd, NULL);
 	_net_close(conn->fd);
 	
+	conn->state = false;
+
+	for (list_node_t* n = cdk_list_head(&conn->owners); n != cdk_list_sentinel(&conn->owners); ) {
+		
+		inner_owner_t* owner = cdk_list_data(n, inner_owner_t, n);
+		n = cdk_list_next(n);
+
+		if (owner->id == cdk_gettid()) {
+			cdk_list_remove(&owner->n);
+			cdk_free(owner);
+		}
+	}
 	if (conn->type == SOCK_STREAM) {
 		cdk_free(conn->tcp.ibuf.buf);
 		
@@ -661,28 +714,35 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 			cdk_free(e);
 		}
 	}
-	cdk_free(conn);
-}
+	cdk_mtx_unlock(&conn->olist_mutex);
 
-void _poller_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
-
-	int    pfd;
-	sock_t s;
-
-	if (!strncmp(t, "tcp", strlen("tcp"))) {
-
-		s = _net_listen(h, p, SOCK_STREAM);
-		_poller_conn_create(__master, s, _POLLER_CMD_A, handler);
-	}
-	if (!strncmp(t, "udp", strlen("udp"))) {
-
-		s = _net_listen(h, p, SOCK_DGRAM);
-		_poller_conn_create(__poller_loadbalance(), s, _POLLER_CMD_R, handler);
+	if (cdk_list_empty(&conn->owners)) {
+		cdk_mtx_destroy(&conn->olist_mutex);
+		cdk_free(conn);
 	}
 	return;
 }
 
-void _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
+poller_conn_t* _poller_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
+
+	int            pfd;
+	sock_t         s;
+	poller_conn_t* conn;
+
+	if (!strncmp(t, "tcp", strlen("tcp"))) {
+
+		s    = _net_listen(h, p, SOCK_STREAM);
+		conn = _poller_conn_create(__master, s, _POLLER_CMD_A, handler);
+	}
+	if (!strncmp(t, "udp", strlen("udp"))) {
+
+		s    = _net_listen(h, p, SOCK_DGRAM);
+		conn = _poller_conn_create(__poller_loadbalance(), s, _POLLER_CMD_R, handler);
+	}
+	return conn;
+}
+
+poller_conn_t* _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler) {
 
 	int						pfd;
 	sock_t					s;
@@ -695,8 +755,8 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 
 	if (!strncmp(t, "tcp", strlen("tcp"))) {
 
-		s = _net_dial(h, p, SOCK_STREAM);
-		_poller_conn_create(__poller_loadbalance(), s, _POLLER_CMD_C, handler);
+		s    = _net_dial(h, p, SOCK_STREAM);
+		conn = _poller_conn_create(__poller_loadbalance(), s, _POLLER_CMD_C, handler);
 	}
 	if (!strncmp(t, "udp", strlen("udp"))) {
 
@@ -712,7 +772,7 @@ void _poller_dial(const char* restrict t, const char* restrict h, const char* re
 		conn->udp.peer.ss    = ss;
 		conn->udp.peer.sslen = sizeof(struct sockaddr_storage);
 	}
-	return;
+	return conn;
 }
 
 void _poller_postrecv(poller_conn_t* conn) {
@@ -723,6 +783,29 @@ void _poller_postrecv(poller_conn_t* conn) {
 
 void _poller_postsend(poller_conn_t* conn, void* data, size_t size) {
 
+	cdk_mtx_lock(&conn->olist_mutex);
+
+	for (list_node_t* n = cdk_list_head(&conn->owners); n != cdk_list_sentinel(&conn->owners); ) {
+
+		inner_owner_t* owner = cdk_list_data(n, inner_owner_t, n);
+		n = cdk_list_next(n);
+
+		if (owner->id != cdk_gettid()) {
+			cdk_list_insert_tail();
+		}
+	}
+	if (!conn->state) {
+		for (list_node_t* n = cdk_list_head(&conn->owners); n != cdk_list_sentinel(&conn->owners); ) {
+
+			inner_owner_t* owner = cdk_list_data(n, inner_owner_t, n);
+			n = cdk_list_next(n);
+
+			if (owner->id != cdk_gettid()) {
+				cdk_list_remove(&owner->n);
+				cdk_free(owner);
+			}
+		}
+	}
 	inner_offset_buf_t* buffer = cdk_malloc(sizeof(inner_offset_buf_t) + size);
 
 	memcpy(buffer->buf, data, size);
@@ -737,6 +820,8 @@ void _poller_postsend(poller_conn_t* conn, void* data, size_t size) {
 		cdk_list_insert_tail(&(conn->udp.olist), &(buffer->n));
 	}
 	__poller_post_send(conn);
+
+	cdk_mtx_unlock(&conn->olist_mutex);
 	return;
 }
 
