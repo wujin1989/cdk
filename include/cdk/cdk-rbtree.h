@@ -31,11 +31,13 @@
  * i know it's not the cleaner way,  but in c (not in c++) to get
  * performances and genericity...
  * 
- * TODO:
- *	wait for the c standard to support similar gnu typeof (currently not supported by msvc), 
- *  so that the insert and search methods can implement common operations through typeof and C11 _Generic.
- * 
  * example:
+ * 
+ *  typedef struct _rb_entry_t{
+ *		char*     key;
+ *      int       val;
+ *		rb_node_t n;
+ *  }rb_entry_t;
  * 
  *	static inline void cdk_rb_insert(rb_tree_t* tree, char* key, rb_node_t* node){
  *
@@ -44,10 +46,10 @@
  * 
  *		while(*p){
  *			
- *			parent = *p;
- *			T* t   = cdk_rb_entry(parent, T, rb_node);
+ *			parent        = *p;
+ *			rb_entry_t* e = cdk_rb_entry(parent, rb_entry_t, n);
  * 
- *			int r = strcmp(key, t->key);
+ *			int r = strcmp(key, e->key);
  *			if(r < 0){
  *				p = &(*p)->rb_left;
  *			}else if(r > 0){
@@ -60,24 +62,28 @@
  *		cdk_rb_insert_color(tree, node);
  *	}
  * 
- *	static inline T* cdk_rb_find(rb_tree_t* tree, const char* key){
+ *	static inline rb_entry_t* cdk_rb_find(rb_tree_t* tree, const char* key){
  * 
  *		rb_node_t* n = tree->rb_root;
  * 
  *		while(n){
- *			T* t = cdk_rb_entry(n, T, rb_node);
+ *			rb_entry_t* e = cdk_rb_entry(n, rb_entry_t, n);
  *          
- *			int r = strcmp(key, t->key);
+ *			int r = strcmp(key, e->key);
  *			if(r < 0){
  *				n = n->rb_left;
  *			}else if(r > 0){
  *				n = n->rb_right;
  *			}else{
- *				return t;
+ *				return e;
  *			}
  *		}
  *		return NULL;
  *  }
+ * TODO:
+ *	wait for the c standard to support similar gnu typeof (currently not supported by msvc), 
+ *  so that the insert and search methods can implement common operations through typeof and C11 _Generic.
+ * 
  */
                   
 

@@ -67,8 +67,52 @@ typedef struct _inner_offset_buf_t {
 typedef struct _inner_owner_t {
 
 	tid_t		id;
-	list_node_t n;
+	rb_node_t   n;
 }inner_owner_t;
+
+static inline void __rb_insert_owner(rb_tree_t* tree, tid_t tid, rb_node_t* node) {
+	
+	rb_node_t** p     = &(tree->rb_root);
+	rb_node_t* parent = NULL;
+	
+	while (*p) {
+		
+		parent = *p;
+		inner_owner_t* e = cdk_rb_entry(parent, inner_owner_t, n);
+		
+		if (tid < e->id) {
+			p = &(*p)->rb_left;
+		}
+		else if (tid > e->id) {
+			p = &(*p)->rb_right;
+		}
+		else {
+			return;
+		}
+	}
+	cdk_rb_link_node(node, parent, p);
+	cdk_rb_insert_color(tree, node);
+}
+
+static inline inner_owner_t* __rb_find_owner(rb_tree_t* tree, tid_t tid) {
+	
+	rb_node_t* n = tree->rb_root;
+	
+	while (n) {
+		inner_owner_t* e = cdk_rb_entry(n, inner_owner_t, n);
+		
+		if (tid < e->id) {
+			n = n->rb_left;
+		}
+		else if (tid > e->id) {
+			n = n->rb_right;
+		}
+		else {
+			return e;
+		}
+	}
+	return NULL;
+}
 
 static void __poller_post_accept(poller_conn_t* conn) {
 
@@ -384,12 +428,12 @@ static void __poller_handle_send(poller_conn_t* conn) {
 
 	if (conn->type == SOCK_STREAM) {
 
-		cdk_mtx_lock(&conn->olist_mutex);
+		cdk_mtx_lock(&conn->mutex);
 
 		while (cdk_queue_empty(&(conn->tcp.olist))) {
 
 			cdk_list_remove(&conn->n);
-			cdk_mtx_unlock(&conn->olist_mutex);
+			cdk_mtx_unlock(&conn->mutex);
 			return;
 		}
 		while (!cdk_queue_empty(&(conn->tcp.olist))) {
@@ -407,7 +451,7 @@ static void __poller_handle_send(poller_conn_t* conn) {
 					}
 					if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 						__poller_post_send(conn);
-						cdk_mtx_unlock(&conn->olist_mutex);
+						cdk_mtx_unlock(&conn->mutex);
 					}
 					return;
 				}
@@ -423,16 +467,16 @@ static void __poller_handle_send(poller_conn_t* conn) {
 			cdk_list_remove(&(e->n));
 			cdk_free(e);
 		}
-		cdk_mtx_unlock(&conn->olist_mutex);
+		cdk_mtx_unlock(&conn->mutex);
 	}
 	if (conn->type == SOCK_DGRAM) {
 		
-		cdk_mtx_lock(&conn->olist_mutex);
+		cdk_mtx_lock(&conn->mutex);
 
 		while (cdk_queue_empty(&(conn->udp.olist))) {
 
 			cdk_list_remove(&conn->n);
-			cdk_mtx_unlock(&conn->olist_mutex);
+			cdk_mtx_unlock(&conn->mutex);
 			return;
 		}
 		while (!cdk_queue_empty(&(conn->udp.olist))) {
@@ -448,7 +492,7 @@ static void __poller_handle_send(poller_conn_t* conn) {
 				}
 				if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
 					__poller_post_send(conn);
-					cdk_mtx_unlock(&conn->olist_mutex);
+					cdk_mtx_unlock(&conn->mutex);
 				}
 				return;
 			}
@@ -462,7 +506,7 @@ static void __poller_handle_send(poller_conn_t* conn) {
 			cdk_list_remove(&(e->n));
 			cdk_free(e);
 		}
-		cdk_mtx_unlock(&conn->olist_mutex);
+		cdk_mtx_unlock(&conn->mutex);
 	}
 	return;
 }
@@ -505,11 +549,15 @@ static void __poller_poll(int pfd) {
 
 			poller_conn_t* conn = events[i].data.ptr;
 
-			if (cdk_list_empty(&conn->owners)) {
+			if (!conn->ptid) {
+				conn->ptid = cdk_gettid();
+			}
+			if (!__rb_find_owner(&conn->owners, conn->ptid)) {
 
 				inner_owner_t* owner = cdk_malloc(sizeof(inner_owner_t));
-				owner->id = cdk_gettid();
-				cdk_list_init_node(&owner->n);
+				owner->id = conn->ptid;
+
+				__rb_insert_owner(&conn->owners, owner->id, &owner->n);
 			}
 			cdk_list_insert_tail(&conns, &conn->n);
 		}
@@ -607,9 +655,10 @@ poller_conn_t* _poller_conn_create(int pfd, sock_t s, uint32_t c, poller_handler
 	conn->type  = cdk_net_socktype(s);
 	conn->pfd   = pfd;
 	conn->state = true;
+	conn->ptid  = 0;
 
-	cdk_list_create(&(conn->owners));
-	cdk_mtx_init(&conn->olist_mutex);
+	cdk_rb_create(&(conn->owners));
+	cdk_mtx_init(&conn->mutex);
 
 	if (conn->type == SOCK_STREAM) {
 
@@ -686,16 +735,10 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 	
 	conn->state = false;
 
-	for (list_node_t* n = cdk_list_head(&conn->owners); n != cdk_list_sentinel(&conn->owners); ) {
-		
-		inner_owner_t* owner = cdk_list_data(n, inner_owner_t, n);
-		n = cdk_list_next(n);
+	inner_owner_t* entry =  __rb_find_owner(&conn->owners, cdk_gettid());
+	cdk_rb_erase(&conn->owners, &entry->n);
+	cdk_free(entry);
 
-		if (owner->id == cdk_gettid()) {
-			cdk_list_remove(&owner->n);
-			cdk_free(owner);
-		}
-	}
 	if (conn->type == SOCK_STREAM) {
 		cdk_free(conn->tcp.ibuf.buf);
 		
@@ -714,12 +757,14 @@ void _poller_conn_destroy(poller_conn_t* conn) {
 			cdk_free(e);
 		}
 	}
-	cdk_mtx_unlock(&conn->olist_mutex);
-
-	if (cdk_list_empty(&conn->owners)) {
-		cdk_mtx_destroy(&conn->olist_mutex);
+	if (!cdk_rb_first(&conn->owners)) {
+		
+		cdk_mtx_unlock(&conn->mutex);
+		cdk_mtx_destroy(&conn->mutex);
 		cdk_free(conn);
+		return;
 	}
+	cdk_mtx_unlock(&conn->mutex);
 	return;
 }
 
@@ -783,35 +828,36 @@ void _poller_postrecv(poller_conn_t* conn) {
 
 void _poller_postsend(poller_conn_t* conn, void* data, size_t size) {
 
-	cdk_mtx_lock(&conn->olist_mutex);
+	cdk_mtx_lock(&conn->mutex);
 
-	for (list_node_t* n = cdk_list_head(&conn->owners); n != cdk_list_sentinel(&conn->owners); ) {
+	if (!__rb_find_owner(&conn->owners, cdk_gettid())) {
 
-		inner_owner_t* owner = cdk_list_data(n, inner_owner_t, n);
-		n = cdk_list_next(n);
+		inner_owner_t* owner = cdk_malloc(sizeof(inner_owner_t));
+		owner->id = cdk_gettid();
 
-		if (owner->id != cdk_gettid()) {
-			cdk_list_insert_tail();
-		}
+		__rb_insert_owner(&conn->owners, owner->id, &owner->n);
 	}
 	if (!conn->state) {
-		for (list_node_t* n = cdk_list_head(&conn->owners); n != cdk_list_sentinel(&conn->owners); ) {
 
-			inner_owner_t* owner = cdk_list_data(n, inner_owner_t, n);
-			n = cdk_list_next(n);
+		inner_owner_t* entry = __rb_find_owner(&conn->owners, cdk_gettid());
+		cdk_rb_erase(&conn->owners, &entry->n);
+		cdk_free(entry);
 
-			if (owner->id != cdk_gettid()) {
-				cdk_list_remove(&owner->n);
-				cdk_free(owner);
-			}
+		if (!cdk_rb_first(&conn->owners)) {
+			
+			cdk_mtx_unlock(&conn->mutex);
+			cdk_mtx_destroy(&conn->mutex);
+			cdk_free(conn);
+			return;
 		}
+		cdk_mtx_unlock(&conn->mutex);
+		return;
 	}
 	inner_offset_buf_t* buffer = cdk_malloc(sizeof(inner_offset_buf_t) + size);
 
 	memcpy(buffer->buf, data, size);
 	buffer->len = size;
 	buffer->off = 0;
-	cdk_list_init_node(&(buffer->n));
 
 	if (conn->type == SOCK_STREAM) {
 		cdk_list_insert_tail(&(conn->tcp.olist), &(buffer->n));
@@ -821,7 +867,7 @@ void _poller_postsend(poller_conn_t* conn, void* data, size_t size) {
 	}
 	__poller_post_send(conn);
 
-	cdk_mtx_unlock(&conn->olist_mutex);
+	cdk_mtx_unlock(&conn->mutex);
 	return;
 }
 

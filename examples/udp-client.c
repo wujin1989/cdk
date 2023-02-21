@@ -21,11 +21,12 @@ static int video_thrd(void* p) {
 	static size_t num = 0;
 	while (true) {
 		sprintf(buf, "hello_%zu", num++);
-		if (!conn) {
+		
+		cdk_net_postsend(conn, buf, sizeof(buf));
+		//cdk_sleep(1000);
+		if (!conn->state) {
 			break;
 		}
-		cdk_net_postsend(conn, buf, sizeof(buf));
-		cdk_sleep(1000);
 	}
 	printf("video_thrd exit\n");
 	return 0;

@@ -36,6 +36,7 @@ void* cdk_malloc(size_t sz) {
 void cdk_free(void* p) {
 
 	if (p) {
-		free(p); p = NULL;
+		free(p); 
+		p = NULL;
 	}
 }

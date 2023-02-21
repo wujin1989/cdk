@@ -144,8 +144,9 @@ typedef struct _poller_conn_t {
 	int                  type;
 	int                  pfd;
 	bool                 state;
-	list_t               owners;
-	mtx_t                olist_mutex;
+	rb_tree_t            owners;
+	tid_t                ptid;
+	mtx_t                mutex;
 
 	union {
 		struct {

@@ -53,14 +53,19 @@ static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
 	net_msg_t* rmsg = (net_msg_t*)buf;
 	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
 }
+static void handle_close(poller_conn_t* conn) {
 
+	printf("recv close\n");
+	cdk_net_close(conn);
+}
 int main(void) {
 
 	poller_handler_t handler = {
 		.on_accept  = NULL,
 		.on_connect = handle_connect,
 		.on_read    = handle_read,
-		.on_write   = handle_write
+		.on_write   = handle_write,
+		.on_close   = handle_close
 	};
 	cdk_net_concurrent_slaves(4);
 	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);

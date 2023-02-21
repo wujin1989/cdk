@@ -27,11 +27,6 @@ void cdk_queue_create(fifo_t* q) {
 	cdk_list_create(q);
 }
 
-void cdk_queue_init_node(fifo_node_t* x) {
-
-	cdk_list_init_node(x);
-}
-
 void cdk_queue_enqueue(fifo_t* q, fifo_node_t* x) {
 
 	cdk_list_insert_tail(q, x);

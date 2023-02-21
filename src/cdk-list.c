@@ -23,17 +23,20 @@
 
 void cdk_list_create(list_t* l) {
 
-	cdk_list_init_node(l);
-}
-
-void cdk_list_init_node(list_node_t* x)
-{
-	(x)->n = (x);
-	(x)->p = (x);
+	(l)->n = (l);
+	(l)->p = (l);
 }
 
 void cdk_list_insert_head(list_t* l, list_node_t* x) {
 
+	/**
+	 * init node;
+	 */
+	(x)->n     = (x);
+	(x)->p     = (x);
+	/**
+	 * insert node;
+	 */
 	(x)->n     = (l)->n;
 	(x)->p->n  = (x);
 	(x)->p     = (l);
@@ -42,6 +45,14 @@ void cdk_list_insert_head(list_t* l, list_node_t* x) {
 
 void cdk_list_insert_tail(list_t* l, list_node_t* x) {
 
+	/**
+	 * init node;
+	 */
+	(x)->n = (x);
+	(x)->p = (x);
+	/**
+	 * insert node;
+	 */
 	(x)->p     = (l)->p;
 	(x)->p->n  = (x);
 	(x)->n     = (l);

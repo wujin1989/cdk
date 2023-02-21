@@ -43,13 +43,7 @@
  *  @return N/A.
  */
 extern void cdk_list_create(list_t* l);
-/**
- *  initialize a list node.
- *
- *  @param x [in].
- *  @return N/A.
- */
-extern void cdk_list_init_node(list_node_t* x);
+
 /**
  *  insert a node at the head of the list.
  *

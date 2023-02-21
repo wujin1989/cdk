@@ -26,10 +26,10 @@ void _cdk_mtx_init(mtx_t* restrict m) {
 	
 	if (pthread_mutex_init(m, NULL)) { abort(); }
 }
-
+#include <errno.h>
 void _cdk_mtx_destroy(mtx_t* m) {
-
-	if (pthread_mutex_destroy(m)) { 
+	int r;
+	if ( r = pthread_mutex_destroy(m)) { 
 		abort(); 
 	}
 }

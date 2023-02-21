@@ -26,11 +26,6 @@ void cdk_stack_create(filo_t* s) {
 	cdk_list_create(s);
 }
 
-void cdk_stack_init_node(filo_node_t* x) {
-
-	cdk_list_init_node(x);
-}
-
 void cdk_stack_push(filo_t* s, filo_node_t* x) {
 
 	cdk_list_insert_tail(s, x);
