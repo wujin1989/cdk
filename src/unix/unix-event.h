@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,52 +19,12 @@
  *  IN THE SOFTWARE.
  */
 
-#include "unix-sync.h"
-#include <stdlib.h>
+_Pragma("once")
 
-void _cdk_mtx_init(mtx_t* restrict m) {
-	
-	if (pthread_mutex_init(m, NULL)) { abort(); }
-}
+#include <stdio.h>
+#include "cdk.h"
 
-void _cdk_mtx_destroy(mtx_t* m) {
-
-	if (pthread_mutex_destroy(m)) { 
-		abort(); 
-	}
-}
-
-void _cdk_mtx_lock(mtx_t* m) {
-
-	if (pthread_mutex_lock(m)) { abort(); }
-}
-
-void _cdk_mtx_unlock(mtx_t* m) {
-
-	if (pthread_mutex_unlock(m)) { abort(); }
-}
-
-void _cdk_cnd_init(cnd_t* restrict c) {
-
-	if (pthread_cond_init(c, NULL)) { abort(); }
-}
-
-void _cdk_cnd_destroy(cnd_t* c) {
-
-	if (pthread_cond_destroy(c)) { abort(); }
-}
-
-void _cdk_cnd_signal(cnd_t* c) {
-
-	if (pthread_cond_signal(c)) { abort(); }
-}
-
-void _cdk_cnd_broadcast(cnd_t* c) {
-
-	if (pthread_cond_broadcast(c)) { abort(); }
-}
-
-void _cdk_cnd_wait(cnd_t* restrict c, mtx_t* restrict m) {
-
-	if (pthread_cond_wait(c, m)) { abort(); }
-}
+extern void _event_add(int pfd, sock_t sfd, int event, void* ud);
+extern void _event_mod(int pfd, sock_t sfd, int event, void* ud);
+extern void _event_del(int pfd, sock_t sfd);
+extern void _event_wait();

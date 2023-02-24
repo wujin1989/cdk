@@ -4,9 +4,13 @@
 static void handle_write(poller_conn_t* conn, void* buf, size_t len) {
 
 	printf("send complete.//// %s\n", (char*)buf);
+	cdk_net_postrecv(conn);
 }
 
 static void handle_read(poller_conn_t* conn, void* buf, size_t len) {
+	addrinfo_t ai;
+	cdk_net_inet_ntop(&conn->udp.peer.ss, &ai);
+	printf("recv %s from %s\n", (char*)buf, ai.a);
 	
 }
 static void handle_close(poller_conn_t* conn) {
@@ -23,10 +27,7 @@ static int video_thrd(void* p) {
 		sprintf(buf, "hello_%zu", num++);
 		
 		cdk_net_postsend(conn, buf, sizeof(buf));
-		//cdk_sleep(1000);
-		if (!conn->state) {
-			break;
-		}
+		
 	}
 	printf("video_thrd exit\n");
 	return 0;
@@ -39,7 +40,7 @@ int main(void) {
 	poller_handler_t handler = {
 		.on_accept = NULL,
 		.on_connect = NULL,
-		.on_read = NULL,
+		.on_read = handle_read,
 		.on_write = handle_write,
 		.on_close = handle_close
 	};

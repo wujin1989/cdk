@@ -21,6 +21,7 @@
 
 #include "unix-poller.h"
 #include "unix-net.h"
+#include "unix-event.h"
 #include "cdk/cdk-net.h"
 #include "cdk/cdk-memory.h"
 #include "cdk/cdk-time.h"
@@ -35,11 +36,6 @@
 #include "cdk/cdk-atomic.h"
 #include <stdlib.h>
 #include <string.h>
-
-#define _POLLER_CMD_R    0x1
-#define _POLLER_CMD_W    0x2
-#define _POLLER_CMD_A    0x4
-#define _POLLER_CMD_C    0x8
 
 #define MAX_PROCESS_EVENTS 1024
 
@@ -676,61 +672,19 @@ poller_conn_t* _poller_conn_create(int pfd, sock_t s, uint32_t c, poller_handler
 
 		cdk_list_create(&(conn->udp.olist));
 	}
-	struct epoll_event ee;
-	memset(&ee, 0, sizeof(struct epoll_event));
-
-	if (c & _POLLER_CMD_A) {
-		ee.events |= EPOLLIN;
-	}
-	if (c & _POLLER_CMD_C) {
-		ee.events |= EPOLLOUT;
-	}
-	if (c & _POLLER_CMD_R) {
-		ee.events |= EPOLLIN;
-	}
-	if (c & _POLLER_CMD_W) {
-		ee.events |= EPOLLOUT;
-	}
-	if ((c & _POLLER_CMD_R) || (c & _POLLER_CMD_W)) {
-		ee.events |= EPOLLONESHOT;
-	}
-	ee.events |= EPOLLET;
-	ee.data.ptr = conn;
-
-	epoll_ctl(pfd, EPOLL_CTL_ADD, s, (struct epoll_event*)&ee);
+	_event_add(conn->pfd, conn->fd, conn->cmd, conn);
 
 	return conn;
 }
 
 void _poller_conn_modify(poller_conn_t* conn) {
 
-	struct epoll_event ee;
-	memset(&ee, 0, sizeof(struct epoll_event));
-
-	if (conn->cmd & _POLLER_CMD_A) {
-		ee.events |= EPOLLIN;
-	}
-	if (conn->cmd & _POLLER_CMD_C) {
-		ee.events |= EPOLLOUT;
-	}
-	if (conn->cmd & _POLLER_CMD_R) {
-		ee.events |= EPOLLIN;
-	}
-	if (conn->cmd & _POLLER_CMD_W) {
-		ee.events |= EPOLLOUT;
-	}
-	if ((conn->cmd & _POLLER_CMD_R) || (conn->cmd & _POLLER_CMD_W)) {
-		ee.events |= EPOLLONESHOT;
-	}
-	ee.events |= EPOLLET;
-	ee.data.ptr = conn;
-
-	epoll_ctl(conn->pfd, EPOLL_CTL_MOD, conn->fd, (struct epoll_event*)&ee);
+	_event_mod(conn->pfd, conn->fd, conn->cmd, conn);
 }
 
 void _poller_conn_destroy(poller_conn_t* conn) {
 
-	epoll_ctl(conn->pfd, EPOLL_CTL_DEL, conn->fd, NULL);
+	_event_del(conn->pfd, conn->fd);
 	_net_close(conn->fd);
 	
 	conn->state = false;

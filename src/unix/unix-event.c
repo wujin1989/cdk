@@ -19,52 +19,58 @@
  *  IN THE SOFTWARE.
  */
 
-#include "unix-sync.h"
-#include <stdlib.h>
+#include "unix-event.h"
 
-void _cdk_mtx_init(mtx_t* restrict m) {
-	
-	if (pthread_mutex_init(m, NULL)) { abort(); }
-}
+#define _EVENT_R    0x1
+#define _EVENT_W    0x2
+#define _EVENT_A    0x4
+#define _EVENT_C    0x8
 
-void _cdk_mtx_destroy(mtx_t* m) {
+void _event_add(int pfd, sock_t sfd, int event, void* ud) {
 
-	if (pthread_mutex_destroy(m)) { 
-		abort(); 
+	struct epoll_event ee;
+	memset(&ee, 0, sizeof(struct epoll_event));
+
+	if (event & _EVENT_A) {
+		ee.events |= EPOLLIN;
 	}
+	if (event & _EVENT_C) {
+		ee.events |= EPOLLOUT;
+	}
+	if (event & _EVENT_R) {
+		ee.events |= EPOLLIN;
+	}
+	if (event & _EVENT_W) {
+		ee.events |= EPOLLOUT;
+	}
+	ee.data.ptr = ud;
+
+	epoll_ctl(pfd, EPOLL_CTL_ADD, sfd, (struct epoll_event*)&ee);
 }
 
-void _cdk_mtx_lock(mtx_t* m) {
+void _event_mod(int pfd, sock_t sfd, int event, void* ud) {
 
-	if (pthread_mutex_lock(m)) { abort(); }
+	struct epoll_event ee;
+	memset(&ee, 0, sizeof(struct epoll_event));
+
+	if (event & _EVENT_A) {
+		ee.events |= EPOLLIN;
+	}
+	if (event & _EVENT_C) {
+		ee.events |= EPOLLOUT;
+	}
+	if (event & _EVENT_R) {
+		ee.events |= EPOLLIN;
+	}
+	if (event & _EVENT_W) {
+		ee.events |= EPOLLOUT;
+	}
+	ee.data.ptr = ud;
+
+	epoll_ctl(pfd, EPOLL_CTL_MOD, sfd, (struct epoll_event*)&ee);
 }
 
-void _cdk_mtx_unlock(mtx_t* m) {
+void _event_del(int pfd, sock_t sfd) {
 
-	if (pthread_mutex_unlock(m)) { abort(); }
-}
-
-void _cdk_cnd_init(cnd_t* restrict c) {
-
-	if (pthread_cond_init(c, NULL)) { abort(); }
-}
-
-void _cdk_cnd_destroy(cnd_t* c) {
-
-	if (pthread_cond_destroy(c)) { abort(); }
-}
-
-void _cdk_cnd_signal(cnd_t* c) {
-
-	if (pthread_cond_signal(c)) { abort(); }
-}
-
-void _cdk_cnd_broadcast(cnd_t* c) {
-
-	if (pthread_cond_broadcast(c)) { abort(); }
-}
-
-void _cdk_cnd_wait(cnd_t* restrict c, mtx_t* restrict m) {
-
-	if (pthread_cond_wait(c, m)) { abort(); }
+	epoll_ctl(pfd, EPOLL_CTL_DEL, sfd, NULL);
 }
