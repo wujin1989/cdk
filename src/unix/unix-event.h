@@ -24,7 +24,15 @@ _Pragma("once")
 #include <stdio.h>
 #include "cdk.h"
 
-extern void _event_add(int pfd, sock_t sfd, int event, void* ud);
-extern void _event_mod(int pfd, sock_t sfd, int event, void* ud);
+typedef enum _event_t {
+
+	_EVENT_R,
+	_EVENT_W,
+	_EVENT_A,
+	_EVENT_C,
+}event_t;
+
+extern void _event_add(int pfd, sock_t sfd, event_t evt, void* ud);
+extern void _event_mod(int pfd, sock_t sfd, event_t evt, void* ud);
 extern void _event_del(int pfd, sock_t sfd);
-extern void _event_wait();
+extern int  _event_wait(int pfd, struct epoll_event* events, int maxevents, int timeout);

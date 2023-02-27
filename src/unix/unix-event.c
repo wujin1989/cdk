@@ -21,49 +21,46 @@
 
 #include "unix-event.h"
 
-#define _EVENT_R    0x1
-#define _EVENT_W    0x2
-#define _EVENT_A    0x4
-#define _EVENT_C    0x8
-
-void _event_add(int pfd, sock_t sfd, int event, void* ud) {
+void _event_add(int pfd, sock_t sfd, event_t evt, void* ud) {
 
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
 
-	if (event & _EVENT_A) {
+	switch (event)
+	{
+	case _EVENT_A:
+	case _EVENT_R:
 		ee.events |= EPOLLIN;
-	}
-	if (event & _EVENT_C) {
+		break;
+	case _EVENT_C:
+	case _EVENT_W:
 		ee.events |= EPOLLOUT;
-	}
-	if (event & _EVENT_R) {
-		ee.events |= EPOLLIN;
-	}
-	if (event & _EVENT_W) {
-		ee.events |= EPOLLOUT;
+		break;
+	default:
+		break;
 	}
 	ee.data.ptr = ud;
 
 	epoll_ctl(pfd, EPOLL_CTL_ADD, sfd, (struct epoll_event*)&ee);
 }
 
-void _event_mod(int pfd, sock_t sfd, int event, void* ud) {
+void _event_mod(int pfd, sock_t sfd, event_t evt, void* ud) {
 
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
 
-	if (event & _EVENT_A) {
+	switch (event)
+	{
+	case _EVENT_A:
+	case _EVENT_R:
 		ee.events |= EPOLLIN;
-	}
-	if (event & _EVENT_C) {
+		break;
+	case _EVENT_C:
+	case _EVENT_W:
 		ee.events |= EPOLLOUT;
-	}
-	if (event & _EVENT_R) {
-		ee.events |= EPOLLIN;
-	}
-	if (event & _EVENT_W) {
-		ee.events |= EPOLLOUT;
+		break;
+	default:
+		break;
 	}
 	ee.data.ptr = ud;
 
@@ -73,4 +70,18 @@ void _event_mod(int pfd, sock_t sfd, int event, void* ud) {
 void _event_del(int pfd, sock_t sfd) {
 
 	epoll_ctl(pfd, EPOLL_CTL_DEL, sfd, NULL);
+}
+
+int _event_wait(int pfd, struct epoll_event* events, int maxevents, int timeout) {
+
+	int nevents;
+
+	do {
+		nevents = epoll_wait(pfd, events, maxevents, timeout);
+	} while (nevents == -1 && errno == EINTR);
+
+	if (nevents < 0) {
+		abort();
+	}
+	return nevents;
 }

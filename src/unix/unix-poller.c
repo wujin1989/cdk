@@ -528,19 +528,9 @@ static void __poller_process_connection(poller_conn_t* conn) {
 static void __poller_poll(int pfd) {
 
 	struct epoll_event events[MAX_PROCESS_EVENTS];
-	list_t conns;
-
-	cdk_list_create(&conns);
 
 	while (true) {
-		int r;
-
-		do {
-			r = epoll_wait(pfd, (struct epoll_event*)&events, MAX_PROCESS_EVENTS, -1);
-		} while (r == -1 && errno == EINTR);
-		if (r < 0) {
-			abort();
-		}
+		int r = _event_wait(pfd, &events, MAX_PROCESS_EVENTS, -1);
 		for (int i = 0; i < r; i++) {
 
 			poller_conn_t* conn = events[i].data.ptr;
@@ -555,16 +545,7 @@ static void __poller_poll(int pfd) {
 
 				__rb_insert_owner(&conn->owners, owner->id, &owner->n);
 			}
-			cdk_list_insert_tail(&conns, &conn->n);
-		}
-		while (!cdk_list_empty(&conns)) {
-			for (list_node_t* n = cdk_list_head(&conns); n != cdk_list_sentinel(&conns); ) {
-
-				poller_conn_t* conn = cdk_list_data(n, poller_conn_t, n);
-				n = cdk_list_next(n);
-
-				__poller_process_connection(conn);
-			}
+			__poller_process_connection(conn);
 		}
 	}
 }
