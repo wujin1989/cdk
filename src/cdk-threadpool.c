@@ -62,7 +62,6 @@ static int _thrdpool_thrdfunc(void* arg) {
 
 static void _thrdpool_createthread(thrdpool_t* p) {
 
-	bool    r;
 	void*   nt; /* new threads */
 
 	cdk_mtx_lock(&p->t_m);
@@ -70,8 +69,8 @@ static void _thrdpool_createthread(thrdpool_t* p) {
 	if (!nt) { cdk_mtx_unlock(&p->t_m); return; }
 
 	p->t = nt;
-	r = cdk_thrd_create(p->t + p->t_c, _thrdpool_thrdfunc, p);
-	if (!r) { return; }
+	cdk_thrd_create(p->t + p->t_c, _thrdpool_thrdfunc, p);
+	
 
 	p->t_c++;
 	cdk_mtx_unlock(&p->t_m);

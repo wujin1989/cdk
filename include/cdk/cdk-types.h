@@ -19,32 +19,31 @@
  *  IN THE SOFTWARE.
  */
 
-#ifndef __CDK_TYPES_H__
-#define __CDK_TYPES_H__
+_Pragma("once")
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct _poller_conn_t    poller_conn_t;
-typedef struct _poller_handler_t poller_handler_t;
+typedef struct poller_conn_s    poller_conn_t;
+typedef struct poller_handler_s poller_handler_t;
 
-typedef struct _rb_node_t
+typedef struct rb_node_s
 {
-	struct _rb_node_t* rb_parent;
-	struct _rb_node_t* rb_right;
-	struct _rb_node_t* rb_left;
+	struct rb_node_s* rb_parent;
+	struct rb_node_s* rb_right;
+	struct rb_node_s* rb_left;
 	char               rb_color;
 }rb_node_t;
 
-typedef struct _rb_tree_t
+typedef struct rb_tree_s
 {
 	rb_node_t* rb_root;
 }rb_tree_t;
 
-typedef struct _list_node_t {
-	struct _list_node_t* p;
-	struct _list_node_t* n;
+typedef struct list_node_s {
+	struct list_node_s* p;
+	struct list_node_s* n;
 }list_node_t;
 
 typedef list_node_t    list_t;
@@ -55,13 +54,13 @@ typedef list_node_t    fifo_node_t;
 typedef list_t         filo_t;
 typedef list_node_t    filo_node_t;
 
-typedef struct _thrdpool_job_t {
+typedef struct thrdpool_job_s {
 	void          (*fn)(void*);
 	void*         p;
 	fifo_node_t   q_n;      /* queue node */
 }thrdpool_job_t;
 
-typedef struct _ringbuf_t {
+typedef struct ringbuf_s {
 	char*       b;
 	uint32_t    w;   /* write pos */
 	uint32_t    r;   /* read pos */
@@ -69,17 +68,17 @@ typedef struct _ringbuf_t {
 	uint32_t    esz; /* entry size */
 }ringbuf_t;
 
-typedef enum _splicer_t {
+typedef enum spliter_type_e {
 
-	SPLICE_TYPE_FIXED        = 0   ,
-	SPLICE_TYPE_TEXTPLAIN    = 1   ,
-	SPLICE_TYPE_BINARY       = 2   ,
-	SPLICE_TYPE_USER_DEFINED = 3
-}splicer_t;
+	SPLITER_TYPE_FIXED        = 0   ,
+	SPLITER_TYPE_TEXTPLAIN    = 1   ,
+	SPLITER_TYPE_BINARY       = 2   ,
+	SPLITER_TYPE_USER_DEFINED = 3
+}spliter_type_t;
 
-typedef struct _splicer_profile_t {
+typedef struct spliter_s {
 
-	splicer_t           type;
+	spliter_type_t      type;
 	
 	union {
 		struct {
@@ -102,12 +101,12 @@ typedef struct _splicer_profile_t {
 		}binary;
 
 		struct {
-			void (*splice)(poller_conn_t* conn);
+			void (*split)(poller_conn_t* conn);
 		}userdefined;
 	};
-}splicer_profile_t;
+}spliter_t;
 
-typedef struct _offset_buf_t{
+typedef struct offset_buf_s{
 	void*    buf;
 	uint32_t len;
 	uint32_t off;
@@ -132,20 +131,27 @@ typedef pid_t                            tid_t;
 typedef pthread_t                        thrd_t;
 typedef pthread_once_t                   once_flag;
 typedef pthread_mutex_t                  mtx_t;
+typedef pthread_rwlock_t				 rwlock_t;
 typedef pthread_cond_t                   cnd_t;
 typedef atomic_llong                     atomic_t;
 typedef int                              sock_t;
 
-typedef struct _poller_conn_t {
+typedef struct poller_s {
+
+	int		pfd;
+	tid_t   tid;
+}poller_t;
+
+typedef struct poller_conn_s {
+
+	poller_t			 poller;
 
 	sock_t               fd;
-	uint32_t             cmd;
+	int                  cmd;
 	poller_handler_t*    h;
 	int                  type;
-	int                  pfd;
 	bool                 state;
 	rb_tree_t            owners;
-	tid_t                ptid;
 	mtx_t                mutex;
 
 	union {
@@ -153,7 +159,7 @@ typedef struct _poller_conn_t {
 
 			offset_buf_t      ibuf;
 			list_t            olist;
-			splicer_profile_t splicer;
+			spliter_t splicer;
 		}tcp;
 
 		struct {
@@ -176,18 +182,19 @@ typedef struct _poller_conn_t {
 #include <Windows.h>
 #include <ws2ipdef.h>
 
-typedef struct __atomic_flag {
+typedef struct atomic_flag_s {
 	_Bool v; 
-} _atomic_flag;
+}atomic_flag_t;
 
 typedef DWORD                            tid_t;
 typedef HANDLE                           thrd_t;
 typedef DWORD                            pid_t;
 typedef INIT_ONCE                        once_flag;
 typedef CRITICAL_SECTION                 mtx_t;
+typedef SRWLOCK							 rwlock_t;
 typedef CONDITION_VARIABLE               cnd_t;
 
-typedef _atomic_flag                     atomic_flag;
+typedef atomic_flag_t                    atomic_flag;
 typedef LONG64                           atomic_t;
 
 typedef SOCKET                           sock_t;
@@ -196,7 +203,7 @@ typedef SSIZE_T                          ssize_t;
 
 typedef WSABUF iobuf_t;
 
-typedef struct _poller_conn_t {
+typedef struct poller_conn_s {
 
 	sock_t               fd;
 	uint32_t             cmd;
@@ -207,21 +214,14 @@ typedef struct _poller_conn_t {
 }poller_conn_t;
 #endif
 
-typedef struct _rwlock_t {
-	atomic_t w;
-	atomic_t r;
-}rwlock_t;
-
 #define MAX_ADDRSTRLEN INET6_ADDRSTRLEN
-typedef struct _addrinfo_t {
+typedef struct addrinfo_s {
 	uint16_t    f;
 	char        a[MAX_ADDRSTRLEN];
 	uint16_t    p;
 }addrinfo_t;
 
-typedef void (*routine_t)(sock_t s);
-
-typedef struct _thrdpool_t {
+typedef struct thrdpool_s {
 	thrd_t*       t;       /* threads */
 	size_t        t_c;     /* thread count */
 	fifo_t        q;
@@ -231,7 +231,7 @@ typedef struct _thrdpool_t {
 	bool          s;       /* status, idle or running */
 }thrdpool_t;
 
-typedef struct _poller_handler_t {
+typedef struct poller_handler_s {
 
 	void (*on_accept) (poller_conn_t*);
 	void (*on_connect)(poller_conn_t*);
@@ -240,4 +240,3 @@ typedef struct _poller_handler_t {
 	void (*on_close)  (poller_conn_t*);
 }poller_handler_t;
 
-#endif /* __CDK_TYPES_H__ */

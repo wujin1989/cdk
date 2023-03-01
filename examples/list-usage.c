@@ -22,6 +22,7 @@ int task(void* p) {
 }
 int main(void) {
 
+	cdk_logger_init(NULL, false);
 	/*data_t* data = cdk_malloc(sizeof(data_t));
 	
 	data->value = 2;

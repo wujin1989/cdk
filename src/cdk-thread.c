@@ -29,27 +29,27 @@
 #include "win/win-thread.h"
 #endif
 
-tid_t cdk_gettid(void) {
+tid_t cdk_thrd_gettid(void) {
 
-	return _cdk_gettid();
+	return _thrd_gettid();
 }
 
-bool cdk_thrd_create(thrd_t* t, int (*h)(void*), void* restrict p) {
+void cdk_thrd_create(thrd_t* t, int (*h)(void*), void* restrict p) {
 
-	return _cdk_thrd_create(t, h, p);
+	_thrd_create(t, h, p);
 }
 
-bool cdk_thrd_join(thrd_t t) {
+void cdk_thrd_join(thrd_t t) {
 
-	return _cdk_thrd_join(t);
+	_thrd_join(t);
 }
 
-bool cdk_thrd_detach(thrd_t t) {
+void cdk_thrd_detach(thrd_t t) {
 
-	return _cdk_thrd_detach(t);
+	_thrd_detach(t);
 }
 
-bool cdk_thrd_once(once_flag *f, void (*h)(void)) {
+void cdk_thrd_once(once_flag *f, void (*h)(void)) {
 
-	return _cdk_thrd_once(f, h);
+	_thrd_once(f, h);
 }

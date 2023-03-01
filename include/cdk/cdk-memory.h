@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -18,8 +18,8 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
-#ifndef __CDK_MEMORY_H__
-#define __CDK_MEMORY_H__
+
+_Pragma("once")
 
 #include <stdlib.h>
 
@@ -29,7 +29,7 @@
  *  @param sz [in].
  *  @return memory pointer.
  */
-extern void* cdk_malloc(size_t sz);
+extern void* cdk_mem_malloc(size_t sz);
 
 /**
  *  safe free.
@@ -37,7 +37,6 @@ extern void* cdk_malloc(size_t sz);
  *  @param p [in].
  *  @return N/A.
  */
-extern void cdk_free(void* p);
+extern void cdk_mem_free(void* p);
 
-#endif /* __CDK_MEMORY_H__ */
 

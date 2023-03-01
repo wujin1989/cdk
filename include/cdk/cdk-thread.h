@@ -46,7 +46,7 @@
  *  @param N/A.
  *  @return thread-id.
  */
-extern tid_t cdk_gettid(void);
+extern tid_t cdk_thrd_gettid(void);
 
 /**
  *  create a new thread.
@@ -56,7 +56,7 @@ extern tid_t cdk_gettid(void);
  *  @param p [in] thread's parameter.
  *  @return success return true; failure return false.
  */
-extern bool cdk_thrd_create(thrd_t* t, int (*h)(void*), void* restrict p);
+extern void cdk_thrd_create(thrd_t* t, int (*h)(void*), void* restrict p);
 
 /**
  *  waits for the thread specified by thread to terminate.
@@ -64,7 +64,7 @@ extern bool cdk_thrd_create(thrd_t* t, int (*h)(void*), void* restrict p);
  *  @param t [in] thread identifier.
  *  @return success return true; failure return false.
  */
-extern bool cdk_thrd_join(thrd_t t);
+extern void cdk_thrd_join(thrd_t t);
 
 /**
  *  marks the thread identified by thread as detached. When a detached thread terminates,
@@ -73,7 +73,7 @@ extern bool cdk_thrd_join(thrd_t t);
  *  @param t [in] thread identifier.
  *  @return success return true; failure return false.
  */
-extern bool cdk_thrd_detach(thrd_t t);
+extern void cdk_thrd_detach(thrd_t t);
 
 /**
  *  in the case of multiple threads, the specified function is executed only once.
@@ -82,6 +82,6 @@ extern bool cdk_thrd_detach(thrd_t t);
  *  @param h [in].
  *  @return success return true; failure return false.
  */
-extern bool cdk_thrd_once(once_flag* f, void (*h)(void));
+extern void cdk_thrd_once(once_flag* f, void (*h)(void));
 
 #endif /* __CDK_THREAD_H__ */

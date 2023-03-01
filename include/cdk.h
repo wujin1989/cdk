@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,8 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#ifndef __CDK_H__
-#define __CDK_H__
+_Pragma("once")
 
 /* include cdk header files */
 #include "cdk/cdk-process.h"
@@ -41,5 +40,5 @@
 #include "cdk/cdk-memory.h"
 #include "cdk/cdk-loadapi.h"
 #include "cdk/cdk-rbtree.h"
+#include "cdk/cdk-string.h"
 
-#endif /* __CDK_H__ */

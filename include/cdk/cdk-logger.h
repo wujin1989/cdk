@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,8 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#ifndef __CDK_LOGGER_H__
-#define __CDK_LOGGER_H__
+_Pragma("once")
 
 #include <stdbool.h>
 
@@ -37,10 +36,10 @@ enum {
  *  @param ... [in].
  *  @return N/A.
  */
-#define cdk_logi(...)    cdk_log(LEVEL_INFO,  __FILE__, __LINE__, __VA_ARGS__)
-#define cdk_logd(...)    cdk_log(LEVEL_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
-#define cdk_logw(...)    cdk_log(LEVEL_WARN,  __FILE__, __LINE__, __VA_ARGS__)
-#define cdk_loge(...)    cdk_log(LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
+#define cdk_logi(...)    cdk_logger_log(LEVEL_INFO,  __FILE__, __LINE__, __VA_ARGS__)
+#define cdk_logd(...)    cdk_logger_log(LEVEL_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
+#define cdk_logw(...)    cdk_logger_log(LEVEL_WARN,  __FILE__, __LINE__, __VA_ARGS__)
+#define cdk_loge(...)    cdk_logger_log(LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 
 /**
  *  init logger engine.
@@ -58,7 +57,4 @@ extern void cdk_logger_init(const char* restrict o, bool a);
  *  @return N/A.
  */
 extern void cdk_logger_destroy(void);
-extern void cdk_log(int l, const char* restrict f, int n, const char* restrict fmt, ...);
-
-
-#endif /* __CDK_LOGGER_H__ */
+extern void cdk_logger_log(int l, const char* restrict f, int n, const char* restrict fmt, ...);

@@ -32,28 +32,26 @@
 
 void cdk_mtx_init(mtx_t* restrict m) {
 
-	_cdk_mtx_init(m);
+	_mtx_init(m);
 }
 
 void cdk_mtx_destroy(mtx_t* m) {
 	
-	_cdk_mtx_destroy(m);
+	_mtx_destroy(m);
 }
 
 void cdk_mtx_lock(mtx_t* m) {
 	
-	_cdk_mtx_lock(m);
+	_mtx_lock(m);
 }
 
 void cdk_mtx_unlock(mtx_t* m) {
 
-	 _cdk_mtx_unlock(m);
+	 _mtx_unlock(m);
 }
 
 void cdk_rwlock_init(rwlock_t* restrict rw) {
 	
-	rw->w = ATOMIC_VAR_INIT(0);
-	rw->r = ATOMIC_VAR_INIT(0);
 }
 
 void cdk_rwlock_destroy(rwlock_t* rw) {
@@ -62,57 +60,41 @@ void cdk_rwlock_destroy(rwlock_t* rw) {
 
 void cdk_rwlock_rlock(rwlock_t* rw) {
 	
-	for (;;) {
-
-		while (cdk_atomic_load(&rw->w)) {}
-		cdk_atomic_inc(&rw->r);
-
-		if (cdk_atomic_load(&rw->w)) {
-			cdk_atomic_dec(&rw->r);
-		} else {
-			break;
-		}
-	}
 }
 
 void cdk_rwlock_runlock(rwlock_t* rw) {
 
-	cdk_atomic_dec(&rw->r);
 }
 
 void cdk_rwlock_wlock(rwlock_t* rw) {
 
-	int64_t c = 0;
-	while (!cdk_atomic_cas(&rw->w, &c, 1)) { c = 0; }
-	while (cdk_atomic_load(&rw->r)) {}
 }
 
 void cdk_rwlock_wunlock(rwlock_t* rw) {
 
-	cdk_atomic_store(&rw->w, 0);
 }
 
 void cdk_cnd_init(cnd_t* restrict c) {
 
-	_cdk_cnd_init(c);
+	_cnd_init(c);
 }
 
 void cdk_cnd_destroy(cnd_t* c) {
 
-	_cdk_cnd_destroy(c);
+	_cnd_destroy(c);
 }
 
 void cdk_cnd_signal(cnd_t* c) {
 
-	_cdk_cnd_signal(c);
+	_cnd_signal(c);
 }
 
 void cdk_cnd_broadcast(cnd_t* c) {
 
-	_cdk_cnd_broadcast(c);
+	_cnd_broadcast(c);
 }
 
 void cdk_cnd_wait(cnd_t* restrict c, mtx_t* restrict m) {
 
-	_cdk_cnd_wait(c, m);
+	_cnd_wait(c, m);
 }

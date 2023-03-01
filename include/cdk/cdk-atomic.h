@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,8 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#ifndef __CDK_ATOMIC_H__
-#define __CDK_ATOMIC_H__
+_Pragma("once")
 
 #include <cdk/cdk-types.h>
 
@@ -33,7 +32,6 @@
  *  initializing an atomic object with value.
  */
 #define ATOMIC_VAR_INIT(value)      (value)
-
 #endif
 
 /**
@@ -143,4 +141,3 @@ extern void cdk_atomic_and(volatile atomic_t* t, int64_t o);
  */
 extern bool cdk_atomic_cas(volatile atomic_t* t, int64_t* e, int64_t d);
 
-#endif /* __CDK_ATOMIC_H__ */

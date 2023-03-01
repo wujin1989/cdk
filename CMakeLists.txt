@@ -75,56 +75,49 @@ set(SRCS
 	src/cdk-loadapi.c
 	src/cdk-rbtree.c
 	src/cdk-ringbuffer.c
-	src/cdk-varint.c)
+	src/cdk-varint.c
+	src/platform/platform-process.h
+	src/platform/platform-atomic.h
+	src/platform/platform-event.h
+	src/platform/platform-io.h
+	src/platform/platform-loadapi.h
+	src/platform/platform-net.h
+	src/platform/platform-poller.h
+	src/platform/platform-sync.h
+	src/platform/platform-systeminfo.h
+	src/platform/platform-thread.h
+	src/platform/platform-time.h
+	)
 	
 if(WIN32)
-	
 	list(APPEND SRCS 
-		src/win/win-process.c
-		src/win/win-thread.c
-		src/win/win-time.c
-		src/win/win-sync.c
-		src/win/win-atomic.c
-		src/win/win-net.c
-		src/win/win-systeminfo.c
-		src/win/win-io.c
-		src/win/win-loadapi.c
-		src/win/win-poller.c
-		src/win/win-process.h
-		src/win/win-thread.h
-		src/win/win-time.h
-		src/win/win-sync.h
-		src/win/win-atomic.h
-		src/win/win-net.h
-		src/win/win-systeminfo.h
-		src/win/win-io.h
-		src/win/win-loadapi.h
-		src/win/win-poller.h)
+		src/platform/win/win-process.c
+		src/platform/win/win-thread.c
+		src/platform/win/win-time.c
+		src/platform/win/win-sync.c
+		src/platform/win/win-atomic.c
+		src/platform/win/win-net.c
+		src/platform/win/win-systeminfo.c
+		src/platform/win/win-io.c
+		src/platform/win/win-loadapi.c
+		src/platform/win/win-poller.c
+		)
 endif()
 
 if(UNIX)
-	
 	list(APPEND SRCS 
-		src/unix/unix-process.c
-		src/unix/unix-thread.c
-		src/unix/unix-time.c
-		src/unix/unix-sync.c
-		src/unix/unix-atomic.c
-		src/unix/unix-net.c
-		src/unix/unix-systeminfo.c
-		src/unix/unix-io.c
-		src/unix/unix-loadapi.c
-		src/unix/unix-poller.c
-		src/unix/unix-process.h
-		src/unix/unix-thread.h
-		src/unix/unix-time.h
-		src/unix/unix-sync.h
-		src/unix/unix-atomic.h
-		src/unix/unix-net.h
-		src/unix/unix-systeminfo.h
-		src/unix/unix-io.h
-		src/unix/unix-loadapi.h
-		src/unix/unix-poller.h)
+		src/platform/unix/unix-process.c
+		src/platform/unix/unix-thread.c
+		src/platform/unix/unix-time.c
+		src/platform/unix/unix-sync.c
+		src/platform/unix/unix-atomic.c
+		src/platform/unix/unix-net.c
+		src/platform/unix/unix-systeminfo.c
+		src/platform/unix/unix-io.c
+		src/platform/unix/unix-loadapi.c
+		src/platform/unix/unix-poller.c
+		src/platform/unix/unix-event.c
+		)
 endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${HDRS})

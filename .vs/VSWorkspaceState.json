@@ -1,0 +1,41 @@
+{
+  "DevContainersInfoBarHidden": true,
+  "OutputFoldersPerTargetSystem": {
+    "本地计算机": [
+      "out\\build\\x64-Debug",
+      "out\\install\\x64-Debug",
+      "out\\build\\Linux-GCC-Debug",
+      "out\\install\\Linux-GCC-Debug",
+      "out\\build\\Linux-GCC-Debug-2",
+      "out\\install\\Linux-GCC-Debug-2"
+    ],
+    "192.168.2.48": [
+      "out\\build\\x64-Debug",
+      "out\\install\\x64-Debug",
+      "out\\build\\Linux-GCC-Debug",
+      "out\\install\\Linux-GCC-Debug",
+      "out\\build\\Linux-GCC-Debug-2",
+      "out\\install\\Linux-GCC-Debug-2"
+    ],
+    "192.168.2.159": [
+      "out\\build\\x64-Debug",
+      "out\\install\\x64-Debug",
+      "out\\build\\Linux-GCC-Debug",
+      "out\\install\\Linux-GCC-Debug",
+      "out\\build\\Linux-GCC-Debug-2",
+      "out\\install\\Linux-GCC-Debug-2"
+    ]
+  },
+  "ActiveTargetSystem": "192.168.2.48",
+  "ExpandedNodes": [
+    "",
+    "\\include",
+    "\\include\\cdk",
+    "\\src",
+    "\\src\\platform",
+    "\\src\\platform\\unix",
+    "\\src\\platform\\win"
+  ],
+  "SelectedNode": "\\src\\platform\\platform-net.h",
+  "PreviewInSolutionExplorer": false
+}

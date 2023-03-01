@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -18,8 +18,8 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
-#ifndef __CDK_IO_H__
-#define __CDK_IO_H__
+
+_Pragma("once")
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -33,7 +33,7 @@
  *  @param m  [in].
  *  @return N/A.
  */
-extern void cdk_fopen(FILE** fp, const char* restrict f, const char* restrict m);
+extern void cdk_io_fopen(FILE** fp, const char* restrict f, const char* restrict m);
 
 /**
  *  encapsulates fclose.
@@ -41,7 +41,7 @@ extern void cdk_fopen(FILE** fp, const char* restrict f, const char* restrict m)
  *  @param s [in].
  *  @return false means failure, true means success.
  */
-extern bool cdk_fclose(FILE* s);
+extern void cdk_io_fclose(FILE* s);
 
 /**
  *  safe sprintf, write formatted data to a string.
@@ -52,7 +52,7 @@ extern bool cdk_fclose(FILE* s);
  *  @param ... [in] variable parameter.
  *  @return the number of bytes written to the buffer, not counting the terminating null character. a negative value if error occurs.
  */
-extern int cdk_sprintf(char* s, size_t sz, const char* f, ...);
+extern int cdk_io_sprintf(char* s, size_t sz, const char* f, ...);
 
 /**
  *  safe vsprintf.
@@ -63,35 +63,7 @@ extern int cdk_sprintf(char* s, size_t sz, const char* f, ...);
  *  @param v   [in] variable parameter.
  *  @return the number of bytes written to the buffer, not counting the terminating null character. a negative value if error occurs.
  */
-extern int cdk_vsprintf(char* s, size_t sz, const char* f, va_list v);
-
-/**
- *  safe strtok, extract sub-string from strings.
- *
- *  @param s   [in] buffer.
- *  @param d   [in] delim.
- *  @param c   [in/out] saved remaining substrings.
- *  @return a pointer to the next sub-string, or NULL if there are no more sub-strings.
- */
-extern char* cdk_strtok(char* s, const char* d, char** c);
-
-/**
- *  concatenate two strings.
- *
- *  @param d   [in/out] dest string buffer.
- *  @param n   [in] dest string buffer size.
- *  @param s   [in] src string buffer.
- *  @return N/A.
- */
-extern void cdk_strcat(char* d, size_t n, const char* s);
-
-/**
- *  duplicate a string.
- *
- *  @param s   [in] src string buffer.
- *  @return a pointer to the duplicated string.
- */
-extern char* cdk_strdup(const char* s);
+extern int cdk_io_vsprintf(char* s, size_t sz, const char* f, va_list v);
 
 /**
  *  reads formatted data from a string.
@@ -101,7 +73,6 @@ extern char* cdk_strdup(const char* s);
  *  @param ... [in/out] variable parameter.
  *  @return N/A.
  */
-extern void cdk_sscanf(const char* s, const char* f, ...);
+extern void cdk_io_sscanf(const char* s, const char* f, ...);
 
-#endif /* __CDK_IO_H__ */
 

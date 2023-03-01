@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,72 +19,64 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk/cdk-atomic.h"
-
-#if defined(__linux__) || defined(__APPLE__)
-#include "unix/unix-atomic.h"
-#endif
-
-#if defined(_WIN32)
-#include "win/win-atomic.h"
-#endif
+#include "platform/platform-atomic.h"
 
 bool cdk_atomic_flag_test_and_set(volatile atomic_flag* f) {
 
-	return _cdk_atomic_flag_test_and_set(f);
+	return _atomic_flag_test_and_set(f);
 }
 
 void cdk_atomic_flag_clear(volatile atomic_flag* f) {
 	
-	_cdk_atomic_flag_clear(f);
+	_atomic_flag_clear(f);
 }
 
 int64_t cdk_atomic_load(const volatile atomic_t* t) {
 	
-	return _cdk_atomic_load(t);
+	return _atomic_load(t);
 }
 
 void cdk_atomic_store(volatile atomic_t* t, int64_t d) {
 
-	_cdk_atomic_store(t, d);
+	_atomic_store(t, d);
 }
 
 void cdk_atomic_add(volatile atomic_t* t, int64_t o) {
 	
-	_cdk_atomic_fetch_add(t, o);
+	_atomic_fetch_add(t, o);
 }
 
 void cdk_atomic_sub(volatile atomic_t* t, int64_t o) {
 	
-	_cdk_atomic_fetch_sub(t, o);
+	_atomic_fetch_sub(t, o);
 }
 
 void cdk_atomic_inc(volatile atomic_t* t) {
 	
-	_cdk_atomic_fetch_inc(t);
+	_atomic_fetch_inc(t);
 }
 
 void cdk_atomic_dec(volatile atomic_t* t) {
 
-	_cdk_atomic_fetch_dec(t);
+	_atomic_fetch_dec(t);
 }
 
 void cdk_atomic_or(volatile atomic_t* t, int64_t o) {
 	
-	_cdk_atomic_fetch_or(t, o);
+	_atomic_fetch_or(t, o);
 }
 
 void cdk_atomic_xor(volatile atomic_t* t, int64_t o) {
 	
-	_cdk_atomic_fetch_xor(t, o);
+	_atomic_fetch_xor(t, o);
 }
 
 void cdk_atomic_and(volatile atomic_t* t, int64_t o) {
 
-	_cdk_atomic_fetch_and(t, o);
+	_atomic_fetch_and(t, o);
 }
 
 bool cdk_atomic_cas(volatile atomic_t* t, int64_t* e, int64_t d)
 {
-	return _cdk_atomic_cas(t, e, d);
+	return _atomic_cas(t, e, d);
 }
