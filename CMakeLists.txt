@@ -34,41 +34,40 @@ message(STATUS "[cdk compile]: using iso c${CMAKE_C_STANDARD} standard.")
 include_directories(include)
 include_directories(src/platform)
 	
+
+
+file(GLOB ATOMIC_SRCS    src/atomic/*.c)
+file(GLOB CONTAINER_SRCS src/container/*.c)
+file(GLOB ENCODING_SRCS  src/encoding/*.c)
+file(GLOB FILE_SRCS      src/file/*.c)
+file(GLOB IO_SRCS        src/io/*.c)
+#file(GLOB LOGGER_SRCS   src/logger/*.c)
+file(GLOB MATH_SRCS      src/math/*.c)
+file(GLOB MEMORY_SRCS    src/memory/*.c)
+#file(GLOB NET_SRCS      src/net/*.c)
+file(GLOB PROCESS_SRCS   src/process/*.c)
+file(GLOB STRING_SRCS    src/string/*.c)
+#file(GLOB SYNC_SRCS     src/sync/*.c)
+#file(GLOB SYSINFO_SRCS  src/sysinfo/*.c)
+#file(GLOB THREAD_SRCS   src/thread/*.c)
+#file(GLOB TIME_SRCS     src/time/*.c)
+
 set(SRCS 
-	src/logger/cdk-logger.c
-	src/math/cdk-prng.c
-	src/process/cdk-process.c
-#	src/thread/cdk-thread.c
-#	src/time/cdk-time.c
-#	src/sync/cdk-sync.c
-	src/atomic/cdk-atomic.c
-#	src/net/cdk-net.c
-	src/container/cdk-queue.c
-	src/container/cdk-stack.c
-	src/container/cdk-list.c
-#	src/thread/cdk-threadpool.c
-#	src/sysinfo/cdk-systeminfo.c
-	src/io/cdk-io.c
-	src/memory/cdk-memory.c
-	src/file/cdk-loader.c
-	src/file/cdk-file.c
-	src/string/cdk-path.c
-	src/string/cdk-string.c
-	src/container/cdk-rbtree.c
-	src/container/cdk-ringbuffer.c
-	src/encoding/cdk-varint.c
+	${ATOMIC_SRCS} ${CONTAINER_SRCS} ${ENCODING_SRCS} ${FILE_SRCS} ${IO_SRCS} 
+	${LOGGER_SRCS} ${MATH_SRCS} ${MEMORY_SRCS} ${PROCESS_SRCS} ${NET_SRCS} 
+	${STRING_SRCS} ${SYNC_SRCS} ${SYSINFO_SRCS} ${THREAD_SRCS} ${TIME_SRCS}
 )
-	
+
 if(WIN32)
 	list(APPEND SRCS 
-#		src/platform/win/win-process.c
+		src/platform/win/win-process.c
 #		src/platform/win/win-thread.c
 #		src/platform/win/win-time.c
 #		src/platform/win/win-sync.c
 		src/platform/win/win-atomic.c
 #		src/platform/win/win-net.c
 #		src/platform/win/win-systeminfo.c
-#		src/platform/win/win-io.c
+		src/platform/win/win-io.c
 		src/platform/win/win-loader.c
 		src/platform/win/win-file.c
 #		src/platform/win/win-poller.c
@@ -77,14 +76,14 @@ endif()
 
 if(UNIX)
 	list(APPEND SRCS 
-#		src/platform/unix/unix-process.c
+		src/platform/unix/unix-process.c
 #		src/platform/unix/unix-thread.c
 #		src/platform/unix/unix-time.c
 #		src/platform/unix/unix-sync.c
 		src/platform/unix/unix-atomic.c
 #		src/platform/unix/unix-net.c
 #		src/platform/unix/unix-systeminfo.c
-#		src/platform/unix/unix-io.c
+		src/platform/unix/unix-io.c
 		src/platform/unix/unix-loader.c
 		src/platform/unix/unix-file.c
 #		src/platform/unix/unix-poller.c

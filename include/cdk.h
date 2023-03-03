@@ -25,7 +25,7 @@ _Pragma("once")
 #include "cdk/process/cdk-process.h"
 #include "cdk/math/cdk-prng.h"
 //#include "cdk/cdk-time.h"
-#include "cdk/logger/cdk-logger.h"
+//#include "cdk/logger/cdk-logger.h"
 //#include "cdk/cdk-thread.h"
 #include "cdk/cdk-types.h"
 //#include "cdk/cdk-sync.h"
