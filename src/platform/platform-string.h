@@ -21,6 +21,8 @@
 
 _Pragma("once")
 
+#include <stddef.h>
+
 extern char* platform_string_strtok(char* s, const char* d, char** c);
 extern void  platform_string_strcat(char* d, size_t n, const char* s);
 extern char* platform_string_strdup(const char* s);

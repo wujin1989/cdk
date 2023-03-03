@@ -42,21 +42,24 @@ if(UNIX)
 endif()
 
 if(WIN32)
-add_executable(iocp-usage "iocp-usage.c")
-target_link_libraries(iocp-usage PUBLIC cdk Threads::Threads)
+#add_executable(iocp-usage "iocp-usage.c")
+#target_link_libraries(iocp-usage PUBLIC cdk Threads::Threads)
 endif()
 
-add_executable(cdk-asyn-net "cdk-asyn-net.c")
-target_link_libraries(cdk-asyn-net PUBLIC cdk Threads::Threads)
+#add_executable(cdk-asyn-net "cdk-asyn-net.c")
+#target_link_libraries(cdk-asyn-net PUBLIC cdk Threads::Threads)
 
-add_executable(list-usage "list-usage.c")
-target_link_libraries(list-usage PUBLIC cdk Threads::Threads)
+#add_executable(list-usage "list-usage.c")
+#target_link_libraries(list-usage PUBLIC cdk Threads::Threads)
 
-add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
-target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)
+#add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
+#target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)
 
-add_executable(udp-client "udp-client.c")
-target_link_libraries(udp-client PUBLIC cdk Threads::Threads)
+#add_executable(udp-client "udp-client.c")
+#target_link_libraries(udp-client PUBLIC cdk Threads::Threads)
 
-add_executable(udp-server "udp-server.c")
-target_link_libraries(udp-server PUBLIC cdk Threads::Threads)
+#add_executable(udp-server "udp-server.c")
+#target_link_libraries(udp-server PUBLIC cdk Threads::Threads)
+
+add_executable(load-library "file/load-library.c")
+target_link_libraries(load-library PUBLIC cdk Threads::Threads  ${CMAKE_DL_LIBS})

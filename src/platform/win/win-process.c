@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,9 +19,9 @@
  *  IN THE SOFTWARE.
  */
 
-#include "win-process.h"
+#include "cdk/cdk-types.h"
 
-DWORD _cdk_getpid(void) {
+cdk_pid_t platform_proc_getpid(void) {
 
 	return GetCurrentProcessId();
 }

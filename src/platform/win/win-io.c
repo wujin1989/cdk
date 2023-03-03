@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c) 2023-2033, Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -20,16 +20,7 @@
  */
 
 #include <stdarg.h>
-#include <stdlib.h>
-#include <share.h>
-
-void platform_io_fopen(FILE** fp, const char* restrict f, const char* restrict m) {
-
-	*fp = _fsopen(f, m, _SH_DENYNO);
-	if (!*fp) {
-		abort();
-	}
-}
+#include <stdio.h>
 
 int platform_io_sprintf(char* s, size_t sz, const char* f, va_list v) {
 

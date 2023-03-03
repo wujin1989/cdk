@@ -23,7 +23,6 @@ _Pragma("once")
 
 #include <stdio.h>
 
-extern void  platform_io_fopen(FILE** fp, const char* restrict f, const char* restrict m);
 extern int   platform_io_sprintf(char* s, size_t sz, const char* f, va_list v);
 extern void  platform_io_sscanf(const char* s, const char* f, va_list v);
 

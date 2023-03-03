@@ -20,15 +20,7 @@
  */
 
 #include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
-
-void platform_io_fopen(FILE** fp, const char* restrict f, const char* restrict m) {
-
-	*fp = fopen(f, m);
-	if (!(*fp)) { abort(); }
-}
 
 int platform_io_sprintf(char* s, size_t sz, const char* f, va_list v) {
 

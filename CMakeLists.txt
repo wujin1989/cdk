@@ -32,92 +32,64 @@ set(CMAKE_C_STANDARD 11)
 message(STATUS "[cdk compile]: using iso c${CMAKE_C_STANDARD} standard.")
 
 include_directories(include)
-
-set(HDRS 
-	include/cdk.h
-	include/cdk/cdk-logger.h
-	include/cdk/cdk-prng.h
-	include/cdk/cdk-process.h
-	include/cdk/cdk-thread.h
-	include/cdk/cdk-time.h
-	include/cdk/cdk-types.h
-	include/cdk/cdk-sync.h
-	include/cdk/cdk-atomic.h
-	include/cdk/cdk-net.h
-	include/cdk/cdk-queue.h
-	include/cdk/cdk-stack.h
-	include/cdk/cdk-list.h
-	include/cdk/cdk-threadpool.h
-	include/cdk/cdk-systeminfo.h
-	include/cdk/cdk-io.h
-	include/cdk/cdk-memory.h
-	include/cdk/cdk-loadapi.h
-	include/cdk/cdk-rbtree.h
-	include/cdk/cdk-ringbuffer.h
-	include/cdk/cdk-varint.h)
+include_directories(src/platform)
 	
 set(SRCS 
-	src/cdk-logger.c
-	src/cdk-prng.c
-	src/cdk-process.c
-	src/cdk-thread.c
-	src/cdk-time.c
-	src/cdk-sync.c
-	src/cdk-atomic.c
-	src/cdk-net.c
-	src/cdk-queue.c
-	src/cdk-stack.c
-	src/cdk-list.c
-	src/cdk-threadpool.c
-	src/cdk-systeminfo.c
-	src/cdk-io.c
-	src/cdk-memory.c
-	src/cdk-loadapi.c
-	src/cdk-rbtree.c
-	src/cdk-ringbuffer.c
-	src/cdk-varint.c
-	src/platform/platform-process.h
-	src/platform/platform-atomic.h
-	src/platform/platform-event.h
-	src/platform/platform-io.h
-	src/platform/platform-loadapi.h
-	src/platform/platform-net.h
-	src/platform/platform-poller.h
-	src/platform/platform-sync.h
-	src/platform/platform-systeminfo.h
-	src/platform/platform-thread.h
-	src/platform/platform-time.h
-	)
+	src/logger/cdk-logger.c
+	src/math/cdk-prng.c
+	src/process/cdk-process.c
+#	src/thread/cdk-thread.c
+#	src/time/cdk-time.c
+#	src/sync/cdk-sync.c
+	src/atomic/cdk-atomic.c
+#	src/net/cdk-net.c
+	src/container/cdk-queue.c
+	src/container/cdk-stack.c
+	src/container/cdk-list.c
+#	src/thread/cdk-threadpool.c
+#	src/sysinfo/cdk-systeminfo.c
+	src/io/cdk-io.c
+	src/memory/cdk-memory.c
+	src/file/cdk-loader.c
+	src/file/cdk-file.c
+	src/string/cdk-path.c
+	src/string/cdk-string.c
+	src/container/cdk-rbtree.c
+	src/container/cdk-ringbuffer.c
+	src/encoding/cdk-varint.c
+)
 	
 if(WIN32)
 	list(APPEND SRCS 
-		src/platform/win/win-process.c
-		src/platform/win/win-thread.c
-		src/platform/win/win-time.c
-		src/platform/win/win-sync.c
+#		src/platform/win/win-process.c
+#		src/platform/win/win-thread.c
+#		src/platform/win/win-time.c
+#		src/platform/win/win-sync.c
 		src/platform/win/win-atomic.c
-		src/platform/win/win-net.c
-		src/platform/win/win-systeminfo.c
-		src/platform/win/win-io.c
-		src/platform/win/win-loadapi.c
-		src/platform/win/win-poller.c
-		)
+#		src/platform/win/win-net.c
+#		src/platform/win/win-systeminfo.c
+#		src/platform/win/win-io.c
+		src/platform/win/win-loader.c
+		src/platform/win/win-file.c
+#		src/platform/win/win-poller.c
+	)
 endif()
 
 if(UNIX)
 	list(APPEND SRCS 
-		src/platform/unix/unix-process.c
-		src/platform/unix/unix-thread.c
-		src/platform/unix/unix-time.c
-		src/platform/unix/unix-sync.c
+#		src/platform/unix/unix-process.c
+#		src/platform/unix/unix-thread.c
+#		src/platform/unix/unix-time.c
+#		src/platform/unix/unix-sync.c
 		src/platform/unix/unix-atomic.c
-		src/platform/unix/unix-net.c
-		src/platform/unix/unix-systeminfo.c
-		src/platform/unix/unix-io.c
-		src/platform/unix/unix-loadapi.c
-		src/platform/unix/unix-poller.c
-		src/platform/unix/unix-event.c
-		)
+#		src/platform/unix/unix-net.c
+#		src/platform/unix/unix-systeminfo.c
+#		src/platform/unix/unix-io.c
+		src/platform/unix/unix-loader.c
+		src/platform/unix/unix-file.c
+#		src/platform/unix/unix-poller.c
+#		src/platform/unix/unix-event.c
+	)
 endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${HDRS})
