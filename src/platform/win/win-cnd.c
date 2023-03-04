@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,47 +19,28 @@
  *  IN THE SOFTWARE.
  */
 
-#include "win-sync.h"
+#include "cdk/cdk-types.h"
 
-void _mtx_init(mtx_t* restrict m) {
-	
-	InitializeCriticalSection(m);
-}
-
-void _mtx_destroy(mtx_t* m) {
-	
-	DeleteCriticalSection(m);
-}
-
-void _mtx_lock(mtx_t* m) {
-	
-	EnterCriticalSection(m);
-}
-void _mtx_unlock(mtx_t* m) {
-
-	LeaveCriticalSection(m);
-}
-
-void _cnd_init(cnd_t* restrict c) {
+void platform_cnd_init(cdk_cnd_t* restrict c) {
 
 	InitializeConditionVariable(c);
 }
 
-void _cnd_destroy(cnd_t* c) {
+void platform_cnd_destroy(cdk_cnd_t* c) {
 
 }
 
-void _cnd_signal(cnd_t* c) {
+void platform_cnd_signal(cdk_cnd_t* c) {
 
 	WakeConditionVariable(c);
 }
 
-void _cnd_broadcast(cnd_t* c) {
+void platform_cnd_broadcast(cdk_cnd_t* c) {
 
 	WakeAllConditionVariable(c);
 }
 
-void _cnd_wait(cnd_t* restrict c, mtx_t* restrict m) {
+void platform_cnd_wait(cdk_cnd_t* restrict c, cdk_mtx_t* restrict m) {
 
 	if (SleepConditionVariableCS(c, m, INFINITE) == 0) {
 		abort();

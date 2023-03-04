@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -25,6 +25,6 @@ _Pragma("once")
 #include <stdint.h>
 #include <stdbool.h>
 
-extern bool _cdk_localtime(const time_t* t, struct tm* r);
-extern void _cdk_sleep(const uint32_t ms);
+extern void platform_time_localtime(const time_t* t, struct tm* r);
+extern void platform_time_sleep(const uint32_t ms);
 

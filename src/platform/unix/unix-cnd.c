@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,66 +19,38 @@
  *  IN THE SOFTWARE.
  */
 
-#include "unix-sync.h"
+#include "cdk/cdk-types.h"
 #include <stdlib.h>
 
-void _mtx_init(mtx_t* restrict m) {
-	
-	if (pthread_mutex_init(m, NULL)) { 
-		abort(); 
-	}
-}
-
-void _mtx_destroy(mtx_t* m) {
-
-	if (pthread_mutex_destroy(m)) { 
-		abort(); 
-	}
-}
-
-void _mtx_lock(mtx_t* m) {
-
-	if (pthread_mutex_lock(m)) { 
-		abort(); 
-	}
-}
-
-void _mtx_unlock(mtx_t* m) {
-
-	if (pthread_mutex_unlock(m)) { 
-		abort(); 
-	}
-}
-
-void _cnd_init(cnd_t* restrict c) {
+void platform_cnd_init(cdk_cnd_t* restrict c) {
 
 	if (pthread_cond_init(c, NULL)) { 
 		abort(); 
 	}
 }
 
-void _cnd_destroy(cnd_t* c) {
+void platform_cnd_destroy(cdk_cnd_t* c) {
 
 	if (pthread_cond_destroy(c)) { 
 		abort(); 
 	}
 }
 
-void _cnd_signal(cnd_t* c) {
+void platform_cnd_signal(cdk_cnd_t* c) {
 
 	if (pthread_cond_signal(c)) { 
 		abort(); 
 	}
 }
 
-void _cnd_broadcast(cnd_t* c) {
+void platform_cnd_broadcast(cdk_cnd_t* c) {
 
 	if (pthread_cond_broadcast(c)) { 
 		abort(); 
 	}
 }
 
-void _cnd_wait(cnd_t* restrict c, mtx_t* restrict m) {
+void platform_cnd_wait(cdk_cnd_t* restrict c, cdk_mtx_t* restrict m) {
 
 	if (pthread_cond_wait(c, m)) { 
 		abort(); 

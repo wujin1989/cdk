@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -23,8 +23,8 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern _Bool   platform_atomic_flag_test_and_set(volatile cdk_atomic_flag* f);
-extern void    platform_atomic_flag_clear(volatile cdk_atomic_flag* f);
+extern _Bool   platform_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* f);
+extern void    platform_atomic_flag_clear(volatile cdk_atomic_flag_t* f);
 extern int64_t platform_atomic_load(const volatile cdk_atomic_t* t);
 extern void    platform_atomic_store(volatile cdk_atomic_t* t, int64_t d);
 extern void    platform_atomic_fetch_add(volatile cdk_atomic_t* t, int64_t o);

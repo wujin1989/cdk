@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,21 +19,18 @@
  *  IN THE SOFTWARE.
  */
 
-#include "win-time.h"
+#include <stdint.h>
+#include <time.h>
 
-BOOL _cdk_localtime(const time_t* t, struct tm* r) {
+void platform_time_localtime(const time_t* t, struct tm* r) {
 
 	_tzset();
-	errno_t err = localtime_s(r, t);
-
-	switch (err) {
-	case 0:
-		return TRUE;
-	default:
-		return FALSE;
-	}
+	localtime_s(r, t);
 }
 
-void _cdk_sleep(const DWORD ms) {
+void platform_time_sleep(const uint32_t ms) {
+
+	timeBeginPeriod(1);
 	Sleep(ms);
+	timeEndPeriod(1);
 }

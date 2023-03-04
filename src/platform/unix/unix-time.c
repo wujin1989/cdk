@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,27 +19,21 @@
  *  IN THE SOFTWARE.
  */
 
-#define _POSIX_C_SOURCE    200809L
-#define _DEFAULT_SOURCE
-
-#include "unix-time.h"
 #include <unistd.h>
+#include <time.h>
+#include <stdint.h>
+#include <errno.h>
 
-bool _cdk_localtime(const time_t* t, struct tm* r) {
+void platform_time_localtime(const time_t* t, struct tm* r) {
 
 	tzset();
-	struct tm* tp = localtime_r(t, r);
-
-	switch ((uintptr_t)tp)
-	{
-	case 0:
-		return false;
-	default:
-		return true;
-	}
+	localtime_r(t, r);
 }
 
-void _cdk_sleep(const uint32_t ms) {
+void platform_time_sleep(const uint32_t ms) {
 
-	usleep(ms * 1000);
+	int r;
+	do {
+		r = usleep(ms * 1000);
+	} while (r == -1 && errno == EINTR);
 }

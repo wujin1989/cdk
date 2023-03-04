@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -23,8 +23,8 @@
 #define _DEFAULT_SOURCE
 #endif
 
-#include "unix-thread.h"
 #include "cdk/cdk-memory.h"
+#include "cdk/cdk-types.h"
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -34,27 +34,27 @@
 #endif
 
 
-typedef struct _thrd_ctx {
+typedef struct thrd_ctx_s {
 	int     (*entry)(void* arg);
 	void*   arg;
-}thrd_ctx;
+}thrd_ctx_t;
 
 static void* __thread_start(void* arg) {
 
-	thrd_ctx* ctxp;
-	thrd_ctx  ctx;
+	thrd_ctx_t* ctxp;
+	thrd_ctx_t  ctx;
 
 	ctxp = arg;
 	ctx  = *ctxp;
 
-	cdk_free(ctxp);
+	cdk_memory_free(ctxp);
 	ctx.entry(ctx.arg);
 
 	return NULL;
 }
 
 #if defined(__APPLE__)
-uint64_t _thrd_gettid(void) {
+cdk_tid_t platform_thrd_gettid(void) {
 
 	uint64_t tid;
 	pthread_threadid_np(NULL, &tid);
@@ -64,45 +64,61 @@ uint64_t _thrd_gettid(void) {
 #endif
 
 #if defined(__linux__)
-pid_t _thrd_gettid(void) {
+cdk_tid_t platform_thrd_gettid(void) {
 
 	return syscall(SYS_gettid);
 }
 #endif
 
-void _thrd_create(thrd_t* t, int (*h)(void*), void* restrict p) {
+void platform_thrd_create(cdk_thrd_t* t, int (*h)(void*), void* restrict p) {
 
-	thrd_ctx*  ctx;
+	thrd_ctx_t*  ctx;
 
-	ctx = cdk_malloc(sizeof(thrd_ctx));
+	ctx = cdk_memory_malloc(sizeof(thrd_ctx_t));
 
 	ctx->entry = h;
 	ctx->arg   = p;
 
-	if (pthread_create(t, NULL, __thread_start, ctx)) {
+	if (pthread_create(&t->tid, NULL, __thread_start, ctx)) {
 
-		cdk_free(ctx);
+		cdk_memory_free(ctx);
 		abort();
 	}
 }
 
-void _thrd_join(thrd_t t) {
+void platform_thrd_join(cdk_thrd_t t) {
 
-	if (pthread_join(t, NULL)) {
+	if (pthread_join(t.tid, NULL)) {
 		abort();
 	}
 }
 
-void _thrd_detach(thrd_t t) {
+void platform_thrd_detach(cdk_thrd_t t) {
 
-	if (pthread_detach(t)) {
+	if (pthread_detach(t.tid)) {
 		abort();
 	}
 }
 
-void _thrd_once(once_flag* f, void (*h)(void)) {
+void platform_thrd_once(cdk_once_t* f, void (*h)(void)) {
 	
 	if (pthread_once(f, h)) {
 		abort();
 	}
+}
+
+bool platform_thrd_equal(cdk_thrd_t t1, cdk_thrd_t t2) {
+
+	if (pthread_equal(t1.tid, t2.tid)) {
+		return true;
+	}
+	return false;
+}
+
+cdk_thrd_t platform_thrd_current(void) {
+
+	cdk_thrd_t t;
+	t.tid = pthread_self();
+
+	return t;
 }

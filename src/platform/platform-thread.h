@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -23,16 +23,12 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void _thrd_create(thrd_t* t, int (*h)(void*), void* restrict p);
-extern void _thrd_join(thrd_t t);
-extern void _thrd_detach(thrd_t t);
-extern void _thrd_once(once_flag* f, void (*h)(void));
+extern void		  platform_thrd_create(cdk_thrd_t* t, int (*h)(void*), void* restrict p);
+extern void		  platform_thrd_join(cdk_thrd_t t);
+extern void		  platform_thrd_detach(cdk_thrd_t t);
+extern void		  platform_thrd_once(cdk_once_t* f, void (*h)(void));
+extern cdk_tid_t  platform_thrd_gettid(void);
+extern bool       platform_thrd_equal(cdk_thrd_t t1, cdk_thrd_t t2);
+extern cdk_thrd_t platform_thrd_current(void);
 
-#if defined(__APPLE__)
-extern uint64_t _thrd_gettid(void);
-#endif
-
-#if defined(__linux__)
-extern pid_t _thrd_gettid(void);
-#endif
 

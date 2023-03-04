@@ -1,4 +1,4 @@
-/** Copyright (c) 2022, Wu Jin <wujin.developer@gmail.com>
+/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -19,95 +19,110 @@
  *  IN THE SOFTWARE.
  */
 
-#include "win-thread.h"
 #include "cdk/cdk-memory.h"
+#include "cdk/cdk-types.h"
 #include <process.h>
 #include <stdlib.h>
 #include <errno.h>
 
-typedef struct _thrd_ctx {
+typedef struct thrd_ctx_s {
 	int     (*entry)(void* arg);
 	void*   arg;
-}thrd_ctx;
+}thrd_ctx_t;
 
-typedef struct _once_ctx {
+typedef struct once_ctx_s {
 	void (*entry)(void);
-}once_ctx;
+}once_ctx_t;
 
 static unsigned int __stdcall __thread_start(void* arg) {
 
-	thrd_ctx* ctxp;
-	thrd_ctx  ctx;
+	thrd_ctx_t* ctxp;
+	thrd_ctx_t  ctx;
 
 	ctxp = arg;
 	ctx  = *ctxp;
 
-	cdk_free(ctxp);
+	cdk_memory_free(ctxp);
 
 	return ctx.entry(ctx.arg);
 }
 
 static BOOL __stdcall __once_start(PINIT_ONCE once, PVOID param, PVOID* context) {
 
-	once_ctx* ctxp;
-	once_ctx  ctx;
+	once_ctx_t* ctxp;
+	once_ctx_t  ctx;
 
 	ctxp = param;
 	ctx  = *ctxp;
 
-	cdk_free(ctxp);
+	cdk_memory_free(ctxp);
 
 	ctx.entry();
 
 	return TRUE;
 }
 
-DWORD _thrd_gettid(void) {
+cdk_tid_t platform_thrd_gettid(void) {
 
 	return GetCurrentThreadId();
 }
 
-void _thrd_create(thrd_t* t, int (*h)(void*), void* restrict p) {
+void platform_thrd_create(cdk_thrd_t* t, int (*h)(void*), void* restrict p) {
 
-	thrd_ctx*    ctx;
-	HANDLE       thrd;
+	thrd_ctx_t* ctx;
+	HANDLE hnd;
 
-	ctx = cdk_malloc(sizeof(thrd_ctx));
+	ctx = cdk_memory_malloc(sizeof(thrd_ctx_t));
 
 	ctx->entry = h;
 	ctx->arg   = p;
 
-	thrd = (HANDLE)_beginthreadex(NULL, 0, __thread_start, ctx, 0, NULL);
+	hnd = (HANDLE)_beginthreadex(NULL, 0, __thread_start, ctx, 0, &t->tid);
 
-	switch ((uintptr_t)thrd)
+	switch ((uintptr_t)hnd)
 	{
 	case 0:
-		cdk_free(ctx);
+		cdk_memory_free(ctx);
 		return;
 	default:
-		*t = thrd;
+		t->handle = hnd;
 		return;
 	}
 }
 
-void _thrd_join(thrd_t t) {
+void platform_thrd_join(cdk_thrd_t t) {
 
-	if (WAIT_OBJECT_0 == WaitForSingleObject(t, INFINITE)) {
-		CloseHandle(t);
+	if (WAIT_OBJECT_0 == WaitForSingleObject(t.handle, INFINITE)) {
+		CloseHandle(t.handle);
 	}
 }
 
-void _thrd_detach(thrd_t t) {
+void platform_thrd_detach(cdk_thrd_t t) {
 
-	CloseHandle(t);
+	CloseHandle(t.handle);
 }
 
-void _thrd_once(once_flag* f, void (*h)(void)) {
+void platform_thrd_once(cdk_once_t* f, void (*h)(void)) {
 	
-	once_ctx* ctx;
+	once_ctx_t* ctx;
 
-	ctx = cdk_malloc(sizeof(once_ctx));
+	ctx = cdk_memory_malloc(sizeof(once_ctx_t));
 	ctx->entry = h;
 
 	InitOnceExecuteOnce(f, __once_start, ctx, NULL);
+}
+
+bool platform_thrd_equal(cdk_thrd_t t1, cdk_thrd_t t2) {
+
+	return t1.tid == t2.tid;
+}
+
+cdk_thrd_t platform_thrd_current(void) {
+
+	cdk_thrd_t t;
+
+	t.handle = GetCurrentThread();
+	t.tid    = GetCurrentThreadId();
+
+	return t;
 }
