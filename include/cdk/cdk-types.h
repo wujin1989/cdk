@@ -68,10 +68,10 @@ enum cdk_rbtree_node_keytype_e {
 
 typedef struct cdk_poller_conn_s		 cdk_poller_conn_t;
 typedef struct cdk_poller_handler_s		 cdk_poller_handler_t;
-typedef union  cdk_rbtree_node_key_u     cdk_rbtree_node_key_t;
+typedef union  cdk_rbtree_node_key_u             cdk_rbtree_node_key_t;
 typedef struct cdk_rbtree_node_s		 cdk_rbtree_node_t;
-typedef enum   cdk_rbtree_node_keytype_e cdk_rbtree_node_keytype_t;
-typedef struct cdk_rbtree_s			     cdk_rbtree_t;
+typedef enum   cdk_rbtree_node_keytype_e         cdk_rbtree_node_keytype_t;
+typedef struct cdk_rbtree_s			 cdk_rbtree_t;
 typedef struct cdk_list_node_s			 cdk_list_node_t;
 typedef struct cdk_list_node_s			 cdk_list_t;
 typedef struct cdk_list_node_s			 cdk_queue_t;
@@ -98,9 +98,9 @@ typedef pid_t                            cdk_pid_t;
 typedef struct cdk_thrd_s                cdk_thrd_t;
 typedef pthread_once_t                   cdk_once_t;
 typedef pthread_mutex_t                  cdk_mtx_t;
-typedef pthread_rwlock_t				 cdk_rwlock_t;
+typedef pthread_rwlock_t		 cdk_rwlock_t;
 typedef pthread_cond_t                   cdk_cnd_t;
-typedef atomic_flag						 cdk_atomic_flag_t;
+typedef atomic_flag			 cdk_atomic_flag_t;
 typedef atomic_llong                     cdk_atomic_t;
 typedef int                              cdk_sock_t;
 
@@ -113,7 +113,7 @@ typedef struct cdk_thrd_s                cdk_thrd_t;
 typedef DWORD                            cdk_pid_t;
 typedef INIT_ONCE                        cdk_once_t;
 typedef CRITICAL_SECTION                 cdk_mtx_t;
-typedef SRWLOCK							 cdk_rwlock_t;
+typedef SRWLOCK				 cdk_rwlock_t;
 typedef CONDITION_VARIABLE               cdk_cnd_t;
 
 typedef struct cdk_atomic_flag_s         cdk_atomic_flag_t;
@@ -252,27 +252,27 @@ typedef struct cdk_poller_s {
 
 struct cdk_poller_conn_s {
 
-	cdk_poller_t		    poller;
+	cdk_poller_t          poller;
 
-	cdk_sock_t				fd;
-	int						cmd;
-	cdk_poller_handler_t*   h;
-	int						type;
-	bool					state;
-	cdk_rbtree_t            owners;
-	cdk_mtx_t               mutex;
+	cdk_sock_t            fd;
+	int                   cmd;
+	cdk_poller_handler_t* h;
+	int                   type;
+	bool                  state;
+	cdk_rbtree_t          owners;
+	cdk_mtx_t             mutex;
 
 	union {
 		struct {
 
-			cdk_offset_buf_t      ibuf;
-			cdk_list_t            olist;
-			cdk_spliter_t         splicer;
+			cdk_offset_buf_t ibuf;
+			cdk_list_t       olist;
+			cdk_spliter_t    splicer;
 		}tcp;
 
 		struct {
-			cdk_offset_buf_t      ibuf;
-			cdk_list_t            olist;
+			cdk_offset_buf_t ibuf;
+			cdk_list_t       olist;
 			struct {
 				struct sockaddr_storage ss;
 				socklen_t               sslen;
