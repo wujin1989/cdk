@@ -1,11 +1,5 @@
 # Overview
-CDK is a cross-platform C development library that complements the standard C library rather than replacing it. The library is designed to provide developers with a set of powerful tools and functions to simplify the process of developing portable C applications that can run seamlessly across multiple platforms.
-
-One of the key features of CDK is its clean, concise, and highly-readable codebase. This makes it easy for developers to understand and work with the library, even if they are new to C programming. Additionally, CDK has been developed with a strong focus on ensuring that the code compiles without any warnings on all supported platforms and compilers, which helps to reduce the potential for bugs and other issues.
-
-CDK includes a wide range of functionality, including support for networking, file I/O, and threading development, making it a powerful and versatile library that can be used for a variety of development tasks. Whether you're a seasoned C developer or just starting out, CDK provides a valuable resource that can help you streamline your development process and create robust, reliable software that runs seamlessly on any platform.
-
-In summary, if you're looking for a cross-platform C development library that's easy to work with, well-documented, and designed to support best coding practices, then CDK may be just what you need. Give it a try and see what it can do for your development projects!
+CDK is a clean and concise cross-platform C development library that complements the standard C library. It provides developers with powerful tools and functions to simplify the process of developing portable C applications. CDK is well-documented, designed to support best coding practices, and ensures code compiles without warnings on all supported platforms and compilers.
 
 # Requirement
 The compiler needs to support C11.
