@@ -24,5 +24,5 @@ _Pragma("once")
 #include "cdk-types.h"
 
 extern cdk_thrdpool_t* cdk_thrdpool_create(void);
-extern void			   cdk_thrdpool_post(cdk_thrdpool_t* p, cdk_thrdpool_job_t* j);
-extern void			   cdk_thrdpool_destroy(cdk_thrdpool_t* p);
+extern void            cdk_thrdpool_post(cdk_thrdpool_t* p, cdk_thrdpool_job_t* j);
+extern void            cdk_thrdpool_destroy(cdk_thrdpool_t* p);
