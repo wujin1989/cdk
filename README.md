@@ -14,25 +14,25 @@ The compiler needs to support C11.
 
 Windows:
 
-    cmake .. -G "Ninja Multi-Config";
+    cmake . -G "Ninja Multi-Config";
     or
-    cmake .. -G "Visual Studio 17 2022";
+    cmake . -G "Visual Studio 17 2022";
 
     cmake --build . --config Debug -j 8;
     cmake --build . --config Release -j 8;
 
 Linux:
 
-    cmake .. -G "Ninja Multi-Config";
+    cmake . -G "Ninja Multi-Config";
 	
     cmake --build . --config Debug -j 8;
     cmake --build . --config Release -j 8;
 
 Mac:
 
-    cmake .. -G "Ninja Multi-Config";
+    cmake . -G "Ninja Multi-Config";
     or
-    cmake .. -G "Xcode";
+    cmake . -G "Xcode";
 
     cmake --build . --config Debug -j 8;
     cmake --build . --config Release -j 8;
