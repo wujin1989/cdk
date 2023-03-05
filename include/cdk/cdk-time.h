@@ -25,6 +25,6 @@ _Pragma("once")
 #include <stdint.h>
 
 extern uint64_t cdk_time_now(void);
-extern void		cdk_time_localtime(const time_t* t, struct tm* r);
-extern void		cdk_time_sleep(const uint32_t ms);
+extern void     cdk_time_localtime(const time_t* t, struct tm* r);
+extern void     cdk_time_sleep(const uint32_t ms);
 
