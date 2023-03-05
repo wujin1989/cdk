@@ -32,7 +32,7 @@ _Pragma("once")
 extern void               cdk_rbtree_create(cdk_rbtree_t* tree, cdk_rbtree_node_keytype_t keytype);
 extern void               cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_node_key_t key);
-extern void			      cdk_rbtree_erase(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
+extern void               cdk_rbtree_erase(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_next(cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_prev(cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_first(cdk_rbtree_t* tree);
