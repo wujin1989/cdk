@@ -27,7 +27,7 @@ _Pragma("once")
 #define CDK_ATOMIC_VAR_INIT(value)      (value)
 
 extern bool    cdk_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* f);
-extern void	   cdk_atomic_flag_clear(volatile cdk_atomic_flag_t* f);
+extern void    cdk_atomic_flag_clear(volatile cdk_atomic_flag_t* f);
 extern int64_t cdk_atomic_load(const volatile cdk_atomic_t* t);
 extern void    cdk_atomic_store(volatile cdk_atomic_t* t, int64_t d);
 extern void    cdk_atomic_add(volatile cdk_atomic_t* t, int64_t o);
