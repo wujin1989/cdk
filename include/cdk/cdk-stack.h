@@ -25,7 +25,7 @@ _Pragma("once")
 
 #define cdk_stack_data   cdk_list_data
 
-extern void				 cdk_stack_create(cdk_stack_t* s);
-extern void				 cdk_stack_push(cdk_stack_t* s, cdk_stack_node_t* x);
+extern void              cdk_stack_create(cdk_stack_t* s);
+extern void              cdk_stack_push(cdk_stack_t* s, cdk_stack_node_t* x);
 extern cdk_stack_node_t* cdk_stack_pop(cdk_stack_t* s);
-extern bool				 cdk_stack_empty(cdk_stack_t* s);
+extern bool              cdk_stack_empty(cdk_stack_t* s);
