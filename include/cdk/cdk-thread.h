@@ -35,10 +35,10 @@ _Pragma("once")
 
 
 extern cdk_tid_t  cdk_thrd_gettid(void);
-extern void		  cdk_thrd_create(cdk_thrd_t* t, int (*h)(void*), void* restrict p);
-extern void		  cdk_thrd_join(cdk_thrd_t t);
-extern void		  cdk_thrd_detach(cdk_thrd_t t);
-extern void		  cdk_thrd_once(cdk_once_t* f, void (*h)(void));
+extern void       cdk_thrd_create(cdk_thrd_t* t, int (*h)(void*), void* restrict p);
+extern void       cdk_thrd_join(cdk_thrd_t t);
+extern void       cdk_thrd_detach(cdk_thrd_t t);
+extern void       cdk_thrd_once(cdk_once_t* f, void (*h)(void));
 extern bool       cdk_thrd_equal(cdk_thrd_t t1, cdk_thrd_t t2);
 extern cdk_thrd_t cdk_thrd_current(void);
 
