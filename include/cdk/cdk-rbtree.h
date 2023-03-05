@@ -27,14 +27,14 @@ _Pragma("once")
 #include "cdk/cdk-list.h"
 
 
-#define cdk_rb_data   cdk_list_data
+#define cdk_rbtree_data   cdk_list_data
 
-extern void           cdk_rb_create(cdk_rb_tree_t* tree, cdk_rb_node_keytype_t keytype);
-extern void           cdk_rb_insert(cdk_rb_tree_t* tree, cdk_rb_node_t* node);
-extern cdk_rb_node_t* cdk_rb_find(cdk_rb_tree_t* tree, cdk_rb_node_key_t key);
-extern void			  cdk_rb_erase(cdk_rb_tree_t* tree, cdk_rb_node_t* node);
-extern cdk_rb_node_t* cdk_rb_next(cdk_rb_node_t* node);
-extern cdk_rb_node_t* cdk_rb_prev(cdk_rb_node_t* node);
-extern cdk_rb_node_t* cdk_rb_first(cdk_rb_tree_t* tree);
-extern cdk_rb_node_t* cdk_rb_last(cdk_rb_tree_t* tree);
+extern void               cdk_rbtree_create(cdk_rbtree_t* tree, cdk_rbtree_node_keytype_t keytype);
+extern void               cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
+extern cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_node_key_t key);
+extern void			      cdk_rbtree_erase(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
+extern cdk_rbtree_node_t* cdk_rbtree_next(cdk_rbtree_node_t* node);
+extern cdk_rbtree_node_t* cdk_rbtree_prev(cdk_rbtree_node_t* node);
+extern cdk_rbtree_node_t* cdk_rbtree_first(cdk_rbtree_t* tree);
+extern cdk_rbtree_node_t* cdk_rbtree_last(cdk_rbtree_t* tree);
 

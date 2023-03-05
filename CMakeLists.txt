@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.0)
 
 project(cdk VERSION 1.0.0 LANGUAGES C)
 
@@ -16,9 +16,9 @@ else ()
 endif()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-	message(STATUS "[cdk compile]: current os is 64bit!")
+	message(STATUS "[cdk compile]: current os is 64bit")
 else()
-	message(FATAL_ERROR "[cdk compile]: 32bit os isn't supported!")
+	message(FATAL_ERROR "[cdk compile]: 32bit not supported")
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -29,16 +29,19 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 11)
 
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+
 message(STATUS "[cdk compile]: using iso c${CMAKE_C_STANDARD} standard.")
 
 include_directories(include)
 include_directories(src/platform)
 	
-set(SRCS 
+set(SRCS
+	src/cdk-timer.c
 	src/cdk-atomic.c
 	src/cdk-cnd.c
 	src/cdk-file.c
-	src/cdk-io.c
 	src/cdk-list.c
 	src/cdk-loader.c
 	src/cdk-logger.c
@@ -70,7 +73,6 @@ if(WIN32)
 		src/platform/win/win-atomic.c
 #		src/platform/win/win-net.c
 		src/platform/win/win-sysinfo.c
-		src/platform/win/win-io.c
 		src/platform/win/win-loader.c
 		src/platform/win/win-file.c
 #		src/platform/win/win-poller.c
@@ -89,7 +91,6 @@ if(UNIX)
 		src/platform/unix/unix-atomic.c
 #		src/platform/unix/unix-net.c
 		src/platform/unix/unix-sysinfo.c
-		src/platform/unix/unix-io.c
 		src/platform/unix/unix-loader.c
 		src/platform/unix/unix-file.c
 #		src/platform/unix/unix-poller.c
@@ -100,5 +101,6 @@ if(UNIX)
 endif()
 
 add_library(cdk STATIC ${SRCS})
+target_link_libraries(cdk PUBLIC Threads::Threads  ${CMAKE_DL_LIBS})
 
 add_subdirectory(examples)

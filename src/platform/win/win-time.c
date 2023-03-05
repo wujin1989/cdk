@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include <time.h>
+#include <Windows.h>
 
 void platform_time_localtime(const time_t* t, struct tm* r) {
 

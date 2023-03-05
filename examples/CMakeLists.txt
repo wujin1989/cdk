@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.0)
 
 project(examples LANGUAGES C)
 
@@ -62,4 +62,10 @@ endif()
 #target_link_libraries(udp-server PUBLIC cdk Threads::Threads)
 
 add_executable(load-library "file/load-library.c")
-target_link_libraries(load-library PUBLIC cdk Threads::Threads  ${CMAKE_DL_LIBS})
+target_link_libraries(load-library PUBLIC cdk)
+
+add_executable(test-rbtree "test-rbtree.c")
+target_link_libraries(test-rbtree PUBLIC cdk)
+
+add_executable(test-varint "test-varint.c")
+target_link_libraries(test-varint PUBLIC cdk)

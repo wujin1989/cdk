@@ -45,25 +45,46 @@ _Pragma("once")
 
 #endif
 
-typedef struct cdk_poller_conn_s		cdk_poller_conn_t;
-typedef struct cdk_poller_handler_s		cdk_poller_handler_t;
-typedef union  cdk_rb_node_key_u		cdk_rb_node_key_t;
-typedef struct cdk_rb_node_s			cdk_rb_node_t;
-typedef enum   cdk_rb_node_keytype_e	cdk_rb_node_keytype_t;
-typedef struct cdk_rb_tree_s			cdk_rb_tree_t;
-typedef struct cdk_list_node_s			cdk_list_node_t;
-typedef struct cdk_list_node_s			cdk_list_t;
-typedef struct cdk_list_node_s			cdk_queue_t;
-typedef struct cdk_list_node_s			cdk_queue_node_t;
-typedef struct cdk_list_node_s			cdk_stack_t;
-typedef struct cdk_list_node_s			cdk_stack_node_t;
-typedef struct cdk_thrdpool_job_s		cdk_thrdpool_job_t;
-typedef struct cdk_ringbuf_s			cdk_ringbuf_t;
-typedef enum   cdk_spliter_type_e		cdk_spliter_type_t;
-typedef struct cdk_spliter_s			cdk_spliter_t;
-typedef struct cdk_offset_buf_s			cdk_offset_buf_t;
-typedef struct cdk_addrinfo_s			cdk_addrinfo_t;
-typedef struct cdk_thrdpool_s			cdk_thrdpool_t;
+enum cdk_spliter_type_e {
+
+	SPLITER_TYPE_FIXED,
+	SPLITER_TYPE_TEXTPLAIN,
+	SPLITER_TYPE_BINARY,
+	SPLITER_TYPE_USER_DEFINED
+};
+
+enum cdk_rbtree_node_keytype_e {
+
+	RB_KEYTYPE_INT8,
+	RB_KEYTYPE_UINT8,
+	RB_KEYTYPE_INT16,
+	RB_KEYTYPE_UINT16,
+	RB_KEYTYPE_INT32,
+	RB_KEYTYPE_UINT32,
+	RB_KEYTYPE_INT64,
+	RB_KEYTYPE_UINT64,
+	RB_KEYTYPE_STR,
+};
+
+typedef struct cdk_poller_conn_s		 cdk_poller_conn_t;
+typedef struct cdk_poller_handler_s		 cdk_poller_handler_t;
+typedef union  cdk_rbtree_node_key_u     cdk_rbtree_node_key_t;
+typedef struct cdk_rbtree_node_s		 cdk_rbtree_node_t;
+typedef enum   cdk_rbtree_node_keytype_e cdk_rbtree_node_keytype_t;
+typedef struct cdk_rbtree_s			     cdk_rbtree_t;
+typedef struct cdk_list_node_s			 cdk_list_node_t;
+typedef struct cdk_list_node_s			 cdk_list_t;
+typedef struct cdk_list_node_s			 cdk_queue_t;
+typedef struct cdk_list_node_s			 cdk_queue_node_t;
+typedef struct cdk_list_node_s			 cdk_stack_t;
+typedef struct cdk_list_node_s			 cdk_stack_node_t;
+typedef struct cdk_thrdpool_job_s		 cdk_thrdpool_job_t;
+typedef struct cdk_ringbuf_s			 cdk_ringbuf_t;
+typedef enum   cdk_spliter_type_e		 cdk_spliter_type_t;
+typedef struct cdk_spliter_s			 cdk_spliter_t;
+typedef struct cdk_offset_buf_s			 cdk_offset_buf_t;
+typedef struct cdk_addrinfo_s			 cdk_addrinfo_t;
+typedef struct cdk_thrdpool_s			 cdk_thrdpool_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -104,9 +125,9 @@ typedef SSIZE_T                          ssize_t;
 
 #endif
 
-union cdk_rb_node_key_u {
+union cdk_rbtree_node_key_u {
 
-	char* str;
+	char*    str;
 	int8_t	 i8;
 	int16_t  i16;
 	int32_t  i32;
@@ -117,32 +138,19 @@ union cdk_rb_node_key_u {
 	uint64_t u64;
 };
 
-struct cdk_rb_node_s
+struct cdk_rbtree_node_s
 {
-	cdk_rb_node_key_t     rb_key;
-	struct cdk_rb_node_s* rb_parent;
-	struct cdk_rb_node_s* rb_right;
-	struct cdk_rb_node_s* rb_left;
-	char                  rb_color;
+	cdk_rbtree_node_key_t rb_key;
+	struct cdk_rbtree_node_s* rb_parent;
+	struct cdk_rbtree_node_s* rb_right;
+	struct cdk_rbtree_node_s* rb_left;
+	char rb_color;
 };
 
-enum cdk_rb_node_keytype_e {
-
-	RB_KEYTYPE_INT8,
-	RB_KEYTYPE_UINT8,
-	RB_KEYTYPE_INT16,
-	RB_KEYTYPE_UINT16,
-	RB_KEYTYPE_INT32,
-	RB_KEYTYPE_UINT32,
-	RB_KEYTYPE_INT64,
-	RB_KEYTYPE_UINT64,
-	RB_KEYTYPE_STR,
-};
-
-struct cdk_rb_tree_s
+struct cdk_rbtree_s
 {
-	cdk_rb_node_t* rb_root;
-	cdk_rb_node_keytype_t rb_keytype;
+	cdk_rbtree_node_t* rb_root;
+	cdk_rbtree_node_keytype_t rb_keytype;
 };
 
 struct cdk_list_node_s {
@@ -162,14 +170,6 @@ struct cdk_ringbuf_s {
 	uint32_t r;   /* read pos */
 	uint32_t m;   /* mask */
 	uint32_t esz; /* entry size */
-};
-
-enum cdk_spliter_type_e {
-
-	SPLITER_TYPE_FIXED,
-	SPLITER_TYPE_TEXTPLAIN,
-	SPLITER_TYPE_BINARY,
-	SPLITER_TYPE_USER_DEFINED
 };
 
 struct cdk_spliter_s {
@@ -256,10 +256,10 @@ struct cdk_poller_conn_s {
 
 	cdk_sock_t				fd;
 	int						cmd;
-	cdk_poller_handler_t* h;
+	cdk_poller_handler_t*   h;
 	int						type;
 	bool					state;
-	cdk_rb_tree_t           owners;
+	cdk_rbtree_t            owners;
 	cdk_mtx_t               mutex;
 
 	union {

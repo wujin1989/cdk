@@ -21,7 +21,7 @@
 
 _Pragma("once")
 
-/* include cdk header files */
+#include "cdk/cdk-timer.h"
 #include "cdk/cdk-process.h"
 #include "cdk/cdk-math.h"
 #include "cdk/cdk-time.h"
@@ -35,7 +35,6 @@ _Pragma("once")
 #include "cdk/cdk-threadpool.h"
 #include "cdk/cdk-sysinfo.h"
 #include "cdk/cdk-list.h"
-#include "cdk/cdk-io.h"
 #include "cdk/cdk-memory.h"
 #include "cdk/cdk-loader.h"
 #include "cdk/cdk-file.h"

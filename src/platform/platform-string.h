@@ -22,7 +22,10 @@
 _Pragma("once")
 
 #include <stddef.h>
+#include <stdarg.h>
 
+extern int   platform_string_sprintf(char* s, size_t sz, const char* f, va_list v);
+extern void  platform_string_sscanf(const char* s, const char* f, va_list v);
 extern char* platform_string_strtok(char* s, const char* d, char** c);
 extern void  platform_string_strcat(char* d, size_t n, const char* s);
 extern char* platform_string_strdup(const char* s);

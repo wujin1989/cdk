@@ -21,6 +21,21 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
+
+int platform_string_sprintf(char* s, size_t sz, const char* f, va_list v) {
+
+	return vsprintf_s(s, sz, f, v);
+}
+
+void platform_string_sscanf(const char* s, const char* f, va_list v) {
+
+	/**
+	 * implementation of vsscanf_s has bugs and will crash, thus using vsscanf instead.
+	 */
+	vsscanf(s, f, v);
+}
 
 char* platform_string_strtok(char* s, const char* d, char** c) {
 

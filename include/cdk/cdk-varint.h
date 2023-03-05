@@ -23,7 +23,6 @@ _Pragma("once")
 
 #include <stdint.h>
 
-extern size_t   cdk_varint_encode(uint64_t num, char* buf, size_t len);
-extern uint64_t cdk_varint_decode(char* buf, size_t* len);
-extern size_t   cdk_varint_encoding_length(uint64_t num);
+extern int      cdk_varint_encode(uint64_t value, char* buf);
+extern uint64_t cdk_varint_decode(char* buf, int* pos);
 

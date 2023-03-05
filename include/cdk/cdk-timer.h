@@ -19,29 +19,5 @@
  *  IN THE SOFTWARE.
  */
 
-#include <stdarg.h>
-#include "platform-io.h"
+_Pragma("once")
 
-int cdk_io_sprintf(char* s, size_t sz, const char* f, ...) {
-
-	int     r;
-	va_list v;
-	va_start(v, f);
-	r = platform_io_sprintf(s, sz, f, v);
-	va_end(v);
-
-	return r;
-}
-
-int cdk_io_vsprintf(char* s, size_t sz, const char* f, va_list v) {
-
-	return platform_io_sprintf(s, sz, f, v);
-}
-
-void cdk_io_sscanf(const char* s, const char* f, ...) {
-
-	va_list v;
-	va_start(v, f);
-	platform_io_sscanf(s, f, v);
-	va_end(v);
-}

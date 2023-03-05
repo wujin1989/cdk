@@ -21,6 +21,11 @@
 
 _Pragma("once")
 
+#include <stdarg.h>
+
+extern int   cdk_string_sprintf(char* s, size_t sz, const char* f, ...);
+extern int   cdk_string_vsprintf(char* s, size_t sz, const char* f, va_list v);
+extern void  cdk_string_sscanf(const char* s, const char* f, ...);
 extern char* cdk_string_strtok(char* s, const char* d, char** c);
 extern void  cdk_string_strcat(char* d, size_t n, const char* s);
 extern char* cdk_string_strdup(const char* s);

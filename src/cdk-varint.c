@@ -24,76 +24,30 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-static const int8_t MSB    = 0x80;
-static const int8_t MSBALL = ~0x7F;
+int cdk_varint_encode(uint64_t value, char* buf) {
 
-static const uint64_t N1 = 128;
-static const uint64_t N2 = 16384;
-static const uint64_t N3 = 2097152;
-static const uint64_t N4 = 268435456;
-static const uint64_t N5 = 34359738368;
-static const uint64_t N6 = 4398046511104;
-static const uint64_t N7 = 562949953421312;
-static const uint64_t N8 = 72057594037927936;
-static const uint64_t N9 = 9223372036854775808U;
+    int pos = 0;
 
-size_t cdk_varint_encode(uint64_t num, char* buf, size_t len) {
+    while (value > 0x7f) {
 
-    char* ptr = buf;
-
-    while (num & MSBALL) {
-
-        *(ptr++) = (num & 0xFF) | MSB;
-        num = num >> 7;
-
-        if ((ptrdiff_t)(ptr - buf) >= len) {
-            abort();
-        };
+        buf[pos++] = (char)((value & 0x7f) | 0x80);
+        value >>= 7;
     }
-    *ptr = num;
-
-    return ptr - buf + 1;
+    buf[pos++] = (char)value;
+    return pos;
 }
 
-uint64_t cdk_varint_decode(char* buf, size_t* len) {
+uint64_t cdk_varint_decode(char* buf, int* pos) {
 
-    uint64_t result, ll, bits;
+    uint64_t value = 0;
+    int shift = 0;
 
-    result = bits = ll = 0;
-    char* ptr = buf;
+    while (buf[*pos] & 0x80) {
 
-    while (*ptr & MSB) {
-
-        ll = *ptr;
-        result += ((ll & 0x7F) << bits);
-        ptr++; 
-        bits += 7;
-
-        if ((ptr - buf) >= *len) {
-            abort();
-        };
+        value |= (uint64_t)(buf[*pos] & 0x7f) << shift;
+        shift += 7;
+        (*pos)++;
     }
-    ll = *ptr;
-    result += ((ll & 0x7F) << bits);
-
-    if (len != NULL) {
-        *len = ptr - buf + 1;
-    }
-    return result;
-}
-
-size_t cdk_varint_encoding_length(uint64_t num) {
-
-    return (
-        num < N1 ? 1
-        : num < N2 ? 2
-        : num < N3 ? 3
-        : num < N4 ? 4
-        : num < N5 ? 5
-        : num < N6 ? 6
-        : num < N7 ? 7
-        : num < N8 ? 8
-        : num < N9 ? 9
-        : 10
-        );
+    value |= (uint64_t)(buf[(*pos)++]) << shift;
+    return value;
 }

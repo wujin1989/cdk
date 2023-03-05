@@ -22,7 +22,7 @@
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-mtx.h"
 #include "cdk/cdk-cnd.h"
-#include "cdk/cdk-io.h"
+#include "cdk/cdk-string.h"
 #include "cdk/cdk-file.h"
 #include "cdk/cdk-queue.h"
 #include "cdk/cdk-thread.h"
@@ -96,7 +96,7 @@ static void __asyncbase(int l, const char* restrict f, int n, const char* restri
 	cdk_time_localtime(&tsc.tv_sec, &tm);
 
 	memset(b, 0, sizeof(b));
-	r = cdk_io_sprintf(b, sizeof(b),                                      \
+	r = cdk_string_sprintf(b, sizeof(b),                               \
 		"%04d-%02d-%02d %02d:%02d:%02d.%03d %5s %s:%d ",               \
 		tm.tm_year + 1900,                                             \
 		tm.tm_mon + 1,                                                 \
@@ -105,10 +105,10 @@ static void __asyncbase(int l, const char* restrict f, int n, const char* restri
 		tm.tm_min,                                                     \
 		tm.tm_sec,                                                     \
 		(int)(tsc.tv_nsec / 1000000UL),                                \
-		__l[l],                                                         \
+		__l[l],                                                        \
 		f, n
 	);
-	r += cdk_io_vsprintf(b + r, sizeof(b) - r, fmt, v);
+	r += cdk_string_vsprintf(b + r, sizeof(b) - r, fmt, v);
 	r++;
 	entry_t* e = cdk_memory_malloc(sizeof(entry_t) + r);
 

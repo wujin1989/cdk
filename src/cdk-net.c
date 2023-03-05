@@ -23,7 +23,7 @@
 #include "cdk/cdk-thread.h"
 #include "cdk/cdk-queue.h"
 #include "cdk/cdk-threadpool.h"
-#include "cdk/cdk-systeminfo.h"
+#include "cdk/cdk-sysinfo.h"
 #include "cdk/cdk-memory.h"
 #include "cdk/cdk-atomic.h"
 

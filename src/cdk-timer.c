@@ -19,15 +19,3 @@
  *  IN THE SOFTWARE.
  */
 
-#include <stdarg.h>
-#include <stdio.h>
-
-int platform_io_sprintf(char* s, size_t sz, const char* f, va_list v) {
-
-	return vsnprintf(s, sz, f, v);
-}
-
-void platform_io_sscanf(const char* s, const char* f, va_list v) {
-
-	vsscanf(s, f, v);
-}
