@@ -23,7 +23,7 @@ _Pragma("once")
 
 #include "cdk-types.h"
 
-extern void				        cdk_net_rbuf(cdk_sock_t s, int v);
+extern void               cdk_net_rbuf(cdk_sock_t s, int v);
 extern void				        cdk_net_sbuf(cdk_sock_t s, int v);
 extern void				        cdk_net_inet_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai);
 extern void				        cdk_net_inet_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
