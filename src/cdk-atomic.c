@@ -21,62 +21,62 @@
 
 #include "platform-atomic.h"
 
-bool cdk_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* f) {
+bool cdk_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* flag) {
 
-	return platform_atomic_flag_test_and_set(f);
+	return platform_atomic_flag_test_and_set(flag);
 }
 
-void cdk_atomic_flag_clear(volatile cdk_atomic_flag_t* f) {
+void cdk_atomic_flag_clear(volatile cdk_atomic_flag_t* flag) {
 	
-	platform_atomic_flag_clear(f);
+	platform_atomic_flag_clear(flag);
 }
 
-int64_t cdk_atomic_load(const volatile cdk_atomic_t* t) {
+int64_t cdk_atomic_load(const volatile cdk_atomic_t* obj) {
 	
-	return platform_atomic_load(t);
+	return platform_atomic_load(obj);
 }
 
-void cdk_atomic_store(volatile cdk_atomic_t* t, int64_t d) {
+void cdk_atomic_store(volatile cdk_atomic_t* obj, int64_t desired) {
 
-	platform_atomic_store(t, d);
+	platform_atomic_store(obj, desired);
 }
 
-void cdk_atomic_add(volatile cdk_atomic_t* t, int64_t o) {
+void cdk_atomic_add(volatile cdk_atomic_t* obj, int64_t val) {
 	
-	platform_atomic_fetch_add(t, o);
+	platform_atomic_fetch_add(obj, val);
 }
 
-void cdk_atomic_sub(volatile cdk_atomic_t* t, int64_t o) {
+void cdk_atomic_sub(volatile cdk_atomic_t* obj, int64_t val) {
 	
-	platform_atomic_fetch_sub(t, o);
+	platform_atomic_fetch_sub(obj, val);
 }
 
-void cdk_atomic_inc(volatile cdk_atomic_t* t) {
+void cdk_atomic_inc(volatile cdk_atomic_t* obj) {
 	
-	platform_atomic_fetch_inc(t);
+	platform_atomic_fetch_inc(obj);
 }
 
-void cdk_atomic_dec(volatile cdk_atomic_t* t) {
+void cdk_atomic_dec(volatile cdk_atomic_t* obj) {
 
-	platform_atomic_fetch_dec(t);
+	platform_atomic_fetch_dec(obj);
 }
 
-void cdk_atomic_or(volatile cdk_atomic_t* t, int64_t o) {
+void cdk_atomic_or(volatile cdk_atomic_t* obj, int64_t val) {
 	
-	platform_atomic_fetch_or(t, o);
+	platform_atomic_fetch_or(obj, val);
 }
 
-void cdk_atomic_xor(volatile cdk_atomic_t* t, int64_t o) {
+void cdk_atomic_xor(volatile cdk_atomic_t* obj, int64_t val) {
 	
-	platform_atomic_fetch_xor(t, o);
+	platform_atomic_fetch_xor(obj, val);
 }
 
-void cdk_atomic_and(volatile cdk_atomic_t* t, int64_t o) {
+void cdk_atomic_and(volatile cdk_atomic_t* obj, int64_t val) {
 
-	platform_atomic_fetch_and(t, o);
+	platform_atomic_fetch_and(obj, val);
 }
 
-bool cdk_atomic_cas(volatile cdk_atomic_t* t, int64_t* e, int64_t d)
+bool cdk_atomic_cas(volatile cdk_atomic_t* obj, int64_t* expected, int64_t desired)
 {
-	return platform_atomic_cas(t, e, d);
+	return platform_atomic_cas(obj, expected, desired);
 }

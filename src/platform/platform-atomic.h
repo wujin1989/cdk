@@ -23,18 +23,18 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern _Bool   platform_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* f);
-extern void    platform_atomic_flag_clear(volatile cdk_atomic_flag_t* f);
-extern int64_t platform_atomic_load(const volatile cdk_atomic_t* t);
-extern void    platform_atomic_store(volatile cdk_atomic_t* t, int64_t d);
-extern void    platform_atomic_fetch_add(volatile cdk_atomic_t* t, int64_t o);
-extern void    platform_atomic_fetch_sub(volatile cdk_atomic_t* t, int64_t o);
-extern void    platform_atomic_fetch_inc(volatile cdk_atomic_t* t);
-extern void    platform_atomic_fetch_dec(volatile cdk_atomic_t* t);
-extern void    platform_atomic_fetch_or(volatile cdk_atomic_t* t, int64_t o);
-extern void    platform_atomic_fetch_xor(volatile cdk_atomic_t* t, int64_t o);
-extern void    platform_atomic_fetch_and(volatile cdk_atomic_t* t, int64_t o);
-extern _Bool   platform_atomic_cas(volatile cdk_atomic_t* t, int64_t* e, int64_t d);
+extern _Bool   platform_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* flag);
+extern void    platform_atomic_flag_clear(volatile cdk_atomic_flag_t* flag);
+extern int64_t platform_atomic_load(const volatile cdk_atomic_t* obj);
+extern void    platform_atomic_store(volatile cdk_atomic_t* obj, int64_t desired);
+extern void    platform_atomic_fetch_add(volatile cdk_atomic_t* obj, int64_t val);
+extern void    platform_atomic_fetch_sub(volatile cdk_atomic_t* obj, int64_t val);
+extern void    platform_atomic_fetch_inc(volatile cdk_atomic_t* obj);
+extern void    platform_atomic_fetch_dec(volatile cdk_atomic_t* obj);
+extern void    platform_atomic_fetch_or(volatile cdk_atomic_t* obj, int64_t val);
+extern void    platform_atomic_fetch_xor(volatile cdk_atomic_t* obj, int64_t val);
+extern void    platform_atomic_fetch_and(volatile cdk_atomic_t* obj, int64_t val);
+extern _Bool   platform_atomic_cas(volatile cdk_atomic_t* obj, int64_t* expected, int64_t desired);
 
 
 

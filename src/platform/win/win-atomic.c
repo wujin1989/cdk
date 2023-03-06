@@ -21,65 +21,65 @@
 
 #include "cdk/cdk-types.h"
 
-_Bool platform_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* f) {
+_Bool platform_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* flag) {
 
-	return InterlockedExchange8((volatile char*)f, 1) == 1;
+	return InterlockedExchange8((volatile char*)flag, 1) == 1;
 }
 
-void platform_atomic_flag_clear(volatile cdk_atomic_flag_t* f) {
+void platform_atomic_flag_clear(volatile cdk_atomic_flag_t* flag) {
 
-	InterlockedExchange8((volatile char*)f, 0);
+	InterlockedExchange8((volatile char*)flag, 0);
 }
 
-int64_t platform_atomic_load(const volatile cdk_atomic_t* t) {
+int64_t platform_atomic_load(const volatile cdk_atomic_t* obj) {
 
-	return InterlockedCompareExchange64((volatile cdk_atomic_t*)t, 0LL, 0LL);
+	return InterlockedCompareExchange64((volatile cdk_atomic_t*)obj, 0LL, 0LL);
 }
 
-void platform_atomic_store(volatile cdk_atomic_t* t, int64_t d) {
+void platform_atomic_store(volatile cdk_atomic_t* obj, int64_t desired) {
 	
-	InterlockedExchange64(t, d);
+	InterlockedExchange64(obj, desired);
 }
 
-void platform_atomic_fetch_add(volatile cdk_atomic_t* t, int64_t o) {
+void platform_atomic_fetch_add(volatile cdk_atomic_t* obj, int64_t val) {
 
-	InterlockedAdd64(t, o);
+	InterlockedAdd64(obj, val);
 }
 
-void platform_atomic_fetch_sub(volatile cdk_atomic_t* t, int64_t o) {
+void platform_atomic_fetch_sub(volatile cdk_atomic_t* obj, int64_t val) {
 
-	InterlockedAdd64(t, -o);
+	InterlockedAdd64(obj, -val);
 }
 
-void platform_atomic_fetch_inc(volatile cdk_atomic_t* t) {
+void platform_atomic_fetch_inc(volatile cdk_atomic_t* obj) {
 
-	InterlockedAdd64(t, 1LL);
+	InterlockedAdd64(obj, 1LL);
 }
 
-void platform_atomic_fetch_dec(volatile cdk_atomic_t* t) {
+void platform_atomic_fetch_dec(volatile cdk_atomic_t* obj) {
 
-	InterlockedAdd64(t, -1LL);
+	InterlockedAdd64(obj, -1LL);
 }
 
-void platform_atomic_fetch_or(volatile cdk_atomic_t* t, int64_t o) {
+void platform_atomic_fetch_or(volatile cdk_atomic_t* obj, int64_t val) {
 
-	InterlockedOr64(t, o);
+	InterlockedOr64(obj, val);
 }
 
-void platform_atomic_fetch_xor(volatile cdk_atomic_t* t, int64_t o) {
+void platform_atomic_fetch_xor(volatile cdk_atomic_t* obj, int64_t val) {
 
-	InterlockedXor64(t, o);
+	InterlockedXor64(obj, val);
 }
 
-void platform_atomic_fetch_and(volatile cdk_atomic_t* t, int64_t o) {
+void platform_atomic_fetch_and(volatile cdk_atomic_t* obj, int64_t val) {
 	
-	InterlockedAnd64(t, o);
+	InterlockedAnd64(obj, val);
 }
 
-_Bool platform_atomic_cas(volatile cdk_atomic_t* t, int64_t* e, int64_t d)
+_Bool platform_atomic_cas(volatile cdk_atomic_t* obj, int64_t* expected, int64_t desired)
 {
-	LONG64 m = *e;
-	*e = InterlockedCompareExchange64(t, d, m);
+	LONG64 m = *expected;
+	*expected = InterlockedCompareExchange64(obj, desired, m);
 	
-	return *e == m;
+	return *expected == m;
 }
