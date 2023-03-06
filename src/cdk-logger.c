@@ -42,7 +42,6 @@
 typedef struct logger_s {
 	FILE* file;
 	_Bool async;
-	_Bool status;
 	cdk_thrdpool_t pool;
 }logger_t;
 
@@ -119,7 +118,6 @@ static void __asyncbase(int level, const char* restrict file, int line, const ch
 void cdk_logger_init(const char* restrict out, bool async, int workers) {
 
 	if (async) {
-		__g.status = true;
 		cdk_thrdpool_create(&__g.pool, workers);
 	}
 	__g.async = async;
@@ -134,8 +132,6 @@ void cdk_logger_init(const char* restrict out, bool async, int workers) {
 void cdk_logger_destroy(void) {
 
 	if (__g.async) {
-
-		__g.status = false;
 		cdk_thrdpool_destroy(&__g.pool);
 	}
 	if (__g.file) { 
