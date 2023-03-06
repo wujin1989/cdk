@@ -31,89 +31,96 @@
 
 static int __thrdpool_thrdfunc(void* arg) {
 	
-	cdk_thrdpool_t* p = arg;
+	cdk_thrdpool_t* pool = arg;
 
-	cdk_thrdpool_job_t  j;
+	cdk_thrdpool_job_t job;
 
-	while (p->s) {
+	while (pool->status) {
 
-		cdk_mtx_lock(&p->j_m);
-		cdk_thrdpool_job_t* j_p;
+		cdk_mtx_lock(&pool->qmtx);
+		cdk_thrdpool_job_t* ptr;
 
-		while (p->s && cdk_queue_empty(&p->q)) {
-			cdk_cnd_wait(&p->j_c, &p->j_m);
+		while (pool->status && cdk_queue_empty(&pool->queue)) {
+			cdk_cnd_wait(&pool->qcnd, &pool->qmtx);
 		}
-		j_p  = cdk_queue_data(cdk_queue_dequeue(&p->q), cdk_thrdpool_job_t, n);
-		j = *j_p;
-		cdk_memory_free(j_p);
-		cdk_mtx_unlock(&p->j_m);
+		ptr = cdk_queue_data(cdk_queue_dequeue(&pool->queue), cdk_thrdpool_job_t, n);
+		job = *ptr;
+		cdk_memory_free(ptr);
+		cdk_mtx_unlock(&pool->qmtx);
 
-		if (p->s) { j.fn(j.p); }
+		if (pool->status) { 
+			job.routine(job.arg);
+		}
 	}
 	return 0;
 }
 
-static void __thrdpool_createthread(cdk_thrdpool_t* p) {
+static void __thrdpool_createthread(cdk_thrdpool_t* pool) {
 
-	void*   nt; /* new threads */
+	void* thrds;
 
-	cdk_mtx_lock(&p->t_m);
-	nt = realloc(p->t, (p->t_c + 1) * sizeof(cdk_thrd_t));
-	if (!nt) { cdk_mtx_unlock(&p->t_m); return; }
-
-	p->t = nt;
-	cdk_thrd_create(p->t + p->t_c, __thrdpool_thrdfunc, p);
-	
-
-	p->t_c++;
-	cdk_mtx_unlock(&p->t_m);
-}
-
-cdk_thrdpool_t* cdk_thrdpool_create(void) {
-
-	cdk_thrdpool_t* p = cdk_memory_malloc(sizeof(cdk_thrdpool_t));
-
-	cdk_queue_create(&p->q);
-	cdk_mtx_init(&p->t_m);
-	cdk_mtx_init(&p->j_m);
-	cdk_cnd_init(&p->j_c);
-	p->t_c = 0;
-	p->s   = true;
-	p->t   = NULL;
-
-	for (int i = 0; i < cdk_sysinfo_cpus(); i++) {
-		__thrdpool_createthread(p);
+	cdk_mtx_lock(&pool->tmtx);
+	thrds = realloc(pool->thrds, (pool->thrdcnt + 1) * sizeof(cdk_thrd_t));
+	if (!thrds) {
+		cdk_mtx_unlock(&pool->tmtx);
+		return;
 	}
-	return p;
+	pool->thrds = thrds;
+	cdk_thrd_create(pool->thrds + pool->thrdcnt, __thrdpool_thrdfunc, pool);
+
+	pool->thrdcnt++;
+	cdk_mtx_unlock(&pool->tmtx);
 }
 
-void cdk_thrdpool_destroy(cdk_thrdpool_t* p) {
-	
-	if (!p) { return; }
+void cdk_thrdpool_create(cdk_thrdpool_t* pool, int workers) {
 
-	p->s = false;
+	cdk_queue_create(&pool->queue);
 
-	cdk_mtx_lock(&p->j_m);
-	cdk_cnd_broadcast(&p->j_c);
-	cdk_mtx_unlock(&p->j_m);
+	cdk_mtx_init(&pool->tmtx);
+	cdk_mtx_init(&pool->qmtx);
+	cdk_cnd_init(&pool->qcnd);
 
-	for (int i = 0; i < p->t_c; i++) {
-		cdk_thrd_join(p->t[i]);
+	pool->thrdcnt = 0;
+	pool->status  = true;
+	pool->thrds   = NULL;
+
+	if (!workers) {
+		workers = cdk_sysinfo_cpus();
 	}
-	cdk_mtx_destroy(&p->j_m);
-	cdk_mtx_destroy(&p->t_m);
-	cdk_cnd_destroy(&p->j_c);
-
-	cdk_memory_free(p->t);
-	cdk_memory_free(p);
+	for (int i = 0; i < workers; i++) {
+		__thrdpool_createthread(pool);
+	}
 }
 
-void cdk_thrdpool_post(cdk_thrdpool_t* p, cdk_thrdpool_job_t* j) {
+void cdk_thrdpool_destroy(cdk_thrdpool_t* pool) {
+	
+	if (!pool) {
+		return;
+	}
+	pool->status = false;
 
-	if (!p || !j) { return; }
+	cdk_mtx_lock(&pool->qmtx);
+	cdk_cnd_broadcast(&pool->qcnd);
+	cdk_mtx_unlock(&pool->qmtx);
 
-	cdk_mtx_lock(&p->j_m);
-	cdk_queue_enqueue(&p->q, &j->n);
-	cdk_cnd_signal(&p->j_c);
-	cdk_mtx_unlock(&p->j_m);
+	for (int i = 0; i < pool->thrdcnt; i++) {
+		cdk_thrd_join(pool->thrds[i]);
+	}
+	cdk_mtx_destroy(&pool->qmtx);
+	cdk_mtx_destroy(&pool->tmtx);
+	cdk_cnd_destroy(&pool->qcnd);
+
+	cdk_memory_free(pool->thrds);
+	cdk_memory_free(pool);
+}
+
+void cdk_thrdpool_post(cdk_thrdpool_t* pool, cdk_thrdpool_job_t* job) {
+
+	if (!pool || !job) {
+		return;
+	}
+	cdk_mtx_lock(&pool->qmtx);
+	cdk_queue_enqueue(&pool->queue, &job->n);
+	cdk_cnd_signal(&pool->qcnd);
+	cdk_mtx_unlock(&pool->qmtx);
 }

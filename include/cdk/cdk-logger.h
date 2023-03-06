@@ -35,10 +35,10 @@ enum {
 #define cdk_logw(...)    cdk_logger_log(LEVEL_WARN,  __FILE__, __LINE__, __VA_ARGS__)
 #define cdk_loge(...)    cdk_logger_log(LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 
-extern void cdk_logger_init(const char* restrict o, bool a);
+extern void cdk_logger_init(const char* restrict out, bool async, int workers);
 extern void cdk_logger_destroy(void);
 
 /**
  * for internal use by the logger, not to be used by users.
  */
-extern void cdk_logger_log(int l, const char* restrict f, int n, const char* restrict fmt, ...);
+extern void cdk_logger_log(int level, const char* restrict file, int line, const char* restrict fmt, ...);

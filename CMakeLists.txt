@@ -101,6 +101,6 @@ if(UNIX)
 endif()
 
 add_library(cdk STATIC ${SRCS})
-target_link_libraries(cdk PUBLIC Threads::Threads  ${CMAKE_DL_LIBS})
+target_link_libraries(cdk PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
 
 add_subdirectory(examples)

@@ -69,3 +69,6 @@ target_link_libraries(test-rbtree PUBLIC cdk)
 
 add_executable(test-varint "test-varint.c")
 target_link_libraries(test-varint PUBLIC cdk)
+
+add_executable(test-logger "test-logger.c")
+target_link_libraries(test-logger PUBLIC cdk)

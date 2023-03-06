@@ -47,81 +47,80 @@ _Pragma("once")
 
 enum cdk_spliter_type_e {
 
-	SPLITER_TYPE_FIXED,
-	SPLITER_TYPE_TEXTPLAIN,
-	SPLITER_TYPE_BINARY,
-	SPLITER_TYPE_USER_DEFINED
+	SPLITER_TYPE_FIXED        ,
+	SPLITER_TYPE_TEXTPLAIN    ,
+	SPLITER_TYPE_BINARY       ,
+	SPLITER_TYPE_USER_DEFINED ,
 };
 
 enum cdk_rbtree_node_keytype_e {
 
-	RB_KEYTYPE_INT8,
-	RB_KEYTYPE_UINT8,
-	RB_KEYTYPE_INT16,
-	RB_KEYTYPE_UINT16,
-	RB_KEYTYPE_INT32,
-	RB_KEYTYPE_UINT32,
-	RB_KEYTYPE_INT64,
-	RB_KEYTYPE_UINT64,
-	RB_KEYTYPE_STR,
+	RB_KEYTYPE_INT8   ,
+	RB_KEYTYPE_UINT8  ,
+	RB_KEYTYPE_INT16  ,
+	RB_KEYTYPE_UINT16 ,
+	RB_KEYTYPE_INT32  ,
+	RB_KEYTYPE_UINT32 ,
+	RB_KEYTYPE_INT64  ,
+	RB_KEYTYPE_UINT64 ,
+	RB_KEYTYPE_STR    ,
 };
 
-typedef struct cdk_poller_conn_s		 cdk_poller_conn_t;
-typedef struct cdk_poller_handler_s		 cdk_poller_handler_t;
-typedef union  cdk_rbtree_node_key_u             cdk_rbtree_node_key_t;
-typedef struct cdk_rbtree_node_s		 cdk_rbtree_node_t;
-typedef enum   cdk_rbtree_node_keytype_e         cdk_rbtree_node_keytype_t;
-typedef struct cdk_rbtree_s			 cdk_rbtree_t;
-typedef struct cdk_list_node_s			 cdk_list_node_t;
-typedef struct cdk_list_node_s			 cdk_list_t;
-typedef struct cdk_list_node_s			 cdk_queue_t;
-typedef struct cdk_list_node_s			 cdk_queue_node_t;
-typedef struct cdk_list_node_s			 cdk_stack_t;
-typedef struct cdk_list_node_s			 cdk_stack_node_t;
-typedef struct cdk_thrdpool_job_s		 cdk_thrdpool_job_t;
-typedef struct cdk_ringbuf_s			 cdk_ringbuf_t;
-typedef enum   cdk_spliter_type_e		 cdk_spliter_type_t;
-typedef struct cdk_spliter_s			 cdk_spliter_t;
-typedef struct cdk_offset_buf_s			 cdk_offset_buf_t;
-typedef struct cdk_addrinfo_s			 cdk_addrinfo_t;
-typedef struct cdk_thrdpool_s			 cdk_thrdpool_t;
+typedef struct cdk_poller_conn_s         cdk_poller_conn_t;
+typedef struct cdk_poller_handler_s      cdk_poller_handler_t;
+typedef union  cdk_rbtree_node_key_u     cdk_rbtree_node_key_t;
+typedef struct cdk_rbtree_node_s         cdk_rbtree_node_t;
+typedef enum   cdk_rbtree_node_keytype_e cdk_rbtree_node_keytype_t;
+typedef struct cdk_rbtree_s              cdk_rbtree_t;
+typedef struct cdk_list_node_s           cdk_list_node_t;
+typedef struct cdk_list_node_s           cdk_list_t;
+typedef struct cdk_list_node_s           cdk_queue_t;
+typedef struct cdk_list_node_s           cdk_queue_node_t;
+typedef struct cdk_list_node_s           cdk_stack_t;
+typedef struct cdk_list_node_s           cdk_stack_node_t;
+typedef struct cdk_thrdpool_job_s        cdk_thrdpool_job_t;
+typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
+typedef enum   cdk_spliter_type_e        cdk_spliter_type_t;
+typedef struct cdk_spliter_s             cdk_spliter_t;
+typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
+typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
+typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
+typedef struct cdk_timer_s               cdk_timer_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
 #if defined(__APPLE__)
-typedef uint64_t                         cdk_tid_t;
+typedef uint64_t             cdk_tid_t;
 #endif
 #if defined(__linux__)
-typedef pid_t                            cdk_tid_t;
+typedef pid_t                cdk_tid_t;
 #endif
-typedef pid_t                            cdk_pid_t;
-typedef struct cdk_thrd_s                cdk_thrd_t;
-typedef pthread_once_t                   cdk_once_t;
-typedef pthread_mutex_t                  cdk_mtx_t;
-typedef pthread_rwlock_t		 cdk_rwlock_t;
-typedef pthread_cond_t                   cdk_cnd_t;
-typedef atomic_flag			 cdk_atomic_flag_t;
-typedef atomic_llong                     cdk_atomic_t;
-typedef int                              cdk_sock_t;
+typedef pid_t                cdk_pid_t;
+typedef struct cdk_thrd_s    cdk_thrd_t;
+typedef pthread_once_t       cdk_once_t;
+typedef pthread_mutex_t      cdk_mtx_t;
+typedef pthread_rwlock_t     cdk_rwlock_t;
+typedef pthread_cond_t       cdk_cnd_t;
+typedef atomic_flag          cdk_atomic_flag_t;
+typedef atomic_llong         cdk_atomic_t;
+typedef int                  cdk_sock_t;
 
 #endif
 
 #if defined(_WIN32)
 
-typedef DWORD                            cdk_tid_t;
-typedef struct cdk_thrd_s                cdk_thrd_t;
-typedef DWORD                            cdk_pid_t;
-typedef INIT_ONCE                        cdk_once_t;
-typedef CRITICAL_SECTION                 cdk_mtx_t;
-typedef SRWLOCK				 cdk_rwlock_t;
-typedef CONDITION_VARIABLE               cdk_cnd_t;
-
-typedef struct cdk_atomic_flag_s         cdk_atomic_flag_t;
-typedef LONG64                           cdk_atomic_t;
-
-typedef SOCKET                           cdk_sock_t;
-typedef int                              socklen_t;
-typedef SSIZE_T                          ssize_t;
+typedef DWORD                       cdk_tid_t;
+typedef struct cdk_thrd_s           cdk_thrd_t;
+typedef DWORD                       cdk_pid_t;
+typedef INIT_ONCE                   cdk_once_t;
+typedef CRITICAL_SECTION            cdk_mtx_t;
+typedef SRWLOCK                     cdk_rwlock_t;
+typedef CONDITION_VARIABLE          cdk_cnd_t;
+typedef struct cdk_atomic_flag_s    cdk_atomic_flag_t;
+typedef LONG64                      cdk_atomic_t;
+typedef SOCKET                      cdk_sock_t;
+typedef int                         socklen_t;
+typedef SSIZE_T                     ssize_t;
 
 #endif
 
@@ -159,8 +158,8 @@ struct cdk_list_node_s {
 };
 
 struct cdk_thrdpool_job_s {
-	void (*fn)(void*);
-	void* p;
+	void (*routine)(void*);
+	void* arg;
 	cdk_queue_node_t n;
 };
 
@@ -235,13 +234,13 @@ struct cdk_addrinfo_s {
 };
 
 struct cdk_thrdpool_s {
-	cdk_thrd_t* t;       /* threads */
-	size_t      t_c;     /* thread count */
-	cdk_queue_t q;
-	cdk_mtx_t   t_m;     /* create thread mutex */
-	cdk_mtx_t   j_m;     /* handle job mutex */
-	cdk_cnd_t   j_c;
-	bool s;              /* status, idle or running */
+	cdk_thrd_t* thrds;
+	size_t      thrdcnt;
+	cdk_queue_t queue;
+	cdk_mtx_t   tmtx;
+	cdk_mtx_t   qmtx;
+	cdk_cnd_t   qcnd;
+	bool        status;
 };
 
 typedef struct cdk_poller_s {
@@ -289,4 +288,10 @@ struct cdk_poller_handler_s {
 	void (*on_read)   (cdk_poller_conn_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_poller_conn_t*, void* buf, size_t len);
 	void (*on_close)  (cdk_poller_conn_t*);
+};
+
+struct cdk_timer_s {
+
+	struct cdk_rbtree_s   tree;
+	struct cdk_thrdpool_s pool;
 };

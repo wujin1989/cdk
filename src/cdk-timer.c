@@ -19,3 +19,42 @@
  *  IN THE SOFTWARE.
  */
 
+#include "cdk/cdk-types.h"
+#include "cdk/cdk-memory.h"
+#include "cdk/cdk-rbtree.h"
+#include "cdk/cdk-mtx.h"
+#include "cdk/cdk-threadpool.h"
+
+typedef struct cdk_timer_entry_s {
+
+	void (*routine)(void*);
+	void* arg;
+	bool  repeat;
+
+	struct cdk_rbtree_node_s node;
+}cdk_timer_entry_t;
+
+void cdk_timer_create(cdk_timer_t* timer, uint32_t workers) {
+
+	cdk_rbtree_create(&timer->tree, RB_KEYTYPE_UINT64);
+	cdk_thrdpool_create(&timer->pool, workers);
+}
+
+void cdk_timer_destroy(cdk_timer_t* timer) {
+
+	cdk_thrdpool_destroy(&timer->pool);
+}
+
+void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint64_t expire, bool repeat) {
+
+	cdk_timer_entry_t* entry;
+
+	entry = cdk_memory_malloc(sizeof(cdk_timer_entry_t));
+	
+	entry->routine = routine;
+	entry->arg     = arg;
+	entry->repeat  = repeat;
+	entry->node.rb_key.u64 = expire;
+
+	cdk_rbtree_insert(&timer->tree, &entry->node);
+}
