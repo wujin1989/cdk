@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        cmake-version: [3.0]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install CMake
+        uses: cmake/action-setup@v2
+        with:
+          cmake-version: ${{ matrix.cmake-version }}
+
+      - name: Build project
+        run: |
+          cmake -B build
+          cmake --build build
+
