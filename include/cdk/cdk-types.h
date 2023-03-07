@@ -79,16 +79,12 @@ typedef struct cdk_list_node_s           cdk_queue_node_t;
 typedef struct cdk_list_node_s           cdk_stack_t;
 typedef struct cdk_list_node_s           cdk_stack_node_t;
 typedef struct cdk_thrdpool_job_s        cdk_thrdpool_job_t;
-typedef struct cdk_thrdpool_timed_job_s  cdk_thrdpool_timed_job_t;
-typedef struct cdk_thrdpool_timed_jobs_s cdk_thrdpool_timed_jobs_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_spliter_type_e        cdk_spliter_type_t;
 typedef struct cdk_spliter_s             cdk_spliter_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
-typedef struct cdk_thrdpool_timed_s      cdk_thrdpool_timed_t;
-typedef struct cdk_timer_s               cdk_timer_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -164,19 +160,6 @@ struct cdk_thrdpool_job_s {
 	void (*routine)(void*);
 	void* arg;
 	cdk_queue_node_t n;
-};
-
-struct cdk_thrdpool_timed_job_s {
-	void     (*routine)(void*);
-	void*    arg;
-	bool     repeat;
-	cdk_queue_node_t n;
-};
-
-struct cdk_thrdpool_timed_jobs_s {
-	uint64_t          timebase;
-	cdk_queue_t       jobs;
-	cdk_rbtree_node_t n;
 };
 
 struct cdk_ringbuf_s {
@@ -315,8 +298,4 @@ struct cdk_poller_handler_s {
 	void (*on_read)   (cdk_poller_conn_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_poller_conn_t*, void* buf, size_t len);
 	void (*on_close)  (cdk_poller_conn_t*);
-};
-
-struct cdk_timer_s {
-	struct cdk_thrdpool_timed_s pool;
 };

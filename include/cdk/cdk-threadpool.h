@@ -26,6 +26,3 @@ _Pragma("once")
 extern void cdk_thrdpool_create(cdk_thrdpool_t* pool, int workers);
 extern void cdk_thrdpool_post(cdk_thrdpool_t* pool, cdk_thrdpool_job_t* job);
 extern void cdk_thrdpool_destroy(cdk_thrdpool_t* pool);
-extern void cdk_thrdpool_timed_create(cdk_thrdpool_timed_t* pool, int workers);
-extern void cdk_thrdpool_timed_post(cdk_thrdpool_timed_t* pool, cdk_thrdpool_timed_jobs_t* jobs);
-extern void cdk_thrdpool_timed_destroy(cdk_thrdpool_timed_t* pool);
