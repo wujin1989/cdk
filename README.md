@@ -1,7 +1,7 @@
 ![image](https://github.com/wujin1989/cdk/blob/main/docs/images/logo.png)
 [![platform](https://img.shields.io/badge/platform-linux%7Cmacosx%7Cwindows-ff69b4)](https://github.com/wujin1989/cdk/actions/workflows/main.yml)
 [![Build](https://github.com/wujin1989/cdk/actions/workflows/main.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/main.yml)
-[![license](https://img.shields.io/badge/license-MIT-black)](LISENCE)
+[![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![language](https://img.shields.io/badge/language-C-red)]()
 [![maintainability](https://img.shields.io/badge/maintainability-A-brightgreen)]()
 
