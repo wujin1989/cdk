@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        cmake-version: [3.20.5]
 
     steps:
       - name: Checkout code
