@@ -30,12 +30,12 @@ jobs:
 
       - name: Build project
         run: |
-          if [[ ${{ matrix.os }} == 'windows-latest' ]]; then
+          if (${{ matrix.os }} -eq "windows-latest") {
             cmake -B build -G "Visual Studio 17 2022" -A x64
             cmake --build build --config Release
-          else
+          } else {
             cmake -B build -G "Ninja Multi-Config"
             cmake --build build --config Release -j 8
-          fi
+          }
 
 
