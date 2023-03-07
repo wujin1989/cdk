@@ -13,19 +13,19 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        cmake-version: [3.0]
+        cmake-version: [3.20.5]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install CMake
+      - name: Install CMake and Ninja
         uses: cmake/action-setup@v2
         with:
           cmake-version: ${{ matrix.cmake-version }}
+          extra-options: -G "Ninja Multi-Config"
 
       - name: Build project
         run: |
           cmake -B build
           cmake --build build
-
