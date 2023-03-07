@@ -1,4 +1,5 @@
 ![image](https://github.com/wujin1989/cdk/blob/main/docs/images/logo.png)
+[![platform]([https://img.shields.io/badge/platform-linux%20%7C%20windows%20%7C%20macos-blue](https://img.shields.io/badge/platform-linux%7Cmacosx%7Cwindows-ff69b4))](.github/workflows/CI.yml)
 [![Build](https://github.com/wujin1989/cdk/actions/workflows/main.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/main.yml)
 # Overview
 CDK is a clean and concise cross-platform C development kits that complements the standard C library. It provides developers with powerful tools and functions to simplify the process of developing portable C applications. CDK is well-documented, designed to support best coding practices, and ensures code compiles without warnings on all supported platforms and compilers.
