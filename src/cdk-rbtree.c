@@ -528,6 +528,11 @@ cdk_rbtree_node_t* cdk_rbtree_last(cdk_rbtree_t* tree)
 	return n;
 }
 
+bool cdk_rbtree_empty(cdk_rbtree_t* tree) {
+
+	return cdk_rbtree_first(tree) == NULL;
+}
+
 cdk_rbtree_node_t* cdk_rbtree_next(cdk_rbtree_node_t* node)
 {
 	cdk_rbtree_node_t* parent;

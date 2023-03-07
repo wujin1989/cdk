@@ -23,6 +23,6 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void cdk_timer_create(cdk_timer_t* timer);
+extern void cdk_timer_create(cdk_timer_t* timer, uint32_t workers);
 extern void cdk_timer_destroy(cdk_timer_t* timer);
-extern void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint64_t expire, bool repeat);
+extern void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat);

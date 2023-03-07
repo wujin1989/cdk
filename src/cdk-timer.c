@@ -21,40 +21,51 @@
 
 #include "cdk/cdk-types.h"
 #include "cdk/cdk-memory.h"
-#include "cdk/cdk-rbtree.h"
-#include "cdk/cdk-mtx.h"
 #include "cdk/cdk-threadpool.h"
+#include "cdk/cdk-rbtree.h"
+#include "cdk/cdk-queue.h"
+#include "cdk/cdk-time.h"
 
-typedef struct cdk_timer_entry_s {
-
-	void (*routine)(void*);
-	void* arg;
-	bool  repeat;
-
-	struct cdk_rbtree_node_s node;
-}cdk_timer_entry_t;
 
 void cdk_timer_create(cdk_timer_t* timer, uint32_t workers) {
 
-	cdk_rbtree_create(&timer->tree, RB_KEYTYPE_UINT64);
-	cdk_thrdpool_create(&timer->pool, workers);
+	cdk_thrdpool_timed_create(&timer->pool, workers);
 }
 
 void cdk_timer_destroy(cdk_timer_t* timer) {
 
-	cdk_thrdpool_destroy(&timer->pool);
+	cdk_thrdpool_timed_destroy(&timer->pool);
 }
 
-void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint64_t expire, bool repeat) {
-
-	cdk_timer_entry_t* entry;
-
-	entry = cdk_memory_malloc(sizeof(cdk_timer_entry_t));
+void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat) {
 	
-	entry->routine = routine;
-	entry->arg     = arg;
-	entry->repeat  = repeat;
-	entry->node.rb_key.u64 = expire;
+	cdk_thrdpool_timed_jobs_t* jobs;
+	cdk_thrdpool_timed_job_t* job;
+	cdk_rbtree_node_key_t key;
+	cdk_rbtree_node_t* node;
+	uint64_t timebase;
 
-	cdk_rbtree_insert(&timer->tree, &entry->node);
+	timebase = cdk_time_now();
+	key.u64  = timebase + expire;
+
+	job = cdk_memory_malloc(sizeof(cdk_thrdpool_timed_job_t));
+
+	job->routine = routine;
+	job->arg     = arg;
+	job->repeat  = repeat;
+
+	node = cdk_rbtree_find(&timer->pool.rbtree, key);
+	if (node) {
+		jobs = cdk_rbtree_data(node, cdk_thrdpool_timed_jobs_t, n);
+		cdk_queue_enqueue(&jobs->jobs, &job->n);
+	}
+	else {
+		jobs = cdk_memory_malloc(sizeof(cdk_thrdpool_timed_jobs_t));
+		
+		jobs->timebase = timebase;
+		jobs->n.rb_key = key;
+		cdk_queue_create(&jobs->jobs);
+		cdk_queue_enqueue(&jobs->jobs, &job->n);
+		cdk_thrdpool_timed_post(&timer->pool, jobs);
+	}
 }

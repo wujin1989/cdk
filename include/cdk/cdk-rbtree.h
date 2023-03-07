@@ -37,4 +37,5 @@ extern cdk_rbtree_node_t* cdk_rbtree_next(cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_prev(cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_first(cdk_rbtree_t* tree);
 extern cdk_rbtree_node_t* cdk_rbtree_last(cdk_rbtree_t* tree);
+extern bool               cdk_rbtree_empty(cdk_rbtree_t* tree);
 

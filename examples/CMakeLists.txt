@@ -72,3 +72,6 @@ target_link_libraries(test-varint PUBLIC cdk)
 
 add_executable(test-logger "test-logger.c")
 target_link_libraries(test-logger PUBLIC cdk)
+
+add_executable(test-timer "test-timer.c")
+target_link_libraries(test-timer PUBLIC cdk)
