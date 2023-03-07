@@ -24,6 +24,8 @@
 #include <stdint.h>
 #include <errno.h>
 
+#define USEC   (1000000UL)
+
 void platform_time_localtime(const time_t* t, struct tm* r) {
 
 	tzset();
@@ -32,8 +34,13 @@ void platform_time_localtime(const time_t* t, struct tm* r) {
 
 void platform_time_sleep(const uint32_t ms) {
 
-	int r;
+	int ret;
+	struct timespec req;
+	struct timespec rem;
+
+	req.tv_sec  = ms * USEC / (1000000000UL);
+	req.tv_nsec = ms * USEC % (1000000000UL);
 	do {
-		r = usleep(ms * 1000);
-	} while (r == -1 && errno == EINTR);
+		ret = nanosleep(&req, &rem);
+	} while (ret == -1 && errno == EINTR);
 }
