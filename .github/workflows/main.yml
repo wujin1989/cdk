@@ -21,8 +21,8 @@ jobs:
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@latest
         with:
-              cmake-version: ${{ matrix.cmake-version }}
-              extra-options: -G "Ninja Multi-Config"
+              cmakeVersion: latestrc
+              ninjaVersion: latest
 
       - name: Build project
         run: |
