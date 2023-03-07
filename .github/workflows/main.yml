@@ -21,10 +21,21 @@ jobs:
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@latest
         with:
-              cmakeVersion: latestrc
-              ninjaVersion: latest
+          cmakeVersion: latestrc
+          ninjaVersion: latest
+
+      - name: Set up MSVC 2022 on Windows
+        if: matrix.os == 'windows-latest'
+        uses: microsoft/setup-msbuild@v1.0.2
 
       - name: Build project
+        if: matrix.os != 'windows-latest'
         run: |
           cmake -B build -G "Ninja Multi-Config"
           cmake --build build --config Release -j 8
+
+        if: matrix.os == 'windows-latest'
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64
+          cmake --build build --config Release
+
