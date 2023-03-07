@@ -20,10 +20,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install CMake and Ninja
-        uses: cmake/action-setup@v2
+        uses: cmake/setup-cmake@v1.4.1
         with:
-          cmake-version: ${{ matrix.cmake-version }}
-          extra-options: -G "Ninja Multi-Config"
+              cmake-version: ${{ matrix.cmake-version }}
+              extra-options: -G "Ninja Multi-Config"
 
       - name: Build project
         run: |
