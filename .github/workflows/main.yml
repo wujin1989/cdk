@@ -26,5 +26,5 @@ jobs:
 
       - name: Build project
         run: |
-          cmake -B build
-          cmake --build build
+          cmake -B build -G "Ninja Multi-Config"
+          cmake --build build --config Release -j 8
