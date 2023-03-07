@@ -7,32 +7,30 @@ The compiler needs to support C11.
 
 
 # Compile
-cmake -B build -G "Ninja Multi-Config"
-          cmake --build build --config Release -j 8
 Windows:
 
-    cmake -B build -G "Ninja Multi-Config";
+    cmake -G "Ninja Multi-Config" -B build
     or
-    cmake -B build -G "Visual Studio 17 2022";
+    cmake -G "Visual Studio 17 2022" -B build
 
-    cmake --build build --config Debug -j 8;
-    cmake --build build --config Release -j 8;
+    cmake --build build --config Debug -j 8
+    cmake --build build --config Release -j 8
 
 Linux:
 
-    cmake -B build -G "Ninja Multi-Config";
+    cmake -G "Ninja Multi-Config" -B build
 	
-    cmake --build build --config Debug -j 8;
-    cmake --build build --config Release -j 8;
+    cmake --build build --config Debug -j 8
+    cmake --build build --config Release -j 8
 
 Mac:
 
-    cmake -B build -G "Ninja Multi-Config";
+    cmake -G "Ninja Multi-Config" -B build
     or
-    cmake -B build -G "Xcode";
+    cmake -G "Xcode" -B build
 
-    cmake --build build --config Debug -j 8;
-    cmake --build build --config Release -j 8;
+    cmake --build build --config Debug -j 8
+    cmake --build build --config Release -j 8
 
 # Documentation
 Reference docs/cdk-docs.html.
