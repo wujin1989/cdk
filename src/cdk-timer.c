@@ -29,6 +29,7 @@
 #include "cdk/cdk-sysinfo.h"
 #include "cdk/cdk-queue.h"
 #include "cdk/cdk-time.h"
+#include <stdint.h>
 
 typedef struct cdk_timer_s {
 	cdk_thrd_t*  thrds;
@@ -154,7 +155,7 @@ void cdk_timer_create(uint32_t workers) {
 	if (!workers) {
 		workers = cdk_sysinfo_cpus();
 	}
-	for (int i = 0; i < workers; i++) {
+	for (uint32_t i = 0; i < workers; i++) {
 		__timer_createthread();
 	}
 }
