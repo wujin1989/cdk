@@ -39,5 +39,6 @@ void* platform_loader_load(void* m, const char* restrict f) {
 	if (r == NULL) {
 		platform_loader_destroy(m);
 	}
+	return r;
 }
 
