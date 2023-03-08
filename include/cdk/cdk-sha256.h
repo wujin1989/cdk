@@ -25,6 +25,6 @@ _Pragma("once")
 
 #define CDK_SHA256_BLOCK_SIZE 32
 
-void cdk_sha256_init(cdk_sha256_ctx_t* ctx);
-void cdk_sha256_update(cdk_sha256_ctx_t* ctx, const uint8_t data[], size_t len);
-void cdk_sha256_final(cdk_sha256_ctx_t* ctx, uint8_t hash[]);
+extern void cdk_sha256_init(cdk_sha256_ctx_t* ctx);
+extern void cdk_sha256_update(cdk_sha256_ctx_t* ctx, const uint8_t data[], size_t len);
+extern void cdk_sha256_final(cdk_sha256_ctx_t* ctx, uint8_t hash[]);
