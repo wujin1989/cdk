@@ -33,16 +33,15 @@
 #include <sys/syscall.h>
 #endif
 
-
-typedef struct thrd_ctx_s {
+typedef struct platform_thrd_ctx_s {
 	int     (*entry)(void* arg);
 	void*   arg;
-}thrd_ctx_t;
+}platform_thrd_ctx_t;
 
-static void* __thread_start(void* arg) {
+static void* platform_thrd_start(void* arg) {
 
-	thrd_ctx_t* ctxp;
-	thrd_ctx_t  ctx;
+	platform_thrd_ctx_t* ctxp;
+	platform_thrd_ctx_t  ctx;
 
 	ctxp = arg;
 	ctx  = *ctxp;
@@ -72,14 +71,14 @@ cdk_tid_t platform_thrd_gettid(void) {
 
 void platform_thrd_create(cdk_thrd_t* t, int (*h)(void*), void* restrict p) {
 
-	thrd_ctx_t*  ctx;
+	platform_thrd_ctx_t*  ctx;
 
-	ctx = cdk_memory_malloc(sizeof(thrd_ctx_t));
+	ctx = cdk_memory_malloc(sizeof(platform_thrd_ctx_t));
 
 	ctx->entry = h;
 	ctx->arg   = p;
 
-	if (pthread_create(&t->tid, NULL, __thread_start, ctx)) {
+	if (pthread_create(&t->tid, NULL, platform_thrd_start, ctx)) {
 
 		cdk_memory_free(ctx);
 		abort();

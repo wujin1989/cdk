@@ -39,26 +39,26 @@
 
 #define BUFSIZE    4096
 
-typedef struct logger_s {
+typedef struct cdk_logger_s {
 	FILE* file;
 	_Bool async;
 	cdk_thrdpool_t pool;
-}logger_t;
+}cdk_logger_t;
 
-static const char* __l[] = {
+static const char* levels[] = {
 	"INFO", "DEBUG", "WARN", "ERROR"
 };
 
-static logger_t __g;
+static cdk_logger_t logger;
 
-static void __printer(void* arg) {
+static inline void cdk_logger_printer(void* arg) {
 
-	fprintf(__g.file, "%s", (char*)arg);
-	fflush(__g.file);
+	fprintf(logger.file, "%s", (char*)arg);
+	fflush(logger.file);
 	cdk_memory_free(arg);
 }
 
-static void __syncbase(int level, const char* restrict file, int line) {
+static inline void cdk_logger_syncbase(int level, const char* restrict file, int line) {
 
 	struct timespec tsc;
 	struct tm       tm;
@@ -66,20 +66,20 @@ static void __syncbase(int level, const char* restrict file, int line) {
 	if (!timespec_get(&tsc, TIME_UTC)) { return; }
 	cdk_time_localtime(&tsc.tv_sec, &tm);
 
-	fprintf(__g.file, "%04d-%02d-%02d %02d:%02d:%02d.%03d %5s %s:%d ",  \
-		tm.tm_year + 1900,                                              \
-		tm.tm_mon + 1,                                                  \
-		tm.tm_mday,                                                     \
-		tm.tm_hour,                                                     \
-		tm.tm_min,                                                      \
-		tm.tm_sec,                                                      \
-		(int)(tsc.tv_nsec / 1000000UL),                                 \
-		__l[level],                                                     \
+	fprintf(logger.file, "%04d-%02d-%02d %02d:%02d:%02d.%03d %5s %s:%d ",  \
+		tm.tm_year + 1900,                                                 \
+		tm.tm_mon + 1,                                                     \
+		tm.tm_mday,                                                        \
+		tm.tm_hour,                                                        \
+		tm.tm_min,                                                         \
+		tm.tm_sec,                                                         \
+		(int)(tsc.tv_nsec / 1000000UL),                                    \
+		levels[level],                                                     \
 		file, line
 	);
 }
 
-static void __asyncbase(int level, const char* restrict file, int line, const char* restrict fmt, va_list v) {
+static inline void cdk_logger_asyncbase(int level, const char* restrict file, int line, const char* restrict fmt, va_list v) {
 
 	struct timespec tsc;
 	struct tm       tm;
@@ -101,41 +101,41 @@ static void __asyncbase(int level, const char* restrict file, int line, const ch
 		tm.tm_min,                                                     \
 		tm.tm_sec,                                                     \
 		(int)(tsc.tv_nsec / 1000000UL),                                \
-		__l[level],                                                    \
+		levels[level],                                                 \
 		file, line
 	);
 	ret += cdk_string_vsprintf(buf + ret, sizeof(buf) - ret, fmt, v);
 	ret++;
 
 	cdk_thrdpool_job_t* job = cdk_memory_malloc(sizeof(cdk_thrdpool_job_t));
-	job->routine = __printer;
+	job->routine = cdk_logger_printer;
 	job->arg = cdk_memory_malloc(ret);
 	memcpy(job->arg, buf, ret);
 
-	cdk_thrdpool_post(&__g.pool, job);
+	cdk_thrdpool_post(&logger.pool, job);
 }
 
 void cdk_logger_init(const char* restrict out, bool async, int workers) {
 
 	if (async) {
-		cdk_thrdpool_create(&__g.pool, workers);
+		cdk_thrdpool_create(&logger.pool, workers);
 	}
-	__g.async = async;
+	logger.async = async;
 
 	if (!out) { 
-		__g.file = stdout;
+		logger.file = stdout;
 		return; 
 	}
-	cdk_file_fopen(&__g.file, out, "a+");
+	cdk_file_fopen(&logger.file, out, "a+");
 }
 
 void cdk_logger_destroy(void) {
 
-	if (__g.async) {
-		cdk_thrdpool_destroy(&__g.pool);
+	if (logger.async) {
+		cdk_thrdpool_destroy(&logger.pool);
 	}
-	if (__g.file) { 
-		cdk_file_fclose(__g.file); 
+	if (logger.file) {
+		cdk_file_fclose(logger.file);
 	}
 }
 
@@ -143,31 +143,31 @@ void cdk_logger_log(int level, const char* restrict file, int line, const char* 
 	
 	char* p = strrchr(file, S);
 
-	if (!__g.async) {
+	if (!logger.async) {
 		
 		if (!p) {
-			__syncbase(level, file, line);
+			cdk_logger_syncbase(level, file, line);
 		}
 		if (p) {
-			__syncbase(level, ++p, line);
+			cdk_logger_syncbase(level, ++p, line);
 		}
 		va_list v;
 		va_start(v, fmt);
-		vfprintf(__g.file, fmt, v);
+		vfprintf(logger.file, fmt, v);
 		va_end(v);
 
-		fflush(__g.file);
+		fflush(logger.file);
 	}
-	if (__g.async) {
+	if (logger.async) {
 
 		va_list v;
 		va_start(v, fmt);
 
 		if (!p) {
-			__asyncbase(level, file, line, fmt, v);
+			cdk_logger_asyncbase(level, file, line, fmt, v);
 		}
 		if (p) {
-			__asyncbase(level, ++p, line, fmt, v);
+			cdk_logger_asyncbase(level, ++p, line, fmt, v);
 		}
 		va_end(v);
 	}

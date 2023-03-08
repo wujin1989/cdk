@@ -54,43 +54,43 @@ typedef struct cdk_timer_jobs_s {
 	cdk_rbtree_node_t n;
 }cdk_timer_jobs_t;
 
-static cdk_timer_t __g_timer;
+static cdk_timer_t timer;
 
-static void __timer_post(cdk_timer_jobs_t* jobs) {
+static void cdk_timer_post(cdk_timer_jobs_t* jobs) {
 
 	if (!jobs) {
 		return;
 	}
-	cdk_mtx_lock(&__g_timer.rbmtx);
-	cdk_rbtree_insert(&__g_timer.rbtree, &jobs->n);
-	cdk_cnd_signal(&__g_timer.rbcnd);
-	cdk_mtx_unlock(&__g_timer.rbmtx);
+	cdk_mtx_lock(&timer.rbmtx);
+	cdk_rbtree_insert(&timer.rbtree, &jobs->n);
+	cdk_cnd_signal(&timer.rbcnd);
+	cdk_mtx_unlock(&timer.rbmtx);
 }
 
-static int __timer_thrdfunc(void* arg) {
+static int cdk_timer_thrdfunc(void* arg) {
 
-	while (__g_timer.status) {
+	while (timer.status) {
 
-		cdk_mtx_lock(&__g_timer.rbmtx);
+		cdk_mtx_lock(&timer.rbmtx);
 		cdk_timer_jobs_t* jobs;
 
-		while (__g_timer.status && cdk_rbtree_empty(&__g_timer.rbtree)) {
-			cdk_cnd_wait(&__g_timer.rbcnd, &__g_timer.rbmtx);
+		while (timer.status && cdk_rbtree_empty(&timer.rbtree)) {
+			cdk_cnd_wait(&timer.rbcnd, &timer.rbmtx);
 		}
-		jobs = cdk_rbtree_data(cdk_rbtree_first(&__g_timer.rbtree), cdk_timer_jobs_t, n);
+		jobs = cdk_rbtree_data(cdk_rbtree_first(&timer.rbtree), cdk_timer_jobs_t, n);
 
 		uint64_t now = cdk_time_now();
 
 		if (jobs->n.rb_key.u64 > now) {
 
-			cdk_mtx_unlock(&__g_timer.rbmtx);
+			cdk_mtx_unlock(&timer.rbmtx);
 			cdk_time_sleep((uint32_t)(jobs->n.rb_key.u64 - now));
 			continue;
 		}
-		cdk_rbtree_erase(&__g_timer.rbtree, &jobs->n);
-		cdk_mtx_unlock(&__g_timer.rbmtx);
+		cdk_rbtree_erase(&timer.rbtree, &jobs->n);
+		cdk_mtx_unlock(&timer.rbmtx);
 
-		if (__g_timer.status) {
+		if (timer.status) {
 
 			cdk_timer_job_t* job;
 			while (!cdk_queue_empty(&jobs->jobs)) {
@@ -113,7 +113,7 @@ static int __timer_thrdfunc(void* arg) {
 					cdk_queue_create(&newjobs->jobs);
 					cdk_queue_enqueue(&newjobs->jobs, &newjob->n);
 
-					__timer_post(newjobs);
+					cdk_timer_post(newjobs);
 				}
 				cdk_memory_free(job);
 			}
@@ -123,59 +123,59 @@ static int __timer_thrdfunc(void* arg) {
 	return 0;
 }
 
-static void __timer_createthread(void) {
+static void cdk_timer_createthread(void) {
 
 	void* thrds;
 
-	cdk_mtx_lock(&__g_timer.tmtx);
-	thrds = realloc(__g_timer.thrds, (__g_timer.thrdcnt + 1) * sizeof(cdk_thrd_t));
+	cdk_mtx_lock(&timer.tmtx);
+	thrds = realloc(timer.thrds, (timer.thrdcnt + 1) * sizeof(cdk_thrd_t));
 	if (!thrds) {
-		cdk_mtx_unlock(&__g_timer.tmtx);
+		cdk_mtx_unlock(&timer.tmtx);
 		return;
 	}
-	__g_timer.thrds = thrds;
-	cdk_thrd_create(__g_timer.thrds + __g_timer.thrdcnt, __timer_thrdfunc, NULL);
+	timer.thrds = thrds;
+	cdk_thrd_create(timer.thrds + timer.thrdcnt, cdk_timer_thrdfunc, NULL);
 
-	__g_timer.thrdcnt++;
-	cdk_mtx_unlock(&__g_timer.tmtx);
+	timer.thrdcnt++;
+	cdk_mtx_unlock(&timer.tmtx);
 }
 
 void cdk_timer_create(uint32_t workers) {
 
-	cdk_rbtree_create(&__g_timer.rbtree, RB_KEYTYPE_UINT64);
+	cdk_rbtree_create(&timer.rbtree, RB_KEYTYPE_UINT64);
 
-	cdk_mtx_init(&__g_timer.tmtx);
-	cdk_mtx_init(&__g_timer.rbmtx);
-	cdk_cnd_init(&__g_timer.rbcnd);
+	cdk_mtx_init(&timer.tmtx);
+	cdk_mtx_init(&timer.rbmtx);
+	cdk_cnd_init(&timer.rbcnd);
 
-	__g_timer.thrdcnt = 0;
-	__g_timer.status = true;
-	__g_timer.thrds = NULL;
+	timer.thrdcnt = 0;
+	timer.status = true;
+	timer.thrds = NULL;
 
 	if (!workers) {
 		workers = cdk_sysinfo_cpus();
 	}
 	for (uint32_t i = 0; i < workers; i++) {
-		__timer_createthread();
+		cdk_timer_createthread();
 	}
 }
 
 void cdk_timer_destroy(void) {
 
-	__g_timer.status = false;
+	timer.status = false;
 
-	cdk_mtx_lock(&__g_timer.rbmtx);
-	cdk_cnd_broadcast(&__g_timer.rbcnd);
-	cdk_mtx_unlock(&__g_timer.rbmtx);
+	cdk_mtx_lock(&timer.rbmtx);
+	cdk_cnd_broadcast(&timer.rbcnd);
+	cdk_mtx_unlock(&timer.rbmtx);
 
-	for (int i = 0; i < __g_timer.thrdcnt; i++) {
-		cdk_thrd_join(__g_timer.thrds[i]);
+	for (int i = 0; i < timer.thrdcnt; i++) {
+		cdk_thrd_join(timer.thrds[i]);
 	}
-	cdk_mtx_destroy(&__g_timer.rbmtx);
-	cdk_mtx_destroy(&__g_timer.tmtx);
-	cdk_cnd_destroy(&__g_timer.rbcnd);
+	cdk_mtx_destroy(&timer.rbmtx);
+	cdk_mtx_destroy(&timer.tmtx);
+	cdk_cnd_destroy(&timer.rbcnd);
 
-	cdk_memory_free(__g_timer.thrds);
+	cdk_memory_free(timer.thrds);
 }
 
 void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat) {
@@ -195,7 +195,7 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 	job->arg     = arg;
 	job->repeat  = repeat;
 
-	node = cdk_rbtree_find(&__g_timer.rbtree, key);
+	node = cdk_rbtree_find(&timer.rbtree, key);
 	if (node) {
 		jobs = cdk_rbtree_data(node, cdk_timer_jobs_t, n);
 		cdk_queue_enqueue(&jobs->jobs, &job->n);
@@ -207,7 +207,7 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 		jobs->n.rb_key = key;
 		cdk_queue_create(&jobs->jobs);
 		cdk_queue_enqueue(&jobs->jobs, &job->n);
-		__timer_post(jobs);
+		cdk_timer_post(jobs);
 	}
 }
 

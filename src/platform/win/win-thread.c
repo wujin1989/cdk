@@ -25,19 +25,19 @@
 #include <stdlib.h>
 #include <errno.h>
 
-typedef struct thrd_ctx_s {
+typedef struct platform_thrd_ctx_s {
 	int     (*entry)(void* arg);
 	void*   arg;
-}thrd_ctx_t;
+}platform_thrd_ctx_t;
 
-typedef struct once_ctx_s {
+typedef struct platform_once_ctx_s {
 	void (*entry)(void);
-}once_ctx_t;
+}platform_once_ctx_t;
 
-static unsigned int __stdcall __thread_start(void* arg) {
+static unsigned int __stdcall platform_thrd_start(void* arg) {
 
-	thrd_ctx_t* ctxp;
-	thrd_ctx_t  ctx;
+	platform_thrd_ctx_t* ctxp;
+	platform_thrd_ctx_t  ctx;
 
 	ctxp = arg;
 	ctx  = *ctxp;
@@ -47,10 +47,10 @@ static unsigned int __stdcall __thread_start(void* arg) {
 	return ctx.entry(ctx.arg);
 }
 
-static BOOL __stdcall __once_start(PINIT_ONCE once, PVOID param, PVOID* context) {
+static BOOL __stdcall platform_once_start(PINIT_ONCE once, PVOID param, PVOID* context) {
 
-	once_ctx_t* ctxp;
-	once_ctx_t  ctx;
+	platform_once_ctx_t* ctxp;
+	platform_once_ctx_t  ctx;
 
 	ctxp = param;
 	ctx  = *ctxp;
@@ -69,15 +69,15 @@ cdk_tid_t platform_thrd_gettid(void) {
 
 void platform_thrd_create(cdk_thrd_t* t, int (*h)(void*), void* restrict p) {
 
-	thrd_ctx_t* ctx;
+	platform_thrd_ctx_t* ctx;
 	HANDLE hnd;
 
-	ctx = cdk_memory_malloc(sizeof(thrd_ctx_t));
+	ctx = cdk_memory_malloc(sizeof(platform_thrd_ctx_t));
 
 	ctx->entry = h;
 	ctx->arg   = p;
 
-	hnd = (HANDLE)_beginthreadex(NULL, 0, __thread_start, ctx, 0, &t->tid);
+	hnd = (HANDLE)_beginthreadex(NULL, 0, platform_thrd_start, ctx, 0, &t->tid);
 
 	switch ((uintptr_t)hnd)
 	{
@@ -104,12 +104,12 @@ void platform_thrd_detach(cdk_thrd_t t) {
 
 void platform_thrd_once(cdk_once_t* f, void (*h)(void)) {
 	
-	once_ctx_t* ctx;
+	platform_once_ctx_t* ctx;
 
-	ctx = cdk_memory_malloc(sizeof(once_ctx_t));
+	ctx = cdk_memory_malloc(sizeof(platform_once_ctx_t));
 	ctx->entry = h;
 
-	InitOnceExecuteOnce(f, __once_start, ctx, NULL);
+	InitOnceExecuteOnce(f, platform_once_start, ctx, NULL);
 }
 
 bool platform_thrd_equal(cdk_thrd_t t1, cdk_thrd_t t2) {
