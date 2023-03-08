@@ -3,6 +3,7 @@
 [![Build](https://github.com/wujin1989/cdk/actions/workflows/main.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/main.yml)
 [![AddressSanitizer](https://img.shields.io/badge/AddressSanitizer-checked-yellowgreen)](https://github.com/google/sanitizers/wiki/AddressSanitizer)
 [![License](https://img.shields.io/badge/license-MIT-black)](LICENSE)
+[![CodeQL](https://github.com/wujin1989/cdk/actions/workflows/codeql.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/codeql.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/wujin1989/cdk/badge)](https://www.codefactor.io/repository/github/wujin1989/cdk)
 
 # Overview
