@@ -1,8 +1,22 @@
-![image](https://github.com/wujin1989/cdk/blob/main/docs/images/logo.png)
-[![platform](https://img.shields.io/badge/platform-linux%7Cmacosx%7Cwindows-ff69b4)](https://github.com/wujin1989/cdk/actions/workflows/main.yml)
-[![Build](https://github.com/wujin1989/cdk/actions/workflows/main.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/main.yml)
-[![license](https://img.shields.io/badge/license-MIT-critical)](LICENSE)
-[![CodeFactor](https://www.codefactor.io/repository/github/wujin1989/cdk/badge)](https://www.codefactor.io/repository/github/wujin1989/cdk)
+<div align="center">
+  <a href="https://github.com/wujin1989/cdk">
+    <img width="160" heigth="160" src="https://github.com/wujin1989/cdk/blob/main/docs/images/logo.png">
+  </a>
+  <div>
+    <a href="https://github.com/wujin1989/cdk/actions/workflows/main.yml">
+      <img src="https://img.shields.io/badge/platform-linux%7Cmacosx%7Cwindows-ff69b4"/>
+    </a>
+    <a href="https://github.com/wujin1989/cdk/actions/workflows/main.yml">
+      <img src="https://github.com/wujin1989/cdk/actions/workflows/main.yml/badge.svg"/>
+    </a>
+	<a href="https://github.com/wujin1989/cdk/blob/main/LICENSE">
+      <img src="https://img.shields.io/badge/license-MIT-critical"/>
+    </a>
+	<a href="https://www.codefactor.io/repository/github/wujin1989/cdk">
+      <img src="https://www.codefactor.io/repository/github/wujin1989/cdk/badge"/>
+    </a>
+  </div>
+ </div>
 
 # Overview
 CDK is a clean and concise cross-platform C development kits that complements the standard C library. It provides developers with powerful tools and functions to simplify the process of developing portable C applications. CDK is well-documented, designed to support best coding practices, and ensures code compiles without warnings on all supported platforms and compilers.
