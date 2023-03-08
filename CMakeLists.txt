@@ -61,6 +61,8 @@ set(SRCS
 	src/cdk-threadpool.c
 	src/cdk-time.c
 	src/cdk-varint.c
+	src/cdk-sha256.c
+	src/cdk-base64.c
 )
 
 if(WIN32)

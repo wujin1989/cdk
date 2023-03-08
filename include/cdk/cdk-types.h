@@ -83,6 +83,7 @@ typedef struct cdk_spliter_s             cdk_spliter_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
+typedef struct cdk_sha256_ctx_s	         cdk_sha256_ctx_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -286,4 +287,11 @@ struct cdk_poller_handler_s {
 	void (*on_read)   (cdk_poller_conn_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_poller_conn_t*, void* buf, size_t len);
 	void (*on_close)  (cdk_poller_conn_t*);
+};
+
+struct cdk_sha256_ctx_s {
+	uint8_t  data[64];
+	uint32_t datalen;
+	uint64_t bitlen;
+	uint32_t state[8];
 };

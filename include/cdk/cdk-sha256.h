@@ -21,30 +21,10 @@
 
 _Pragma("once")
 
-#include "cdk/cdk-timer.h"
-#include "cdk/cdk-process.h"
-#include "cdk/cdk-math.h"
-#include "cdk/cdk-time.h"
-#include "cdk/cdk-logger.h"
-#include "cdk/cdk-thread.h"
 #include "cdk/cdk-types.h"
-#include "cdk/cdk-atomic.h"
-#include "cdk/cdk-net.h"
-#include "cdk/cdk-queue.h"
-#include "cdk/cdk-stack.h"
-#include "cdk/cdk-threadpool.h"
-#include "cdk/cdk-sysinfo.h"
-#include "cdk/cdk-list.h"
-#include "cdk/cdk-memory.h"
-#include "cdk/cdk-loader.h"
-#include "cdk/cdk-file.h"
-#include "cdk/cdk-rbtree.h"
-#include "cdk/cdk-string.h"
-#include "cdk/cdk-varint.h"
-#include "cdk/cdk-mtx.h"
-#include "cdk/cdk-rwlock.h"
-#include "cdk/cdk-cnd.h"
-#include "cdk/cdk-sha256.h"
-#include "cdk/cdk-base64.h"
 
+#define CDK_SHA256_BLOCK_SIZE 32
 
+void cdk_sha256_init(cdk_sha256_ctx_t* ctx);
+void cdk_sha256_update(cdk_sha256_ctx_t* ctx, const uint8_t data[], size_t len);
+void cdk_sha256_final(cdk_sha256_ctx_t* ctx, uint8_t hash[]);

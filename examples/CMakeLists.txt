@@ -75,3 +75,6 @@ target_link_libraries(test-logger PUBLIC cdk)
 
 add_executable(test-timer "test-timer.c")
 target_link_libraries(test-timer PUBLIC cdk)
+
+add_executable(test-sha256 "test-sha256.c")
+target_link_libraries(test-sha256 PUBLIC cdk)
