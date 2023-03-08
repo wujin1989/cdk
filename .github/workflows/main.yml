@@ -1,61 +1,48 @@
 name: Build
-
 on:
   push:
     branches:
       - main
   pull_request:
-
 jobs:
   build-linux:
     name: build-linux
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@latest
         with:
           cmakeVersion: latestrc
           ninjaVersion: latest
-          
       - name: Build project
         run: |
             cmake -B build -G "Ninja Multi-Config"
-            cmake --build build --config Release -j 8
-            
+            cmake --build build --config Release -j 8     
   build-macosx:
     name: build-macosx
     runs-on: macos-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@latest
         with:
           cmakeVersion: latestrc
           ninjaVersion: latest
-          
       - name: Build project
         run: |
             cmake -B build -G "Ninja Multi-Config"
             cmake --build build --config Release -j 8
-  
   build-windows:
     name: build-windows
     runs-on: windows-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-     
       - name: Set up MSVC 2022 on Windows
         uses: microsoft/setup-msbuild@v1.0.2
-
       - name: Build project
         run: |
             cmake -B build -G "Visual Studio 17 2022" -A x64
