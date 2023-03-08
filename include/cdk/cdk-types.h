@@ -46,7 +46,6 @@ _Pragma("once")
 #endif
 
 enum cdk_spliter_type_e {
-
 	SPLITER_TYPE_FIXED        ,
 	SPLITER_TYPE_TEXTPLAIN    ,
 	SPLITER_TYPE_BINARY       ,
@@ -54,7 +53,6 @@ enum cdk_spliter_type_e {
 };
 
 enum cdk_rbtree_node_keytype_e {
-
 	RB_KEYTYPE_INT8   ,
 	RB_KEYTYPE_UINT8  ,
 	RB_KEYTYPE_INT16  ,
@@ -124,7 +122,6 @@ typedef SSIZE_T                     ssize_t;
 #endif
 
 union cdk_rbtree_node_key_u {
-
 	char*    str;
 	int8_t	 i8;
 	int16_t  i16;
@@ -171,7 +168,6 @@ struct cdk_ringbuf_s {
 };
 
 struct cdk_spliter_s {
-
 	cdk_spliter_type_t type;
 	union {
 		struct {
@@ -215,11 +211,9 @@ struct cdk_thrd_s {
 	HANDLE handle;
 	unsigned int tid;
 };
-
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)
-
 struct cdk_thrd_s {
 	pthread_t tid;
 };
@@ -233,7 +227,6 @@ struct cdk_addrinfo_s {
 };
 
 struct cdk_thrdpool_s {
-
 	cdk_thrd_t* thrds;
 	size_t      thrdcnt;
 	cdk_queue_t queue;
@@ -254,15 +247,12 @@ struct cdk_thrdpool_timed_s {
 };
 
 typedef struct cdk_poller_s {
-
 	int		    pfd;
 	cdk_tid_t   tid;
 }cdk_poller_t;
 
 struct cdk_poller_conn_s {
-
 	cdk_poller_t          poller;
-
 	cdk_sock_t            fd;
 	int                   cmd;
 	cdk_poller_handler_t* h;
@@ -273,7 +263,6 @@ struct cdk_poller_conn_s {
 
 	union {
 		struct {
-
 			cdk_offset_buf_t ibuf;
 			cdk_list_t       olist;
 			cdk_spliter_t    splicer;
@@ -292,7 +281,6 @@ struct cdk_poller_conn_s {
 };
 
 struct cdk_poller_handler_s {
-
 	void (*on_accept) (cdk_poller_conn_t*);
 	void (*on_connect)(cdk_poller_conn_t*);
 	void (*on_read)   (cdk_poller_conn_t*, void* buf, size_t len);
