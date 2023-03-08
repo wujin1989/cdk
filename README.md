@@ -1,6 +1,5 @@
 <p align="center">
   <img src="https://github.com/wujin1989/cdk/blob/main/docs/images/logo.png">
-  <br><br>
   <a href="https://github.com/wujin1989/cdk/actions/workflows/main.yml">
     <img src="https://img.shields.io/badge/platform-linux%7Cmacosx%7Cwindows-ff69b4">
   </a>
