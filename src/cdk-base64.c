@@ -28,9 +28,9 @@ static const uint8_t base64table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop
 void cdk_base64_encode(uint8_t* src, size_t srclen, char* dst, size_t* dstlen) {
 
 	size_t i;
-	size_t leven = 3 * (srclen / 3);
+	size_t padded = 3 * (srclen / 3);
 
-	for (*dstlen = 0, i = 0; i < leven; i += 3) {
+	for (*dstlen = 0, i = 0; i < padded; i += 3) {
 		
 		if (dst) {
 			dst[*dstlen] = base64table[src[0] >> 2];
