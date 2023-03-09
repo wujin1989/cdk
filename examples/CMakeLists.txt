@@ -78,3 +78,6 @@ target_link_libraries(test-timer PUBLIC cdk)
 
 add_executable(test-sha256 "test-sha256.c")
 target_link_libraries(test-sha256 PUBLIC cdk)
+
+add_executable(test-base64 "test-base64.c")
+target_link_libraries(test-base64 PUBLIC cdk)
