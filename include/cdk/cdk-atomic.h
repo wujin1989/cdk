@@ -23,8 +23,15 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
+#if defined(__linux__) || defined(__APPLE__)
+#define CDK_ATOMIC_FLAG_INIT            ATOMIC_FLAG_INIT
+#define CDK_ATOMIC_VAR_INIT             ATOMIC_VAR_INIT
+#endif
+
+#if defined(_WIN32)
 #define CDK_ATOMIC_FLAG_INIT            { 0 }
 #define CDK_ATOMIC_VAR_INIT(value)      (value)
+#endif
 
 extern bool    cdk_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* flag);
 extern void    cdk_atomic_flag_clear(volatile cdk_atomic_flag_t* flag);

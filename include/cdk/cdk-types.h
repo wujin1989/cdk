@@ -82,7 +82,6 @@ typedef enum   cdk_spliter_type_e        cdk_spliter_type_t;
 typedef struct cdk_spliter_s             cdk_spliter_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
-typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
 typedef struct cdk_sha256_ctx_s	         cdk_sha256_ctx_t;
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -225,26 +224,6 @@ struct cdk_addrinfo_s {
 	uint16_t    f;
 	char        a[INET6_ADDRSTRLEN];
 	uint16_t    p;
-};
-
-struct cdk_thrdpool_s {
-	cdk_thrd_t* thrds;
-	size_t      thrdcnt;
-	cdk_queue_t queue;
-	cdk_mtx_t   tmtx;
-	cdk_mtx_t   qmtx;
-	cdk_cnd_t   qcnd;
-	bool        status;
-};
-
-struct cdk_thrdpool_timed_s {
-	cdk_thrd_t*  thrds;
-	size_t       thrdcnt;
-	cdk_rbtree_t rbtree;
-	cdk_mtx_t    tmtx;
-	cdk_mtx_t    rbmtx;
-	cdk_cnd_t    rbcnd;
-	bool         status;
 };
 
 typedef struct cdk_poller_s {

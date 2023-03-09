@@ -25,6 +25,7 @@
 #include "cdk/cdk-rbtree.h"
 #include "cdk/cdk-cnd.h"
 #include "cdk/cdk-mtx.h"
+#include "cdk/cdk-atomic.h"
 #include "cdk/cdk-thread.h"
 #include "cdk/cdk-sysinfo.h"
 #include "cdk/cdk-queue.h"
@@ -48,23 +49,57 @@ typedef struct cdk_timer_job_s {
 	cdk_queue_node_t n;
 }cdk_timer_job_t;
 
-typedef struct cdk_timer_jobs_s {
+typedef struct cdk_timer_jobqueue_s {
 	uint64_t          timebase;
 	cdk_queue_t       jobs;
 	cdk_rbtree_node_t n;
-}cdk_timer_jobs_t;
+}cdk_timer_jobqueue_t;
 
 static cdk_timer_t timer;
+static cdk_atomic_flag_t once_create  = CDK_ATOMIC_FLAG_INIT;
+static cdk_atomic_flag_t once_destroy = CDK_ATOMIC_FLAG_INIT;
 
-static void cdk_timer_post(cdk_timer_jobs_t* jobs) {
+static void cdk_timer_post(cdk_timer_jobqueue_t* jobs) {
 
 	if (!jobs) {
 		return;
 	}
-	cdk_mtx_lock(&timer.rbmtx);
 	cdk_rbtree_insert(&timer.rbtree, &jobs->n);
 	cdk_cnd_signal(&timer.rbcnd);
-	cdk_mtx_unlock(&timer.rbmtx);
+}
+
+void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat) {
+
+	cdk_timer_jobqueue_t* jobs;
+	cdk_timer_job_t* job;
+	cdk_rbtree_node_key_t key;
+	cdk_rbtree_node_t* node;
+	uint64_t timebase;
+
+	timebase = cdk_time_now();
+	key.u64 = timebase + expire;
+
+	job = cdk_memory_malloc(sizeof(cdk_timer_job_t));
+
+	job->routine = routine;
+	job->arg = arg;
+	job->repeat = repeat;
+
+	node = cdk_rbtree_find(&timer.rbtree, key);
+
+	if (node) {
+		jobs = cdk_rbtree_data(node, cdk_timer_jobqueue_t, n);
+		cdk_queue_enqueue(&jobs->jobs, &job->n);
+	}
+	else {
+		jobs = cdk_memory_malloc(sizeof(cdk_timer_jobqueue_t));
+
+		jobs->timebase = timebase;
+		jobs->n.rb_key = key;
+		cdk_queue_create(&jobs->jobs);
+		cdk_queue_enqueue(&jobs->jobs, &job->n);
+		cdk_timer_post(jobs);
+	}
 }
 
 static int cdk_timer_thrdfunc(void* arg) {
@@ -72,12 +107,12 @@ static int cdk_timer_thrdfunc(void* arg) {
 	while (timer.status) {
 
 		cdk_mtx_lock(&timer.rbmtx);
-		cdk_timer_jobs_t* jobs;
+		cdk_timer_jobqueue_t* jobs;
 
 		while (timer.status && cdk_rbtree_empty(&timer.rbtree)) {
 			cdk_cnd_wait(&timer.rbcnd, &timer.rbmtx);
 		}
-		jobs = cdk_rbtree_data(cdk_rbtree_first(&timer.rbtree), cdk_timer_jobs_t, n);
+		jobs = cdk_rbtree_data(cdk_rbtree_first(&timer.rbtree), cdk_timer_jobqueue_t, n);
 
 		uint64_t now = cdk_time_now();
 
@@ -88,7 +123,6 @@ static int cdk_timer_thrdfunc(void* arg) {
 			continue;
 		}
 		cdk_rbtree_erase(&timer.rbtree, &jobs->n);
-		cdk_mtx_unlock(&timer.rbmtx);
 
 		if (timer.status) {
 
@@ -98,27 +132,13 @@ static int cdk_timer_thrdfunc(void* arg) {
 				job->routine(job->arg);
 
 				if (job->repeat) {
-					cdk_timer_job_t* newjob;
-					cdk_timer_jobs_t* newjobs;
-
-					newjob = cdk_memory_malloc(sizeof(cdk_timer_job_t));
-					newjob->routine = job->routine;
-					newjob->arg = job->arg;
-					newjob->repeat = job->repeat;
-
-					newjobs = cdk_memory_malloc(sizeof(cdk_timer_jobs_t));
-
-					newjobs->timebase = cdk_time_now();
-					newjobs->n.rb_key.u64 = (jobs->n.rb_key.u64 - jobs->timebase) + newjobs->timebase;
-					cdk_queue_create(&newjobs->jobs);
-					cdk_queue_enqueue(&newjobs->jobs, &newjob->n);
-
-					cdk_timer_post(newjobs);
+					cdk_timer_add(job->routine, job->arg, (uint32_t)(jobs->n.rb_key.u64 - jobs->timebase), job->repeat);
 				}
 				cdk_memory_free(job);
 			}
 		}
 		cdk_memory_free(jobs);
+		cdk_mtx_unlock(&timer.rbmtx);
 	}
 	return 0;
 }
@@ -140,8 +160,11 @@ static void cdk_timer_createthread(void) {
 	cdk_mtx_unlock(&timer.tmtx);
 }
 
-void cdk_timer_create(uint32_t workers) {
+void cdk_timer_create(void) {
 
+	if (cdk_atomic_flag_test_and_set(&once_create)) {
+		return;
+	}
 	cdk_rbtree_create(&timer.rbtree, RB_KEYTYPE_UINT64);
 
 	cdk_mtx_init(&timer.tmtx);
@@ -152,16 +175,16 @@ void cdk_timer_create(uint32_t workers) {
 	timer.status = true;
 	timer.thrds = NULL;
 
-	if (!workers) {
-		workers = cdk_sysinfo_cpus();
-	}
-	for (uint32_t i = 0; i < workers; i++) {
+	for (int i = 0; i < cdk_sysinfo_cpus(); i++) {
 		cdk_timer_createthread();
 	}
 }
 
 void cdk_timer_destroy(void) {
 
+	if (cdk_atomic_flag_test_and_set(&once_destroy)) {
+		return;
+	}
 	timer.status = false;
 
 	cdk_mtx_lock(&timer.rbmtx);
@@ -176,38 +199,5 @@ void cdk_timer_destroy(void) {
 	cdk_cnd_destroy(&timer.rbcnd);
 
 	cdk_memory_free(timer.thrds);
-}
-
-void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat) {
-	
-	cdk_timer_jobs_t* jobs;
-	cdk_timer_job_t* job;
-	cdk_rbtree_node_key_t key;
-	cdk_rbtree_node_t* node;
-	uint64_t timebase;
-
-	timebase = cdk_time_now();
-	key.u64  = timebase + expire;
-
-	job = cdk_memory_malloc(sizeof(cdk_timer_job_t));
-
-	job->routine = routine;
-	job->arg     = arg;
-	job->repeat  = repeat;
-
-	node = cdk_rbtree_find(&timer.rbtree, key);
-	if (node) {
-		jobs = cdk_rbtree_data(node, cdk_timer_jobs_t, n);
-		cdk_queue_enqueue(&jobs->jobs, &job->n);
-	}
-	else {
-		jobs = cdk_memory_malloc(sizeof(cdk_timer_jobs_t));
-		
-		jobs->timebase = timebase;
-		jobs->n.rb_key = key;
-		cdk_queue_create(&jobs->jobs);
-		cdk_queue_enqueue(&jobs->jobs, &job->n);
-		cdk_timer_post(jobs);
-	}
 }
 

@@ -24,6 +24,7 @@
 #include "cdk/cdk-file.h"
 #include "cdk/cdk-threadpool.h"
 #include "cdk/cdk-memory.h"
+#include "cdk/cdk-atomic.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -42,7 +43,6 @@
 typedef struct cdk_logger_s {
 	FILE* file;
 	_Bool async;
-	cdk_thrdpool_t pool;
 }cdk_logger_t;
 
 static const char* levels[] = {
@@ -50,6 +50,8 @@ static const char* levels[] = {
 };
 
 static cdk_logger_t logger;
+static cdk_atomic_flag_t once_create  = CDK_ATOMIC_FLAG_INIT;
+static cdk_atomic_flag_t once_destroy = CDK_ATOMIC_FLAG_INIT;
 
 static inline void cdk_logger_printer(void* arg) {
 
@@ -112,13 +114,16 @@ static inline void cdk_logger_asyncbase(int level, const char* restrict file, in
 	job->arg = cdk_memory_malloc(ret);
 	memcpy(job->arg, buf, ret);
 
-	cdk_thrdpool_post(&logger.pool, job);
+	cdk_thrdpool_post(job);
 }
 
-void cdk_logger_init(const char* restrict out, bool async, int workers) {
+void cdk_logger_create(const char* restrict out, bool async) {
 
+	if (cdk_atomic_flag_test_and_set(&once_create)) {
+		return;
+	}
 	if (async) {
-		cdk_thrdpool_create(&logger.pool, workers);
+		cdk_thrdpool_create();
 	}
 	logger.async = async;
 
@@ -131,8 +136,11 @@ void cdk_logger_init(const char* restrict out, bool async, int workers) {
 
 void cdk_logger_destroy(void) {
 
+	if (cdk_atomic_flag_test_and_set(&once_destroy)) {
+		return;
+	}
 	if (logger.async) {
-		cdk_thrdpool_destroy(&logger.pool);
+		cdk_thrdpool_destroy();
 	}
 	if (logger.file) {
 		cdk_file_fclose(logger.file);
