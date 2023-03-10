@@ -126,16 +126,16 @@ void platform_socket_tcp_keepalive(cdk_sock_t sock) {
     int i = 1;  /* 1 second; same as default on win32 */
     int c = 10; /* 10 retries; same as hardcoded on win32 since vista */
 
-    if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on))) {
+    if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on))) {
         abort();
     }
-    if (setsockopt(s, IPPROTO_TCP, TCP_KEEPALIVE, (const void*)&d, sizeof(d))) {
+    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPALIVE, (const void*)&d, sizeof(d))) {
         abort();
     }
-    if (setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i))) {
+    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i))) {
         abort();
     }
-    if (setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c))) {
+    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c))) {
         abort();
     }
 }
@@ -148,7 +148,7 @@ void platform_socket_tcp_maxseg(cdk_sock_t sock) {
      * TCP_MAXSEG doesn't seem to work correctly for outbound connections on macOS/iOS.
      */
     int val = 1;
-    if (setsockopt(s, IPPROTO_TCP, TCP_NOOPT, &val, sizeof(int))) {
+    if (setsockopt(sock, IPPROTO_TCP, TCP_NOOPT, &val, sizeof(int))) {
         abort();
     }
 }
