@@ -79,6 +79,7 @@ if(WIN32)
 		src/platform/win/win-file.c
 #		src/platform/win/win-poller.c
 		src/platform/win/win-string.c
+		src/platform/win/wepoll.c
 		src/platform/win/win-rwlock.c
 	)
 endif()

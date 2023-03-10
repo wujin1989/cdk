@@ -23,89 +23,58 @@
 #include <stdint.h>
 #include "cdk/cdk-memory.h"
 
-static const uint8_t base64table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+void cdk_base64_encode(uint8_t* src, size_t srclen, uint8_t* dst, size_t* dstlen) {
 
-void cdk_base64_encode(uint8_t* src, size_t srclen, char* dst, size_t* dstlen) {
+	static const char b64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	size_t i, j;
 
-	size_t i;
-	size_t padded = 3 * (srclen / 3);
+	for (i = 0, j = 0; i < srclen; i += 3, j += 4) {
 
-	for (*dstlen = 0, i = 0; i < padded; i += 3) {
-		
-		if (dst) {
-			dst[*dstlen] = base64table[src[0] >> 2];
-			dst[*dstlen + 1] = base64table[((src[0] & 3) << 4) + (src[1] >> 4)];
-			dst[*dstlen + 2] = base64table[((src[1] & 0xf) << 2) + (src[2] >> 6)];
-			dst[*dstlen + 3] = base64table[src[2] & 0x3f];
+		uint32_t n = ((uint32_t)src[i]) << 16;
+
+		if (i + 1 < srclen) {
+			n |= ((uint32_t)src[i + 1]) << 8;
 		}
-		*dstlen += 4;
-		src += 3;
-	}
-	if (i < srclen) {
-
-		uint8_t  a = src[0];
-		uint8_t  b = (uint8_t)((i + 1 < srclen) ? src[1] : 0);
-		uint32_t c = 0;
-
-		if (dst) {
-			dst[*dstlen] = base64table[a >> 2];
-			dst[*dstlen + 1] = base64table[((a & 3) << 4) + (b >> 4)];
-			dst[*dstlen + 2] = (char)((i + 1 < srclen) ? base64table[((b & 0xf) << 2) + (c >> 6)] : '=');
-			dst[*dstlen + 3] = '=';
+		if (i + 2 < srclen) {
+			n |= ((uint32_t)src[i + 2]);
 		}
-		*dstlen += 4;
+		dst[j]     = b64[(n >> 18) & 63];
+		dst[j + 1] = b64[(n >> 12) & 63];
+		dst[j + 2] = (i + 1 < srclen) ? b64[(n >> 6) & 63] : '=';
+		dst[j + 3] = (i + 2 < srclen) ? b64[n & 63] : '=';
 	}
-	if (dst) {
-		dst[*dstlen] = 0;
-	}
+	*dstlen = j;
 }
 
-static uint8_t cdk_base64_byte(char c) {
+void cdk_base64_decode(uint8_t* src, size_t srclen, uint8_t* dst, size_t* dstlen) {
 
-	if (c >= '0' && c <= '9') {
-		return (uint8_t)(c - '0' + 52);
-	}
-	if (c >= 'A' && c <= 'Z') {
-		return (uint8_t)(c - 'A');
-	}
-	if (c >= 'a' && c <= 'z') {
-		return (uint8_t)(c - 'a' + 26);
-	}
-	if ('+' == c) {
-		return 62;
-	}
-	if ('/' == c) {
-		return 63;
-	}
-	return 64;
+    static const uint8_t b64[128] = {
+        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64, 64, 63,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64, 0, 64, 64,
+        64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 63,
+        64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64
+    };
+    size_t i, j;
+
+    for (i = 0, j = 0; i < srclen; i += 4, j += 3) {
+
+        uint32_t n = (b64[src[i]] << 18)
+                   | (b64[src[i + 1]] << 12)
+                   | (b64[src[i + 2]] << 6)
+                   | (b64[src[i + 3]]);
+
+        dst[j] = (n >> 16) & 0xff;
+        if (src[i + 2] != '=') {
+            dst[j + 1] = (n >> 8) & 0xff;
+        }
+        if (src[i + 3] != '=') {
+            dst[j + 2] = n & 0xff;
+        }
+    }
+    *dstlen = j;
 }
 
-void cdk_base64_decode(char* src, size_t srclen, uint8_t* dst, size_t* dstlen) {
-
-	uint8_t input[4];
-	size_t i;
-
-	for (*dstlen = 0, i = 0; i < srclen; i += 4) {
-		
-		if (dst) {
-			input[0] = cdk_base64_byte(src[i]);
-			input[1] = cdk_base64_byte(src[i + 1]);
-			dst[*dstlen] = (input[0] << 2) + (input[1] >> 4);
-		}
-		++(*dstlen);
-		if (src[i + 2] != '=') {
-			if (dst) {
-				input[2] = cdk_base64_byte(src[i + 2]);
-				dst[*dstlen] = (input[1] << 4) + (input[2] >> 2);
-			}
-			++(*dstlen);
-		}
-		if (src[i + 3] != '=') {
-			if (dst) {
-				input[3] = cdk_base64_byte(src[i + 3]);
-				dst[*dstlen] = (input[2] << 6) + input[3];
-			}
-			++(*dstlen);
-		}
-	}
-}
