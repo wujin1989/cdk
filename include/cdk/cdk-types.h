@@ -92,6 +92,8 @@ typedef uint64_t             cdk_tid_t;
 #if defined(__linux__)
 typedef pid_t                cdk_tid_t;
 #endif
+
+#define INVALID_SOCKET       -1
 typedef pid_t                cdk_pid_t;
 typedef struct cdk_thrd_s    cdk_thrd_t;
 typedef pthread_once_t       cdk_once_t;

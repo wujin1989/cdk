@@ -19,28 +19,19 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk/cdk-net.h"
-#include "cdk/cdk-thread.h"
-#include "cdk/cdk-queue.h"
-#include "cdk/cdk-threadpool.h"
-#include "cdk/cdk-sysinfo.h"
-#include "cdk/cdk-memory.h"
-#include "cdk/cdk-atomic.h"
+#include "platform-socket.h"
 
-#if defined(__linux__) || defined(__APPLE__)
-#include "unix/unix-net.h"
-#include "unix/unix-poller.h"
-#include <sys/socket.h>
-#include <string.h>
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <netinet/tcp.h>
-#endif
-
-#if defined(_WIN32)
-#include "win/win-net.h"
-#include <WS2tcpip.h>
-#endif
+//#if defined(__linux__) || defined(__APPLE__)
+//#include <sys/socket.h>
+//#include <string.h>
+//#include <stdlib.h>
+//#include <arpa/inet.h>
+//#include <netinet/tcp.h>
+//#endif
+//
+//#if defined(_WIN32)
+//#include <WS2tcpip.h>
+//#endif
 
 #define TCPv4_SAFE_MSS    536
 #define TCPv6_SAFE_MSS    1220

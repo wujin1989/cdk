@@ -73,7 +73,7 @@ if(WIN32)
 		src/platform/win/win-mtx.c
 		src/platform/win/win-cnd.c
 		src/platform/win/win-atomic.c
-#		src/platform/win/win-net.c
+		src/platform/win/win-socket.c
 		src/platform/win/win-sysinfo.c
 		src/platform/win/win-loader.c
 		src/platform/win/win-file.c
@@ -91,7 +91,7 @@ if(UNIX)
 		src/platform/unix/unix-mtx.c
 		src/platform/unix/unix-cnd.c
 		src/platform/unix/unix-atomic.c
-#		src/platform/unix/unix-net.c
+		src/platform/unix/unix-socket.c
 		src/platform/unix/unix-sysinfo.c
 		src/platform/unix/unix-loader.c
 		src/platform/unix/unix-file.c
