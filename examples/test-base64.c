@@ -4,13 +4,12 @@
 
 static void encode() {
 
-    char src[] = "CDK is a clean and concise cross-platform C development kits that complements the standard C library.";
+    char* src = "CDK is a clean and concise cross-platform C development kits that complements the standard C library.";
     char dst[512] = { 0 };
 
     size_t dstlen;
-    size_t srclen = strlen(src);
     
-    cdk_base64_encode(src, srclen, dst, &dstlen);
+    cdk_base64_encode(src, strlen(src), dst, &dstlen);
     printf("dst: %s, dstlen: %zu\n", dst, dstlen);
 }
 
@@ -23,6 +22,7 @@ static void decode() {
     cdk_base64_decode(src, strlen(src), dst, &dstlen);
 
     printf("dst: %.*s\n", (int)dstlen, dst);
+    printf("dst2: %s\n", dst);
     return;
 }
 
