@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![CodeQL](https://github.com/wujin1989/cdk/actions/workflows/codeql.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/codeql.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/wujin1989/cdk/badge)](https://www.codefactor.io/repository/github/wujin1989/cdk)
+[![Snyk Security](https://github.com/wujin1989/cdk/actions/workflows/snyk-security.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/snyk-security.yml)
 
 # Overview
 CDK is a clean and concise cross-platform C development kits that complements the standard C library. It provides developers with powerful tools and functions to simplify the process of developing portable C applications. CDK is well-documented, designed to support best coding practices, and ensures code compiles without warnings on all supported platforms and compilers.
