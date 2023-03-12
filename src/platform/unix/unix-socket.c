@@ -45,7 +45,21 @@ void platform_socket_nonblock(cdk_sock_t sock) {
     }
 }
 
-cdk_sock_t platform_socket_tcp_accept(cdk_sock_t sock) {
+void platform_socket_recvbuf(cdk_sock_t sock, int val) {
+
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void*)&val, sizeof(int))) {
+        abort();
+    }
+}
+
+void platform_socket_sendbuf(cdk_sock_t sock, int val) {
+
+    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void*)&val, sizeof(int))) {
+        abort();
+    }
+}
+
+cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
 
     cdk_sock_t cli;
     do {
@@ -67,7 +81,7 @@ cdk_sock_t platform_socket_tcp_accept(cdk_sock_t sock) {
     return cli;
 }
 
-void platform_socket_tcp_nodelay(cdk_sock_t sock, bool on) {
+void platform_socket_nodelay(cdk_sock_t sock, bool on) {
 
     int val = on ? 1 : 0;
     if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const void*)&val, sizeof(val))) {
@@ -85,7 +99,7 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
 
 #if defined(__linux__)
 
-void platform_socket_tcp_keepalive(cdk_sock_t sock) {
+void platform_socket_keepalive(cdk_sock_t sock) {
 
     int on = 1;
     int d = 60;
@@ -106,12 +120,12 @@ void platform_socket_tcp_keepalive(cdk_sock_t sock) {
     }
 }
 
-void platform_socket_tcp_maxseg(cdk_sock_t sock) {
+void platform_socket_maxseg(cdk_sock_t sock) {
 
     int af = platform_socket_af(sock);
     int mss = af == AF_INET ? TCPv4_MSS : TCPv6_MSS;
 
-    if (setsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, &mss, sizeof(int))) {
+    if (setsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, (const void*)&mss, sizeof(int))) {
         abort();
     }
 }
@@ -119,7 +133,7 @@ void platform_socket_tcp_maxseg(cdk_sock_t sock) {
 
 #if defined(__APPLE__)
 
-void platform_socket_tcp_keepalive(cdk_sock_t sock) {
+void platform_socket_keepalive(cdk_sock_t sock) {
 
     int on = 1;
     int d = 60;
@@ -140,7 +154,7 @@ void platform_socket_tcp_keepalive(cdk_sock_t sock) {
     }
 }
 
-void platform_socket_tcp_maxseg(cdk_sock_t sock) {
+void platform_socket_maxseg(cdk_sock_t sock) {
 
     /**
      * on macos, TCP_NOOPT seems to be the only way to restrict MSS to the minimum.
@@ -148,7 +162,7 @@ void platform_socket_tcp_maxseg(cdk_sock_t sock) {
      * TCP_MAXSEG doesn't seem to work correctly for outbound connections on macOS/iOS.
      */
     int val = 1;
-    if (setsockopt(sock, IPPROTO_TCP, TCP_NOOPT, &val, sizeof(int))) {
+    if (setsockopt(sock, IPPROTO_TCP, TCP_NOOPT, (const void*)&val, sizeof(int))) {
         abort();
     }
 }
@@ -202,12 +216,12 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
                 platform_socket_close(sock);
                 continue;
             }
-            platform_socket_tcp_maxseg(sock);
+            platform_socket_maxseg(sock);
             /**
              * must be after _tcp_maxseg. due to _tcp_maxseg set TCP_NOOPT on macos.
              */
-            platform_socket_tcp_nodelay(sock, true);
-            platform_socket_tcp_keepalive(sock);
+            platform_socket_nodelay(sock, true);
+            platform_socket_keepalive(sock);
         }
         /**
          * this option not inherited by connection-socket.
@@ -257,9 +271,9 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
             continue;
         }
         if (protocol == SOCK_STREAM) {
-            platform_socket_tcp_maxseg(sock);
-            platform_socket_tcp_nodelay(sock, true);
-            platform_socket_tcp_keepalive(sock);
+            platform_socket_maxseg(sock);
+            platform_socket_nodelay(sock, true);
+            platform_socket_keepalive(sock);
         }
         platform_socket_nonblock(sock);
         do {

@@ -21,59 +21,17 @@
 
 #include "platform-socket.h"
 
-//#if defined(__linux__) || defined(__APPLE__)
-//#include <sys/socket.h>
-//#include <string.h>
-//#include <stdlib.h>
-//#include <arpa/inet.h>
-//#include <netinet/tcp.h>
-//#endif
-//
-//#if defined(_WIN32)
-//#include <WS2tcpip.h>
-//#endif
-
-#define TCPv4_SAFE_MSS    536
-#define TCPv6_SAFE_MSS    1220
-
-#define SNDRCV_BUFFER_SIZE_MIN  32767
-#define SNDRCV_BUFFER_SIZE_STEP 16384
-
-static void _inet_ntop(int af, const void* restrict s, char* restrict d) {
+static void cdk_net_inet_ntop(int af, const void* restrict src, char* restrict dst) {
 
     if (af == AF_INET) {
-        inet_ntop(af, s, d, INET_ADDRSTRLEN);
+        inet_ntop(af, src, dst, INET_ADDRSTRLEN);
     }
     if (af == AF_INET6) {
-        inet_ntop(af, s, d, INET6_ADDRSTRLEN);
+        inet_ntop(af, src, dst, INET6_ADDRSTRLEN);
     }
 }
 
-void cdk_net_rbuf(sock_t s, int v) {
-
-    int r;
-    for (;;) {
-        r = setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char*)&v, sizeof(int));
-        if (r == 0) { break; }
-        else if (v <= SNDRCV_BUFFER_SIZE_MIN) { break; }
-        else if (v - SNDRCV_BUFFER_SIZE_STEP <= SNDRCV_BUFFER_SIZE_MIN) { v = SNDRCV_BUFFER_SIZE_MIN; }
-        else { v -= SNDRCV_BUFFER_SIZE_STEP; }
-    }
-}
-
-void cdk_net_sbuf(sock_t s, int v) {
-
-    int r;
-    for (;;) {
-        r = setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char*)&v, sizeof(int));
-        if (r == 0) { break; }
-        else if (v <= SNDRCV_BUFFER_SIZE_MIN) { break; }
-        else if (v - SNDRCV_BUFFER_SIZE_STEP <= SNDRCV_BUFFER_SIZE_MIN) { v = SNDRCV_BUFFER_SIZE_MIN; }
-        else { v -= SNDRCV_BUFFER_SIZE_STEP; }
-    }
-}
-
-void cdk_net_inet_ntop(struct sockaddr_storage* ss, addrinfo_t* ai) {
+void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai) {
 
     char d[MAX_ADDRSTRLEN];
     memset(d, 0, sizeof(d));
@@ -84,7 +42,7 @@ void cdk_net_inet_ntop(struct sockaddr_storage* ss, addrinfo_t* ai) {
     {
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
-        _inet_ntop(AF_INET, &si->sin_addr, d);
+        cdk_net_inet_ntop(AF_INET, &si->sin_addr, d);
         ai->p = ntohs(si->sin_port);
         ai->f = AF_INET;
         break;
@@ -93,7 +51,7 @@ void cdk_net_inet_ntop(struct sockaddr_storage* ss, addrinfo_t* ai) {
     {
         struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
 
-        _inet_ntop(AF_INET6, &si6->sin6_addr, d);
+        cdk_net_inet_ntop(AF_INET6, &si6->sin6_addr, d);
         ai->p = ntohs(si6->sin6_port);
         ai->f = AF_INET6;
         break;
@@ -105,7 +63,7 @@ void cdk_net_inet_ntop(struct sockaddr_storage* ss, addrinfo_t* ai) {
     memcpy(ai->a, d, MAX_ADDRSTRLEN);
 }
 
-void cdk_net_inet_pton(addrinfo_t* ai, struct sockaddr_storage* ss) {
+void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss) {
 
     memset(ss, 0, sizeof(struct sockaddr_storage));
 
@@ -127,28 +85,48 @@ void cdk_net_inet_pton(addrinfo_t* ai, struct sockaddr_storage* ss) {
     }
 }
 
-void cdk_net_obtain_addr(sock_t s, addrinfo_t* ai, bool p) {
+void cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer) {
 
     struct sockaddr_storage ss;
-    socklen_t               l;
+    socklen_t len;
 
-    l = sizeof(struct sockaddr_storage);
+    len = sizeof(struct sockaddr_storage);
 
-    if (p) { getpeername(s, (struct sockaddr*)&ss, &l); }
-    if (!p) { getsockname(s, (struct sockaddr*)&ss, &l); }
-
-    cdk_net_inet_ntop(&ss, ai);
+    if (peer) {
+        getpeername(sock, (struct sockaddr*)&ss, &len);
+    }
+    if (!peer) {
+        getsockname(sock, (struct sockaddr*)&ss, &len);
+    }
+    cdk_net_ntop(&ss, ai);
 }
 
-int cdk_net_af(sock_t s) {
+int cdk_net_af(cdk_sock_t sock) {
 
-    return _net_af(s);
+    return platform_socket_af(sock);
 }
 
-int cdk_net_socktype(sock_t s) {
+int cdk_net_socktype(cdk_sock_t sock) {
 
-    return _net_socktype(s);
+    return platform_socket_socktype(sock);
 }
+
+void cdk_net_recvbuf(cdk_sock_t sock, int val) {
+    
+    platform_socket_recvbuf(sock, val);
+}
+
+void cdk_net_sendbuf(cdk_sock_t sock, int val) {
+
+    platform_socket_sendbuf(sock, val);
+}
+
+
+
+
+
+
+
 
 // num = 0, auto.
 void cdk_net_concurrent_slaves(int64_t num) {

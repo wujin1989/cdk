@@ -31,7 +31,21 @@ void platform_socket_nonblock(cdk_sock_t sock) {
     }
 }
 
-cdk_sock_t platform_socket_tcp_accept(cdk_sock_t sock) {
+void platform_socket_recvbuf(cdk_sock_t sock, int val) {
+
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&val, sizeof(int))) {
+        abort();
+    }
+}
+
+void platform_socket_sendbuf(cdk_sock_t sock, int val) {
+
+    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&val, sizeof(int))) {
+        abort();
+    }
+}
+
+cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
 
     cdk_sock_t cli = accept(sock, NULL, NULL);
 
@@ -50,7 +64,7 @@ cdk_sock_t platform_socket_tcp_accept(cdk_sock_t sock) {
     return cli;
 }
 
-void platform_socket_tcp_nodelay(cdk_sock_t sock, bool on) {
+void platform_socket_nodelay(cdk_sock_t sock, bool on) {
 
     int val = on ? 1 : 0;
     if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&val, sizeof(val))) {
@@ -58,7 +72,7 @@ void platform_socket_tcp_nodelay(cdk_sock_t sock, bool on) {
     }
 }
 
-void platform_socket_tcp_keepalive(cdk_sock_t sock) {
+void platform_socket_keepalive(cdk_sock_t sock) {
 
     int on = 1;
     int d = 60;
@@ -79,7 +93,7 @@ void platform_socket_tcp_keepalive(cdk_sock_t sock) {
     }
 }
 
-void platform_socket_tcp_maxseg(cdk_sock_t sock) {
+void platform_socket_maxseg(cdk_sock_t sock) {
 
     int af = platform_socket_af(sock);
     /**
@@ -145,9 +159,9 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
                 platform_socket_close(sock);
                 continue;
             }
-            platform_socket_tcp_maxseg(sock);
-            platform_socket_tcp_nodelay(sock, true);
-            platform_socket_tcp_keepalive(sock);
+            platform_socket_maxseg(sock);
+            platform_socket_nodelay(sock, true);
+            platform_socket_keepalive(sock);
         }
         platform_socket_nonblock(sock);
         break;
@@ -198,9 +212,9 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
             continue;
         }
         if (protocol == SOCK_STREAM) {
-            platform_socket_tcp_maxseg(sock);
-            platform_socket_tcp_nodelay(sock, true);
-            platform_socket_tcp_keepalive(sock);
+            platform_socket_maxseg(sock);
+            platform_socket_nodelay(sock, true);
+            platform_socket_keepalive(sock);
         }
         platform_socket_nonblock(sock);
 
