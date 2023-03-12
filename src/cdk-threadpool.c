@@ -19,7 +19,6 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk/cdk-threadpool.h"
 #include "cdk/cdk-sysinfo.h"
 #include "cdk/cdk-memory.h"
 #include "cdk/cdk-atomic.h"
@@ -30,107 +29,92 @@
 #include "cdk/cdk-types.h"
 #include <stdlib.h>
 
-typedef struct cdk_thrdpool_s {
-	cdk_thrd_t* thrds;
-	size_t      thrdcnt;
-	cdk_queue_t queue;
-	cdk_mtx_t   tmtx;
-	cdk_mtx_t   qmtx;
-	cdk_cnd_t   qcnd;
-	bool        status;
-}cdk_thrdpool_t;
-
-static cdk_thrdpool_t pool;
-static cdk_atomic_flag_t once_create  = CDK_ATOMIC_FLAG_INIT;
-static cdk_atomic_flag_t once_destroy = CDK_ATOMIC_FLAG_INIT;
-
 static int cdk_thrdpool_thrdfunc(void* arg) {
 	
-	while (pool.status) {
+	cdk_thrdpool_t* pool = arg;
 
-		cdk_mtx_lock(&pool.qmtx);
+	while (pool->status) {
+
+		cdk_mtx_lock(&pool->qmtx);
 		cdk_thrdpool_job_t* job;
 
-		while (pool.status && cdk_queue_empty(&pool.queue)) {
-			cdk_cnd_wait(&pool.qcnd, &pool.qmtx);
+		while (pool->status && cdk_queue_empty(&pool->queue)) {
+			cdk_cnd_wait(&pool->qcnd, &pool->qmtx);
 		}
-		job = cdk_queue_data(cdk_queue_dequeue(&pool.queue), cdk_thrdpool_job_t, n);
+		job = cdk_queue_data(cdk_queue_dequeue(&pool->queue), cdk_thrdpool_job_t, n);
 
-		if (pool.status) { 
+		if (pool->status) {
 			job->routine(job->arg);
 		}
 		cdk_memory_free(job);
-		cdk_mtx_unlock(&pool.qmtx);
+		cdk_mtx_unlock(&pool->qmtx);
 	}
 	return 0;
 }
 
-static void cdk_thrdpool_createthread(void) {
+static void cdk_thrdpool_createthread(cdk_thrdpool_t* pool) {
 
 	void* thrds;
 
-	cdk_mtx_lock(&pool.tmtx);
-	thrds = realloc(pool.thrds, (pool.thrdcnt + 1) * sizeof(cdk_thrd_t));
+	cdk_mtx_lock(&pool->tmtx);
+	thrds = realloc(pool->thrds, (pool->thrdcnt + 1) * sizeof(cdk_thrd_t));
 	if (!thrds) {
-		cdk_mtx_unlock(&pool.tmtx);
+		cdk_mtx_unlock(&pool->tmtx);
 		return;
 	}
-	pool.thrds = thrds;
-	cdk_thrd_create(pool.thrds + pool.thrdcnt, cdk_thrdpool_thrdfunc, NULL);
+	pool->thrds = thrds;
+	cdk_thrd_create(pool->thrds + pool->thrdcnt, cdk_thrdpool_thrdfunc, pool);
 
-	pool.thrdcnt++;
-	cdk_mtx_unlock(&pool.tmtx);
+	pool->thrdcnt++;
+	cdk_mtx_unlock(&pool->tmtx);
 }
 
-void cdk_thrdpool_create(void) {
+cdk_thrdpool_t* cdk_thrdpool_create(int nthrds) {
 
-	if (cdk_atomic_flag_test_and_set(&once_create)) {
-		return;
+	cdk_thrdpool_t* pool = cdk_memory_malloc(sizeof(cdk_thrdpool_t));
+
+	cdk_queue_create(&pool->queue);
+
+	cdk_mtx_init(&pool->tmtx);
+	cdk_mtx_init(&pool->qmtx);
+	cdk_cnd_init(&pool->qcnd);
+
+	pool->thrdcnt = 0;
+	pool->status  = true;
+	pool->thrds   = NULL;
+
+	for (int i = 0; i < nthrds; i++) {
+		cdk_thrdpool_createthread(pool);
 	}
-	cdk_queue_create(&pool.queue);
-
-	cdk_mtx_init(&pool.tmtx);
-	cdk_mtx_init(&pool.qmtx);
-	cdk_cnd_init(&pool.qcnd);
-
-	pool.thrdcnt = 0;
-	pool.status  = true;
-	pool.thrds   = NULL;
-
-	for (int i = 0; i < cdk_sysinfo_cpus(); i++) {
-		cdk_thrdpool_createthread();
-	}
+	return pool;
 }
 
-void cdk_thrdpool_destroy(void) {
+void cdk_thrdpool_destroy(cdk_thrdpool_t* pool) {
 	
-	if (cdk_atomic_flag_test_and_set(&once_destroy)) {
-		return;
+	pool->status = false;
+
+	cdk_mtx_lock(&pool->qmtx);
+	cdk_cnd_broadcast(&pool->qcnd);
+	cdk_mtx_unlock(&pool->qmtx);
+
+	for (int i = 0; i < pool->thrdcnt; i++) {
+		cdk_thrd_join(pool->thrds[i]);
 	}
-	pool.status = false;
+	cdk_mtx_destroy(&pool->qmtx);
+	cdk_mtx_destroy(&pool->tmtx);
+	cdk_cnd_destroy(&pool->qcnd);
 
-	cdk_mtx_lock(&pool.qmtx);
-	cdk_cnd_broadcast(&pool.qcnd);
-	cdk_mtx_unlock(&pool.qmtx);
-
-	for (int i = 0; i < pool.thrdcnt; i++) {
-		cdk_thrd_join(pool.thrds[i]);
-	}
-	cdk_mtx_destroy(&pool.qmtx);
-	cdk_mtx_destroy(&pool.tmtx);
-	cdk_cnd_destroy(&pool.qcnd);
-
-	cdk_memory_free(pool.thrds);
+	cdk_memory_free(pool->thrds);
 }
 
-void cdk_thrdpool_post(cdk_thrdpool_job_t* job) {
+void cdk_thrdpool_post(cdk_thrdpool_t* pool, cdk_thrdpool_job_t* job) {
 
 	if (!job) {
 		return;
 	}
-	cdk_mtx_lock(&pool.qmtx);
-	cdk_queue_enqueue(&pool.queue, &job->n);
-	cdk_cnd_signal(&pool.qcnd);
-	cdk_mtx_unlock(&pool.qmtx);
+	cdk_mtx_lock(&pool->qmtx);
+	cdk_queue_enqueue(&pool->queue, &job->n);
+	cdk_cnd_signal(&pool->qcnd);
+	cdk_mtx_unlock(&pool->qmtx);
 }
 

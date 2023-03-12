@@ -43,6 +43,7 @@
 typedef struct cdk_logger_s {
 	FILE* file;
 	_Bool async;
+	cdk_thrdpool_t* pool;
 }cdk_logger_t;
 
 static const char* levels[] = {
@@ -114,19 +115,18 @@ static inline void cdk_logger_asyncbase(int level, const char* restrict file, in
 	job->arg = cdk_memory_malloc(ret);
 	memcpy(job->arg, buf, ret);
 
-	cdk_thrdpool_post(job);
+	cdk_thrdpool_post(logger.pool, job);
 }
 
-void cdk_logger_create(const char* restrict out, bool async) {
+void cdk_logger_create(const char* restrict out, int nthrds) {
 
 	if (cdk_atomic_flag_test_and_set(&once_create)) {
 		return;
 	}
-	if (async) {
-		cdk_thrdpool_create();
+	if (nthrds > 0) {
+		logger.async = true;
+		logger.pool  = cdk_thrdpool_create(nthrds);
 	}
-	logger.async = async;
-
 	if (!out) { 
 		logger.file = stdout;
 		return; 
@@ -140,7 +140,7 @@ void cdk_logger_destroy(void) {
 		return;
 	}
 	if (logger.async) {
-		cdk_thrdpool_destroy();
+		cdk_thrdpool_destroy(logger.pool);
 	}
 	if (logger.file) {
 		cdk_file_fclose(logger.file);

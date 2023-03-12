@@ -19,8 +19,7 @@ int routine(void* param) {
 }
 
 int main(void) {
-
-	cdk_logger_create(NULL, true);
+	cdk_logger_create(NULL, 3);
 	cdk_mtx_init(&mtx);
 
 	cdk_thrd_t tid;

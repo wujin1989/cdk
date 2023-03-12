@@ -17,9 +17,8 @@ void callback(void* p) {
 
 int main(void) {
 
-	cdk_timer_create();
-	cdk_logger_create(NULL, true);
-	//cdk_mtx_init(&mtx);
+	cdk_timer_create(cdk_sysinfo_cpus());
+	cdk_logger_create(NULL, 0);
 
 	for (int i = 0; i < 10; i++) {
 		cdk_timer_add(callback, NULL, 2000, true);
@@ -27,7 +26,6 @@ int main(void) {
 	while (1) {
 		cdk_time_sleep(1000);
 	}
-	//cdk_mtx_destroy(&mtx);
 	cdk_timer_destroy();
 	cdk_logger_destroy();
 	return 0;

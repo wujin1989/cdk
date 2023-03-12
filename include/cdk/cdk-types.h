@@ -77,6 +77,7 @@ typedef struct cdk_list_node_s           cdk_queue_node_t;
 typedef struct cdk_list_node_s           cdk_stack_t;
 typedef struct cdk_list_node_s           cdk_stack_node_t;
 typedef struct cdk_thrdpool_job_s        cdk_thrdpool_job_t;
+typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_spliter_type_e        cdk_spliter_type_t;
 typedef struct cdk_spliter_s             cdk_spliter_t;
@@ -159,6 +160,16 @@ struct cdk_thrdpool_job_s {
 	void (*routine)(void*);
 	void* arg;
 	cdk_queue_node_t n;
+};
+
+struct cdk_thrdpool_s {
+	cdk_thrd_t* thrds;
+	size_t      thrdcnt;
+	cdk_queue_t queue;
+	cdk_mtx_t   tmtx;
+	cdk_mtx_t   qmtx;
+	cdk_cnd_t   qcnd;
+	bool        status;
 };
 
 struct cdk_ringbuf_s {

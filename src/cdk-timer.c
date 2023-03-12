@@ -76,6 +76,8 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 	cdk_rbtree_node_t* node;
 	uint64_t timebase;
 
+	cdk_mtx_lock(&timer.rbmtx);
+
 	timebase = cdk_time_now();
 	key.u64 = timebase + expire;
 
@@ -100,6 +102,7 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 		cdk_queue_enqueue(&jobs->jobs, &job->n);
 		cdk_timer_post(jobs);
 	}
+	cdk_mtx_unlock(&timer.rbmtx);
 }
 
 static int cdk_timer_thrdfunc(void* arg) {
@@ -160,7 +163,7 @@ static void cdk_timer_createthread(void) {
 	cdk_mtx_unlock(&timer.tmtx);
 }
 
-void cdk_timer_create(void) {
+void cdk_timer_create(int nthrds) {
 
 	if (cdk_atomic_flag_test_and_set(&once_create)) {
 		return;
@@ -175,7 +178,7 @@ void cdk_timer_create(void) {
 	timer.status = true;
 	timer.thrds = NULL;
 
-	for (int i = 0; i < cdk_sysinfo_cpus(); i++) {
+	for (int i = 0; i < nthrds; i++) {
 		cdk_timer_createthread();
 	}
 }
