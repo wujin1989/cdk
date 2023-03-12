@@ -84,6 +84,7 @@ typedef struct cdk_spliter_s             cdk_spliter_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_sha256_ctx_s	         cdk_sha256_ctx_t;
+typedef struct cdk_sha1_ctx_s	         cdk_sha1_ctx_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -286,4 +287,10 @@ struct cdk_sha256_ctx_s {
 	uint32_t datalen;
 	uint64_t bitlen;
 	uint32_t state[8];
+};
+
+struct cdk_sha1_ctx_s {
+	uint32_t state[5];
+	uint32_t count[2];
+	unsigned char buffer[64];
 };

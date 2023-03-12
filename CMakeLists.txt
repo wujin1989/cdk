@@ -41,6 +41,7 @@ set(SRCS
     src/cdk-file.c
 	src/cdk-timer.c
 	src/cdk-atomic.c
+	src/crypto/cdk-sha1.c
 	src/crypto/cdk-sha256.c
 	src/thread/cdk-cnd.c
 	src/thread/cdk-mtx.c

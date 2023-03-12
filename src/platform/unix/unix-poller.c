@@ -268,7 +268,7 @@ static void __poller_builtin_splicer3(poller_conn_t* conn) {
 		if (conn->tcp.splicer.binary.coding == LEN_FIELD_FIXEDINT) {
 
 			ps = *((uint32_t*)(tmp + conn->tcp.splicer.binary.offset));
-
+			//0 means little-endian, 1 means big-endian.
 			if (!cdk_byteorder()) {
 				ps = ntohl(ps);
 			}

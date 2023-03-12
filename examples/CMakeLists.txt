@@ -81,3 +81,6 @@ target_link_libraries(test-sha256 PUBLIC cdk)
 
 add_executable(test-base64 "test-base64.c")
 target_link_libraries(test-base64 PUBLIC cdk)
+
+add_executable(test-sha1 "test-sha1.c")
+target_link_libraries(test-sha1 PUBLIC cdk)

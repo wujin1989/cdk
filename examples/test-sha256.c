@@ -11,12 +11,12 @@ int main() {
     cdk_sha256_init(&ctx);
     cdk_sha256_update(&ctx, (const uint8_t*)message, message_len);
 
-    uint8_t hash[CDK_SHA256_BLOCK_SIZE];
+    uint8_t hash[32];
     cdk_sha256_final(&ctx, hash);
 
     printf("message: %s\n", message);
     printf("hash: ");
-    for (int i = 0; i < CDK_SHA256_BLOCK_SIZE; i++) {
+    for (int i = 0; i < 32; i++) {
         printf("%02x", hash[i]);
     }
     printf("\n");

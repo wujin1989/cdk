@@ -1,4 +1,11 @@
-/** Copyright (c), Wu Jin <wujin.developer@gmail.com>
+/** 
+ *  Filename:   sha256.h
+ *  Author:     Brad Conte (brad AT bradconte.com)
+ *  Copyright:
+ *  Disclaimer: This code is presented "as is" without any guarantees.
+ *  Details:    Defines the API for the corresponding SHA256 implementation.
+ * 
+ *  Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to
@@ -23,8 +30,6 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-#define CDK_SHA256_BLOCK_SIZE 32
-
 extern void cdk_sha256_init(cdk_sha256_ctx_t* ctx);
 extern void cdk_sha256_update(cdk_sha256_ctx_t* ctx, const uint8_t data[], size_t len);
-extern void cdk_sha256_final(cdk_sha256_ctx_t* ctx, uint8_t hash[]);
+extern void cdk_sha256_final(cdk_sha256_ctx_t* ctx, uint8_t hash[32]);
