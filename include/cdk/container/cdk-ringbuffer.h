@@ -21,7 +21,7 @@
 
 _Pragma("once")
 
-#include "cdk-types.h"
+#include "cdk/cdk-types.h"
 
 extern void     cdk_ringbuf_create(cdk_ringbuf_t* ring, uint32_t esize, void* buf, uint32_t bsize);
 extern uint32_t cdk_ringbuf_len(cdk_ringbuf_t* ring);

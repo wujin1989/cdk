@@ -22,10 +22,10 @@
 #include "cdk/cdk-sysinfo.h"
 #include "cdk/cdk-memory.h"
 #include "cdk/cdk-atomic.h"
-#include "cdk/cdk-queue.h"
-#include "cdk/cdk-mtx.h"
-#include "cdk/cdk-cnd.h"
-#include "cdk/cdk-thread.h"
+#include "cdk/container/cdk-queue.h"
+#include "cdk/thread/cdk-mtx.h"
+#include "cdk/thread/cdk-cnd.h"
+#include "cdk/thread/cdk-thread.h"
 #include "cdk/cdk-types.h"
 #include <stdlib.h>
 

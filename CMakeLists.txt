@@ -38,31 +38,31 @@ include_directories(include)
 include_directories(src/platform)
 	
 set(SRCS
+    src/cdk-file.c
 	src/cdk-timer.c
 	src/cdk-atomic.c
-	src/cdk-cnd.c
-	src/cdk-file.c
-	src/cdk-list.c
+	src/crypto/cdk-sha256.c
+	src/thread/cdk-cnd.c
+	src/thread/cdk-mtx.c
+	src/thread/cdk-rwlock.c
+	src/thread/cdk-thread.c
+	src/encoding/cdk-varint.c
+	src/encoding/cdk-base64.c
+	src/container/cdk-list.c
+	src/container/cdk-queue.c
+	src/container/cdk-stack.c
+	src/container/cdk-rbtree.c
+	src/container/cdk-ringbuffer.c
 	src/cdk-loader.c
 	src/cdk-logger.c
 	src/cdk-math.c
 	src/cdk-memory.c
-	src/cdk-mtx.c
 #	src/cdk-net.c
 	src/cdk-process.c
-	src/cdk-queue.c
-	src/cdk-rbtree.c
-	src/cdk-ringbuffer.c
-	src/cdk-rwlock.c
-	src/cdk-stack.c
 	src/cdk-string.c
 	src/cdk-sysinfo.c
-	src/cdk-thread.c
 	src/cdk-threadpool.c
 	src/cdk-time.c
-	src/cdk-varint.c
-	src/cdk-sha256.c
-	src/cdk-base64.c
 )
 
 if(WIN32)

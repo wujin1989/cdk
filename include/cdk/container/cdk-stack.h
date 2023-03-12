@@ -19,31 +19,13 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk/cdk-list.h"
+_Pragma("once")
 
-void cdk_queue_create(cdk_queue_t* q) {
+#include "cdk/container/cdk-list.h"
 
-	cdk_list_create(q);
-}
+#define cdk_stack_data   cdk_list_data
 
-void cdk_queue_enqueue(cdk_queue_t* q, cdk_queue_node_t* x) {
-
-	cdk_list_insert_tail(q, x);
-}
-
-bool cdk_queue_empty(cdk_queue_t* q) {
-
-	return cdk_list_empty(q);
-}
-
-cdk_queue_node_t* cdk_queue_dequeue(cdk_queue_t* q) {
-
-	if (cdk_queue_empty(q)) {
-		return NULL;
-	}
-	cdk_queue_node_t* n = cdk_list_head(q);
-
-	cdk_list_remove(n);
-	return n;
-}
-
+extern void              cdk_stack_create(cdk_stack_t* s);
+extern void              cdk_stack_push(cdk_stack_t* s, cdk_stack_node_t* x);
+extern cdk_stack_node_t* cdk_stack_pop(cdk_stack_t* s);
+extern bool              cdk_stack_empty(cdk_stack_t* s);

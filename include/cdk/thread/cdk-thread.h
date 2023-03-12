@@ -21,7 +21,7 @@
 
 _Pragma("once")
 
-#include "cdk-types.h"
+#include "cdk/cdk-types.h"
 
 #if defined(__linux__) || defined(__APPLE__)
 #define cdk_thread_local            thread_local

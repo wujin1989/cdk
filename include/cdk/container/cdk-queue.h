@@ -21,11 +21,12 @@
 
 _Pragma("once")
 
-#include "cdk/cdk-list.h"
+#include "cdk/container/cdk-list.h"
 
-#define cdk_stack_data   cdk_list_data
+#define cdk_queue_data     cdk_list_data
 
-extern void              cdk_stack_create(cdk_stack_t* s);
-extern void              cdk_stack_push(cdk_stack_t* s, cdk_stack_node_t* x);
-extern cdk_stack_node_t* cdk_stack_pop(cdk_stack_t* s);
-extern bool              cdk_stack_empty(cdk_stack_t* s);
+extern void              cdk_queue_create(cdk_queue_t* q);
+extern void              cdk_queue_enqueue(cdk_queue_t* q, cdk_queue_node_t* x);
+extern cdk_queue_node_t* cdk_queue_dequeue(cdk_queue_t* q);
+extern bool              cdk_queue_empty(cdk_queue_t* q);
+
