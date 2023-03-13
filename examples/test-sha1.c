@@ -4,7 +4,7 @@
 #include "cdk.h"
 
 int main(void) {
-    cdk_sha1_ctx_t ctx;
+    cdk_sha1_t ctx;
     cdk_sha1_init(&ctx);
 
     uint8_t data[] = "hello world";
