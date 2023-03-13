@@ -94,7 +94,7 @@ static void cdk_sha1_transform(uint32_t state[5], const uint8_t buffer[64])
     memset(block, '\0', sizeof(block));
 }
 
-void cdk_sha1_init(cdk_sha1_ctx_t* ctx)
+void cdk_sha1_init(cdk_sha1_t* ctx)
 {
     ctx->state[0] = 0x67452301;
     ctx->state[1] = 0xEFCDAB89;
@@ -104,7 +104,7 @@ void cdk_sha1_init(cdk_sha1_ctx_t* ctx)
     ctx->count[0] = ctx->count[1] = 0;
 }
 
-void cdk_sha1_update(cdk_sha1_ctx_t* ctx, uint8_t* data, uint32_t len)
+void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, uint32_t len)
 {
     uint32_t i, j;
 
@@ -125,7 +125,7 @@ void cdk_sha1_update(cdk_sha1_ctx_t* ctx, uint8_t* data, uint32_t len)
     memcpy(&ctx->buffer[j], &data[i], len - i);
 }
 
-void cdk_sha1_final(cdk_sha1_ctx_t* ctx, uint8_t digest[20])
+void cdk_sha1_final(cdk_sha1_t* ctx, uint8_t digest[20])
 {
     unsigned i;
     uint8_t finalcount[8];

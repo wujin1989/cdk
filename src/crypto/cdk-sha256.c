@@ -57,7 +57,7 @@ static const uint32_t k[64] = {
 	0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 };
 
-static void cdk_sha256_transform(cdk_sha256_ctx_t* ctx, const uint8_t data[])
+static void cdk_sha256_transform(cdk_sha256_t* ctx, const uint8_t data[])
 {
 	uint32_t a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
 
@@ -103,7 +103,7 @@ static void cdk_sha256_transform(cdk_sha256_ctx_t* ctx, const uint8_t data[])
 	ctx->state[7] += h;
 }
 
-void cdk_sha256_init(cdk_sha256_ctx_t* ctx)
+void cdk_sha256_init(cdk_sha256_t* ctx)
 {
 	ctx->datalen = 0;
 	ctx->bitlen = 0;
@@ -117,7 +117,7 @@ void cdk_sha256_init(cdk_sha256_ctx_t* ctx)
 	ctx->state[7] = 0x5be0cd19;
 }
 
-void cdk_sha256_update(cdk_sha256_ctx_t* ctx, const uint8_t data[], size_t len)
+void cdk_sha256_update(cdk_sha256_t* ctx, const uint8_t data[], size_t len)
 {
 	uint32_t i;
 
@@ -132,7 +132,7 @@ void cdk_sha256_update(cdk_sha256_ctx_t* ctx, const uint8_t data[], size_t len)
 	}
 }
 
-void cdk_sha256_final(cdk_sha256_ctx_t* ctx, uint8_t hash[])
+void cdk_sha256_final(cdk_sha256_t* ctx, uint8_t hash[])
 {
 	uint32_t i;
 

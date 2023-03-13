@@ -27,6 +27,6 @@
 #include <stdint.h>
 #include "cdk/cdk-types.h"
 
-extern void cdk_sha1_init(cdk_sha1_ctx_t* ctx);
-extern void cdk_sha1_update(cdk_sha1_ctx_t* ctx, uint8_t* data, uint32_t len);
-extern void cdk_sha1_final(cdk_sha1_ctx_t* ctx, uint8_t digest[20]);
+extern void cdk_sha1_init(cdk_sha1_t* ctx);
+extern void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, uint32_t len);
+extern void cdk_sha1_final(cdk_sha1_t* ctx, uint8_t digest[20]);
