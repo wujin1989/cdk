@@ -7,7 +7,7 @@ int main() {
     const char* message = "hello world";
     size_t message_len = strlen(message);
 
-    cdk_sha256_ctx_t ctx;
+    cdk_sha256_t ctx;
     cdk_sha256_init(&ctx);
     cdk_sha256_update(&ctx, (const uint8_t*)message, message_len);
 
