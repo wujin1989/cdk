@@ -7,7 +7,8 @@
  *  By Jin.Wu <wujin.developer@gmail.com>
  *  Still 100% PD
  *  Modified for the function name to fit CDK and also updated the dynamic detection of byte order.
- * 
+ *  Modified for Call to `memset` may be deleted.
+ *
  *  Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
