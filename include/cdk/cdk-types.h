@@ -292,5 +292,5 @@ struct cdk_sha256_s {
 struct cdk_sha1_s {
 	uint32_t state[5];
 	uint32_t count[2];
-	unsigned char buffer[64];
+	uint8_t  buffer[64];
 };
