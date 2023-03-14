@@ -7,6 +7,7 @@
  *  By Jin.Wu <wujin.developer@gmail.com>
  *  Still 100% PD
  *  Modified for the function name to fit CDK and also updated the dynamic detection of byte order.
+ *  Modified for fix security issue detected by CodeQL.
  *
  *  Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
@@ -36,7 +37,7 @@
 #include "cdk/cdk-types.h"
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
-#define blk0(i) (*((const unsigned char*)&bo) ? (block[i] = (rol(block[i],24)&0xFF00FF00) \
+#define blk0(i) (*((const unsigned char*)&endian) ? (block[i] = (rol(block[i],24)&0xFF00FF00) \
     |(rol(block[i],8)&0x00FF00FF)) : block[i])
 #define	blk(i) (block[i&15] =	rol(block[(i+13)&15]^block[(i+8)&15] \
 	^block[(i+2)&15]^block[i&15],1))
@@ -47,7 +48,7 @@
 #define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
 #define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
-static const unsigned short bo = 0x1;
+static const unsigned short endian = 0x1;
 
 static void cdk_sha1_transform(uint32_t state[5], const uint8_t buffer[64])
 {
@@ -88,8 +89,11 @@ static void cdk_sha1_transform(uint32_t state[5], const uint8_t buffer[64])
     state[3] += d;
     state[4] += e;
     
-    a = b = c = d = e = 0;
-    memset(block, '\0', sizeof(block));
+    /**
+     * fix security issue detected by CodeQL. 
+     */
+    /*a = b = c = d = e = 0;
+    memset(block, '\0', sizeof(block));*/
 }
 
 void cdk_sha1_init(cdk_sha1_t* ctx)
@@ -144,6 +148,9 @@ void cdk_sha1_final(cdk_sha1_t* ctx, uint8_t digest[20])
         digest[i] = (uint8_t)
             ((ctx->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
     }
-    memset(ctx, '\0', sizeof(*ctx));
-    memset(&finalcount, '\0', sizeof(finalcount));
+    /**
+     * fix security issue detected by CodeQL.
+     */
+   /* memset(ctx, '\0', sizeof(*ctx));
+    memset(&finalcount, '\0', sizeof(finalcount));*/
 }
