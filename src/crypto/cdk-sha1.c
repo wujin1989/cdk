@@ -52,6 +52,9 @@ static const unsigned short bo = 0x1;
 static void cdk_sha1_transform(uint32_t state[5], const uint8_t buffer[64])
 {
     uint32_t a, b, c, d, e;
+    /**
+     * Fix Call to `memset` may be deleted.
+     */
     volatile uint32_t block[16];
     memcpy(&block, buffer, 64);
 
