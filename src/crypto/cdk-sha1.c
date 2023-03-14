@@ -2,6 +2,11 @@
  *  SHA-1 in C
  *  By Steve Reid <steve@edmweb.com>
  *  100% Public Domain
+ *  
+ *  Modufiled 03/2023
+ *  By Jin.Wu <wujin.developer@gmail.com>
+ *  Still 100% PD
+ *  Modified for the function name to fit CDK and also updated the dynamic detection of byte order.
  * 
  *  Copyright (c), Wu Jin <wujin.developer@gmail.com>
  *
@@ -31,25 +36,18 @@
 #include "cdk/cdk-types.h"
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
+#define blk0(i) (*((const unsigned char*)&bo) ? (block[i] = (rol(block[i],24)&0xFF00FF00) \
+    |(rol(block[i],8)&0x00FF00FF)) : block[i])
 #define	blk(i) (block[i&15] =	rol(block[(i+13)&15]^block[(i+8)&15] \
 	^block[(i+2)&15]^block[i&15],1))
 
+#define R0(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
 #define R1(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk(i)+0x5A827999+rol(v,5);w=rol(w,30);
 #define R2(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
 #define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
 #define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
-void R0(uint32_t* v, uint32_t* w, uint32_t x, uint32_t y, uint32_t* z, uint32_t i, uint32_t* block)
-{
-    if (!cdk_sysinfo_byteorder()) {
-        *z += ((*w & (x ^ y)) ^ y) + (block[i] = (rol(block[i], 24) & 0xFF00FF00) | (rol(block[i], 8) & 0x00FF00FF)) + 0x5A827999 + rol(*v, 5);
-        *w = rol(*w, 30);
-    }
-    else {
-        *z += ((*w & (x ^ y)) ^ y) + block[i] + 0x5A827999 + rol(*v, 5);
-        *w = rol(*w, 30);
-    }
-}
+static const unsigned short bo = 0x1;
 
 static void cdk_sha1_transform(uint32_t state[5], const uint8_t buffer[64])
 {
@@ -63,10 +61,10 @@ static void cdk_sha1_transform(uint32_t state[5], const uint8_t buffer[64])
     d = state[3];
     e = state[4];
     
-    R0(&a, &b, c, d, &e, 0, block); R0(&e, &a, b, c, &d, 1, block); R0(&d, &e, a, b, &c, 2, block); R0(&c, &d, e, a, &b, 3, block);
-    R0(&b, &c, d, e, &a, 4, block); R0(&a, &b, c, d, &e, 5, block); R0(&e, &a, b, c, &d, 6, block); R0(&d, &e, a, b, &c, 7, block);
-    R0(&c, &d, e, a, &b, 8, block); R0(&b, &c, d, e, &a, 9, block); R0(&a, &b, c, d, &e, 10, block); R0(&e, &a, b, c, &d, 11, block);
-    R0(&d, &e, a, b, &c, 12, block); R0(&c, &d, e, a, &b, 13, block); R0(&b, &c, d, e, &a, 14, block); R0(&a, &b, c, d, &e, 15, block);
+    R0(a, b, c, d, e, 0); R0(e, a, b, c, d, 1); R0(d, e, a, b, c, 2); R0(c, d, e, a, b, 3);
+    R0(b, c, d, e, a, 4); R0(a, b, c, d, e, 5); R0(e, a, b, c, d, 6); R0(d, e, a, b, c, 7);
+    R0(c, d, e, a, b, 8); R0(b, c, d, e, a, 9); R0(a, b, c, d, e, 10); R0(e, a, b, c, d, 11);
+    R0(d, e, a, b, c, 12); R0(c, d, e, a, b, 13); R0(b, c, d, e, a, 14); R0(a, b, c, d, e, 15);
     R1(e, a, b, c, d, 16); R1(d, e, a, b, c, 17); R1(c, d, e, a, b, 18); R1(b, c, d, e, a, 19);
     R2(a, b, c, d, e, 20); R2(e, a, b, c, d, 21); R2(d, e, a, b, c, 22); R2(c, d, e, a, b, 23);
     R2(b, c, d, e, a, 24); R2(a, b, c, d, e, 25); R2(e, a, b, c, d, 26); R2(d, e, a, b, c, 27);

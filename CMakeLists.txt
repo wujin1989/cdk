@@ -49,6 +49,9 @@ set(SRCS
 	src/thread/cdk-thread.c
 	src/encoding/cdk-varint.c
 	src/encoding/cdk-base64.c
+	src/encoding/cdk-json.c
+	src/encoding/cJSON/cJSON.c
+	src/encoding/cJSON/cJSON_Utils.c
 	src/container/cdk-list.c
 	src/container/cdk-queue.c
 	src/container/cdk-stack.c
@@ -80,7 +83,7 @@ if(WIN32)
 		src/platform/win/win-file.c
 #		src/platform/win/win-poller.c
 		src/platform/win/win-string.c
-		src/platform/win/wepoll.c
+		src/platform/win/wepoll/wepoll.c
 		src/platform/win/win-rwlock.c
 	)
 endif()
