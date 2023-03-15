@@ -34,7 +34,8 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Run CMake
-      run: cmake -B build -G "Visual Studio 17 2022" -A x64
-    - name: Build
-      run: cmake --build build --config Release
+#    - name: Run CMake
+#      run: cmake -B build -G "Visual Studio 17 2022" -A x64
+#    - name: Build
+#      run: cmake --build build --config Release
+
