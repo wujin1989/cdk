@@ -29,6 +29,10 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 11)
 
+if(WIN32)
+add_compile_options("/experimental:c11atomics")
+endif()
+
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
@@ -39,14 +43,11 @@ include_directories(src/platform)
 	
 set(SRCS
     src/cdk-file.c
-	src/cdk-timer.c
-	src/cdk-atomic.c
 	src/crypto/cdk-sha1.c
 	src/crypto/cdk-sha256.c
-	src/thread/cdk-cnd.c
-	src/thread/cdk-mtx.c
 	src/thread/cdk-rwlock.c
-	src/thread/cdk-thread.c
+	src/thread/cdk-threadpool.c
+	src/thread/cdk-systid.c
 	src/encoding/cdk-varint.c
 	src/encoding/cdk-base64.c
 	src/encoding/cdk-json.c
@@ -65,18 +66,14 @@ set(SRCS
 	src/cdk-process.c
 	src/cdk-string.c
 	src/cdk-sysinfo.c
-	src/cdk-threadpool.c
-	src/cdk-time.c
+	src/time/cdk-time.c
+	src/time/cdk-timer.c
 )
 
 if(WIN32)
 	list(APPEND SRCS 
 		src/platform/win/win-process.c
-		src/platform/win/win-thread.c
 		src/platform/win/win-time.c
-		src/platform/win/win-mtx.c
-		src/platform/win/win-cnd.c
-		src/platform/win/win-atomic.c
 		src/platform/win/win-socket.c
 		src/platform/win/win-sysinfo.c
 		src/platform/win/win-loader.c
@@ -85,17 +82,14 @@ if(WIN32)
 		src/platform/win/win-string.c
 		src/platform/win/wepoll/wepoll.c
 		src/platform/win/win-rwlock.c
+		src/platform/win/win-systid.c
 	)
 endif()
 
 if(UNIX)
 	list(APPEND SRCS 
 		src/platform/unix/unix-process.c
-		src/platform/unix/unix-thread.c
 		src/platform/unix/unix-time.c
-		src/platform/unix/unix-mtx.c
-		src/platform/unix/unix-cnd.c
-		src/platform/unix/unix-atomic.c
 		src/platform/unix/unix-socket.c
 		src/platform/unix/unix-sysinfo.c
 		src/platform/unix/unix-loader.c
@@ -104,6 +98,7 @@ if(UNIX)
 #		src/platform/unix/unix-event.c
 		src/platform/unix/unix-string.c
 		src/platform/unix/unix-rwlock.c
+		src/platform/unix/unix-systid.c
 	)
 endif()
 

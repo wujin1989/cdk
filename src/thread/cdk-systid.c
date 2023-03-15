@@ -19,30 +19,10 @@
  *  IN THE SOFTWARE.
  */
 
-_Pragma("once")
-
 #include "cdk/cdk-types.h"
+#include "platform-systid.h"
 
-#if defined(__linux__) || defined(__APPLE__)
-#define CDK_ATOMIC_FLAG_INIT            ATOMIC_FLAG_INIT
-#define CDK_ATOMIC_VAR_INIT             ATOMIC_VAR_INIT
-#endif
+cdk_tid_t cdk_systid_get(void) {
 
-#if defined(_WIN32)
-#define CDK_ATOMIC_FLAG_INIT            { 0 }
-#define CDK_ATOMIC_VAR_INIT(value)      (value)
-#endif
-
-extern bool    cdk_atomic_flag_test_and_set(volatile cdk_atomic_flag_t* flag);
-extern void    cdk_atomic_flag_clear(volatile cdk_atomic_flag_t* flag);
-extern int64_t cdk_atomic_load(const volatile cdk_atomic_t* obj);
-extern void    cdk_atomic_store(volatile cdk_atomic_t* obj, int64_t desired);
-extern void    cdk_atomic_add(volatile cdk_atomic_t* obj, int64_t val);
-extern void    cdk_atomic_sub(volatile cdk_atomic_t* obj, int64_t val);
-extern void    cdk_atomic_inc(volatile cdk_atomic_t* obj);
-extern void    cdk_atomic_dec(volatile cdk_atomic_t* obj);
-extern void    cdk_atomic_or(volatile cdk_atomic_t* obj, int64_t val);
-extern void    cdk_atomic_xor(volatile cdk_atomic_t* obj, int64_t val);
-extern void    cdk_atomic_and(volatile cdk_atomic_t* obj, int64_t val);
-extern bool    cdk_atomic_cas(volatile cdk_atomic_t* obj, int64_t* expected, int64_t desired);
-
+	return platform_systid_get();
+}

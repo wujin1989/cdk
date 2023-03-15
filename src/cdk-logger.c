@@ -19,12 +19,12 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk/cdk-time.h"
+#include "cdk/time/cdk-time.h"
 #include "cdk/cdk-string.h"
 #include "cdk/cdk-file.h"
-#include "cdk/cdk-threadpool.h"
+#include "cdk/thread/cdk-threadpool.h"
 #include "cdk/cdk-memory.h"
-#include "cdk/cdk-atomic.h"
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -51,8 +51,8 @@ static const char* levels[] = {
 };
 
 static cdk_logger_t logger;
-static cdk_atomic_flag_t once_create  = CDK_ATOMIC_FLAG_INIT;
-static cdk_atomic_flag_t once_destroy = CDK_ATOMIC_FLAG_INIT;
+static atomic_flag once_create  = ATOMIC_FLAG_INIT;
+static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
 
 static inline void cdk_logger_printer(void* arg) {
 
@@ -120,7 +120,7 @@ static inline void cdk_logger_asyncbase(int level, const char* restrict file, in
 
 void cdk_logger_create(const char* restrict out, int nthrds) {
 
-	if (cdk_atomic_flag_test_and_set(&once_create)) {
+	if (atomic_flag_test_and_set(&once_create)) {
 		return;
 	}
 	if (nthrds > 0) {
@@ -136,7 +136,7 @@ void cdk_logger_create(const char* restrict out, int nthrds) {
 
 void cdk_logger_destroy(void) {
 
-	if (cdk_atomic_flag_test_and_set(&once_destroy)) {
+	if (atomic_flag_test_and_set(&once_destroy)) {
 		return;
 	}
 	if (logger.async) {

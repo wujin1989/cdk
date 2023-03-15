@@ -21,18 +21,17 @@
 
 _Pragma("once")
 
-#include "cdk/cdk-timer.h"
+#include "cdk/time/cdk-timer.h"
 #include "cdk/cdk-process.h"
 #include "cdk/cdk-math.h"
-#include "cdk/cdk-time.h"
+#include "cdk/time/cdk-time.h"
 #include "cdk/cdk-logger.h"
-#include "cdk/thread/cdk-thread.h"
+#include "cdk/thread/cdk-threadpool.h"
+#include "cdk/thread/cdk-systid.h"
 #include "cdk/cdk-types.h"
-#include "cdk/cdk-atomic.h"
 #include "cdk/cdk-net.h"
 #include "cdk/container/cdk-queue.h"
 #include "cdk/container/cdk-stack.h"
-#include "cdk/cdk-threadpool.h"
 #include "cdk/cdk-sysinfo.h"
 #include "cdk/container/cdk-list.h"
 #include "cdk/cdk-memory.h"
@@ -41,11 +40,13 @@ _Pragma("once")
 #include "cdk/container/cdk-rbtree.h"
 #include "cdk/cdk-string.h"
 #include "cdk/encoding/cdk-varint.h"
-#include "cdk/thread/cdk-mtx.h"
 #include "cdk/thread/cdk-rwlock.h"
-#include "cdk/thread/cdk-cnd.h"
 #include "cdk/crypto/cdk-sha256.h"
 #include "cdk/crypto/cdk-sha1.h"
 #include "cdk/encoding/cdk-base64.h"
 #include "cdk/encoding/cdk-json.h"
 
+/**
+ * When Apple and Microsoft support C11 threads, it will be removed from CDK. 
+ */
+#include "cdk/deprecated/threads.h"

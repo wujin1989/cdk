@@ -19,25 +19,10 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-mtx.h"
+_Pragma("once")
+
 #include "cdk/cdk-types.h"
 
-void cdk_mtx_init(cdk_mtx_t* restrict m) {
+extern cdk_tid_t  platform_systid_get(void);
 
-	platform_mtx_init(m);
-}
 
-void cdk_mtx_destroy(cdk_mtx_t* m) {
-
-	platform_mtx_destroy(m);
-}
-
-void cdk_mtx_lock(cdk_mtx_t* m) {
-
-	platform_mtx_lock(m);
-}
-
-void cdk_mtx_unlock(cdk_mtx_t* m) {
-
-	platform_mtx_unlock(m);
-}

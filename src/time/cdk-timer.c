@@ -21,25 +21,22 @@
 
 #include "cdk/cdk-types.h"
 #include "cdk/cdk-memory.h"
-#include "cdk/cdk-threadpool.h"
+#include "cdk/thread/cdk-threadpool.h"
 #include "cdk/container/cdk-rbtree.h"
-#include "cdk/thread/cdk-cnd.h"
-#include "cdk/thread/cdk-mtx.h"
-#include "cdk/cdk-atomic.h"
-#include "cdk/thread/cdk-thread.h"
 #include "cdk/cdk-sysinfo.h"
 #include "cdk/container/cdk-queue.h"
-#include "cdk/cdk-time.h"
+#include "cdk/time/cdk-time.h"
 #include <stdint.h>
+#include <stdatomic.h>
 
 typedef struct cdk_timer_s {
-	cdk_thrd_t*  thrds;
-	size_t       thrdcnt;
+	thrd_t* thrds;
+	size_t thrdcnt;
 	cdk_rbtree_t rbtree;
-	cdk_mtx_t    tmtx;
-	cdk_mtx_t    rbmtx;
-	cdk_cnd_t    rbcnd;
-	bool         status;
+	mtx_t tmtx;
+	mtx_t rbmtx;
+	cnd_t rbcnd;
+	bool status;
 }cdk_timer_t;
 
 typedef struct cdk_timer_job_s {
@@ -56,8 +53,8 @@ typedef struct cdk_timer_jobqueue_s {
 }cdk_timer_jobqueue_t;
 
 static cdk_timer_t timer;
-static cdk_atomic_flag_t once_create  = CDK_ATOMIC_FLAG_INIT;
-static cdk_atomic_flag_t once_destroy = CDK_ATOMIC_FLAG_INIT;
+static atomic_flag once_create  = ATOMIC_FLAG_INIT;
+static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
 
 static void cdk_timer_post(cdk_timer_jobqueue_t* jobs) {
 
@@ -65,7 +62,7 @@ static void cdk_timer_post(cdk_timer_jobqueue_t* jobs) {
 		return;
 	}
 	cdk_rbtree_insert(&timer.rbtree, &jobs->n);
-	cdk_cnd_signal(&timer.rbcnd);
+	cnd_signal(&timer.rbcnd);
 }
 
 void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat) {
@@ -76,7 +73,7 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 	cdk_rbtree_node_t* node;
 	uint64_t timebase;
 
-	cdk_mtx_lock(&timer.rbmtx);
+	mtx_lock(&timer.rbmtx);
 
 	timebase = cdk_time_now();
 	key.u64 = timebase + expire;
@@ -102,18 +99,18 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 		cdk_queue_enqueue(&jobs->jobs, &job->n);
 		cdk_timer_post(jobs);
 	}
-	cdk_mtx_unlock(&timer.rbmtx);
+	mtx_unlock(&timer.rbmtx);
 }
 
 static int cdk_timer_thrdfunc(void* arg) {
 
 	while (timer.status) {
 
-		cdk_mtx_lock(&timer.rbmtx);
+		mtx_lock(&timer.rbmtx);
 		cdk_timer_jobqueue_t* jobs;
 
 		while (timer.status && cdk_rbtree_empty(&timer.rbtree)) {
-			cdk_cnd_wait(&timer.rbcnd, &timer.rbmtx);
+			cnd_wait(&timer.rbcnd, &timer.rbmtx);
 		}
 		jobs = cdk_rbtree_data(cdk_rbtree_first(&timer.rbtree), cdk_timer_jobqueue_t, n);
 
@@ -121,7 +118,7 @@ static int cdk_timer_thrdfunc(void* arg) {
 
 		if (jobs->n.rb_key.u64 > now) {
 
-			cdk_mtx_unlock(&timer.rbmtx);
+			mtx_unlock(&timer.rbmtx);
 			cdk_time_sleep((uint32_t)(jobs->n.rb_key.u64 - now));
 			continue;
 		}
@@ -141,7 +138,7 @@ static int cdk_timer_thrdfunc(void* arg) {
 			}
 		}
 		cdk_memory_free(jobs);
-		cdk_mtx_unlock(&timer.rbmtx);
+		mtx_unlock(&timer.rbmtx);
 	}
 	return 0;
 }
@@ -150,29 +147,29 @@ static void cdk_timer_createthread(void) {
 
 	void* thrds;
 
-	cdk_mtx_lock(&timer.tmtx);
-	thrds = realloc(timer.thrds, (timer.thrdcnt + 1) * sizeof(cdk_thrd_t));
+	mtx_lock(&timer.tmtx);
+	thrds = realloc(timer.thrds, (timer.thrdcnt + 1) * sizeof(thrd_t));
 	if (!thrds) {
-		cdk_mtx_unlock(&timer.tmtx);
+		mtx_unlock(&timer.tmtx);
 		return;
 	}
 	timer.thrds = thrds;
-	cdk_thrd_create(timer.thrds + timer.thrdcnt, cdk_timer_thrdfunc, NULL);
+	thrd_create(timer.thrds + timer.thrdcnt, cdk_timer_thrdfunc, NULL);
 
 	timer.thrdcnt++;
-	cdk_mtx_unlock(&timer.tmtx);
+	mtx_unlock(&timer.tmtx);
 }
 
 void cdk_timer_create(int nthrds) {
 
-	if (cdk_atomic_flag_test_and_set(&once_create)) {
+	if (atomic_flag_test_and_set(&once_create)) {
 		return;
 	}
 	cdk_rbtree_create(&timer.rbtree, RB_KEYTYPE_UINT64);
 
-	cdk_mtx_init(&timer.tmtx);
-	cdk_mtx_init(&timer.rbmtx);
-	cdk_cnd_init(&timer.rbcnd);
+	mtx_init(&timer.tmtx, mtx_plain);
+	mtx_init(&timer.rbmtx, mtx_plain);
+	cnd_init(&timer.rbcnd);
 
 	timer.thrdcnt = 0;
 	timer.status = true;
@@ -185,21 +182,21 @@ void cdk_timer_create(int nthrds) {
 
 void cdk_timer_destroy(void) {
 
-	if (cdk_atomic_flag_test_and_set(&once_destroy)) {
+	if (atomic_flag_test_and_set(&once_destroy)) {
 		return;
 	}
 	timer.status = false;
 
-	cdk_mtx_lock(&timer.rbmtx);
-	cdk_cnd_broadcast(&timer.rbcnd);
-	cdk_mtx_unlock(&timer.rbmtx);
+	mtx_lock(&timer.rbmtx);
+	cnd_broadcast(&timer.rbcnd);
+	mtx_unlock(&timer.rbmtx);
 
 	for (int i = 0; i < timer.thrdcnt; i++) {
-		cdk_thrd_join(timer.thrds[i]);
+		thrd_join(timer.thrds[i], NULL);
 	}
-	cdk_mtx_destroy(&timer.rbmtx);
-	cdk_mtx_destroy(&timer.tmtx);
-	cdk_cnd_destroy(&timer.rbcnd);
+	mtx_destroy(&timer.rbmtx);
+	mtx_destroy(&timer.tmtx);
+	cnd_destroy(&timer.rbcnd);
 
 	cdk_memory_free(timer.thrds);
 }

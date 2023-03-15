@@ -19,11 +19,10 @@
  *  IN THE SOFTWARE.
  */
 
-_Pragma("once")
-
 #include "cdk/cdk-types.h"
+#include <process.h>
 
-extern void platform_mtx_init(cdk_mtx_t* restrict m);
-extern void platform_mtx_destroy(cdk_mtx_t* m);
-extern void platform_mtx_lock(cdk_mtx_t* m);
-extern void platform_mtx_unlock(cdk_mtx_t* m);
+cdk_tid_t platform_systid_get(void) {
+
+	return GetCurrentThreadId();
+}

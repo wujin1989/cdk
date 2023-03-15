@@ -19,30 +19,8 @@
  *  IN THE SOFTWARE.
  */
 
+_Pragma("once")
+
 #include "cdk/cdk-types.h"
 
-void platform_cnd_init(cdk_cnd_t* restrict c) {
-
-	InitializeConditionVariable(c);
-}
-
-void platform_cnd_destroy(cdk_cnd_t* c) {
-
-}
-
-void platform_cnd_signal(cdk_cnd_t* c) {
-
-	WakeConditionVariable(c);
-}
-
-void platform_cnd_broadcast(cdk_cnd_t* c) {
-
-	WakeAllConditionVariable(c);
-}
-
-void platform_cnd_wait(cdk_cnd_t* restrict c, cdk_mtx_t* restrict m) {
-
-	if (SleepConditionVariableCS(c, m, INFINITE) == 0) {
-		abort();
-	}
-}
+extern cdk_tid_t  cdk_systid_get(void);

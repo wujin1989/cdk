@@ -21,28 +21,26 @@
 
 _Pragma("once")
 
+/**
+ * When Apple and Microsoft support C11 threads, it will be removed from CDK.
+ */
+#include "cdk/deprecated/threads.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
 #if defined(_WIN32)
-
 #include <WinSock2.h>
 #include <Windows.h>
 #include <ws2ipdef.h>
-
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)
-
-#include <stdatomic.h>
 #include <netinet/in.h>
-#include <pthread.h>
-
 #if defined(__linux__)
 #include <sys/types.h>
 #endif
-
 #endif
 
 enum cdk_spliter_type_e {
@@ -97,13 +95,7 @@ typedef pid_t                cdk_tid_t;
 
 #define INVALID_SOCKET       -1
 typedef pid_t                cdk_pid_t;
-typedef struct cdk_thrd_s    cdk_thrd_t;
-typedef pthread_once_t       cdk_once_t;
-typedef pthread_mutex_t      cdk_mtx_t;
 typedef pthread_rwlock_t     cdk_rwlock_t;
-typedef pthread_cond_t       cdk_cnd_t;
-typedef atomic_flag          cdk_atomic_flag_t;
-typedef atomic_llong         cdk_atomic_t;
 typedef int                  cdk_sock_t;
 
 #endif
@@ -111,14 +103,8 @@ typedef int                  cdk_sock_t;
 #if defined(_WIN32)
 
 typedef DWORD                       cdk_tid_t;
-typedef struct cdk_thrd_s           cdk_thrd_t;
 typedef DWORD                       cdk_pid_t;
-typedef INIT_ONCE                   cdk_once_t;
-typedef CRITICAL_SECTION            cdk_mtx_t;
 typedef SRWLOCK                     cdk_rwlock_t;
-typedef CONDITION_VARIABLE          cdk_cnd_t;
-typedef struct cdk_atomic_flag_s    cdk_atomic_flag_t;
-typedef LONG64                      cdk_atomic_t;
 typedef SOCKET                      cdk_sock_t;
 typedef int                         socklen_t;
 typedef SSIZE_T                     ssize_t;
@@ -164,12 +150,12 @@ struct cdk_thrdpool_job_s {
 };
 
 struct cdk_thrdpool_s {
-	cdk_thrd_t* thrds;
+	thrd_t*     thrds;
 	size_t      thrdcnt;
 	cdk_queue_t queue;
-	cdk_mtx_t   tmtx;
-	cdk_mtx_t   qmtx;
-	cdk_cnd_t   qcnd;
+	mtx_t       tmtx;
+	mtx_t       qmtx;
+	cnd_t       qcnd;
 	bool        status;
 };
 
@@ -215,25 +201,6 @@ struct cdk_offset_buf_s {
 	uint32_t off;
 };
 
-#if defined(_WIN32)
-
-struct cdk_atomic_flag_s {
-	_Bool v;
-};
-
-struct cdk_thrd_s {
-	HANDLE handle;
-	unsigned int tid;
-};
-#endif
-
-#if defined(__linux__) || defined(__APPLE__)
-struct cdk_thrd_s {
-	pthread_t tid;
-};
-
-#endif
-
 struct cdk_addrinfo_s {
 	uint16_t    f;
 	char        a[INET6_ADDRSTRLEN];
@@ -253,7 +220,7 @@ struct cdk_poller_conn_s {
 	int                   type;
 	bool                  state;
 	cdk_rbtree_t          owners;
-	cdk_mtx_t             mutex;
+	mtx_t                 mutex;
 
 	union {
 		struct {
