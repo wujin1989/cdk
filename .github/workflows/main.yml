@@ -41,8 +41,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Install MSVC Build Tools
+        uses: microsoft/setup-msbuild@v1.0.3
         with:
-          vs-version: '17.5.2'
+         include-prerelease: true
+
       - name: Build project
         run: |
             cmake -B build -G "Visual Studio 17 2022" -A x64
