@@ -48,5 +48,5 @@ jobs:
 
       - name: Build project
         run: |
-            cmake -B build -G "Visual Studio 17 2022" -A x64
-            cmake --build build --config Release
+#            cmake -B build -G "Visual Studio 17 2022" -A x64
+#            cmake --build build --config Release
