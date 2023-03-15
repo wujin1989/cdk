@@ -31,7 +31,7 @@ jobs:
         with:
           cmakeVersion: latestrc
           ninjaVersion: latest
-          vs-version: '17.5.2'
+          vs-version: latest
       - name: Build project
         run: |
             cmake -B build -G "Ninja Multi-Config"
