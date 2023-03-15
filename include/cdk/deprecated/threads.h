@@ -29,6 +29,8 @@
 #ifndef EMULATED_THREADS_H_INCLUDED_
 #define EMULATED_THREADS_H_INCLUDED_
 
+#define HAVE_PTHREAD
+
 #include <time.h>
 
 #ifndef TIME_UTC
@@ -61,7 +63,7 @@ enum {
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #include "threads-win.h"
 #elif defined(HAVE_PTHREAD)
-#include "threads_unix.h"
+#include "threads-unix.h"
 #else
 #error Not supported on this platform.
 #endif
