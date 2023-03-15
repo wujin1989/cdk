@@ -42,7 +42,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Install MSVC Build Tools
-        uses: microsoft/setup-msbuild@v1.0.3
+        uses: microsoft/setup-msbuild@v1.3.1
         with:
          include-prerelease: true
 
