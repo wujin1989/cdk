@@ -34,6 +34,11 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Install Visual Studio 2022 Build Tools
+      uses: microsoft/setup-vs-build-tools@v2
+      with:
+        vs-version: '2022'
+        includeRecommended: true
     - name: Run CMake
       run: cmake -B build -G "Visual Studio 17 2022" -A x64
     - name: Build
