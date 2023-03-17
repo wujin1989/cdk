@@ -372,7 +372,6 @@ thrd_create(thrd_t* thr, thrd_start_t func, void* arg)
     return thrd_success;
 }
 
-#if 0
 // 7.25.5.2
 static inline thrd_t
 thrd_current(void)
@@ -411,7 +410,6 @@ thrd_current(void)
     }
     return hCurrentThread;
 }
-#endif
 
 // 7.25.5.3
 static inline int
