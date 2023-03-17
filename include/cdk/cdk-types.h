@@ -24,7 +24,7 @@ _Pragma("once")
 /**
  * When Apple and Microsoft support C11 threads, it will be removed from CDK.
  */
-#include "cdk/deprecated/threads.h"
+#include "cdk/deprecated/c11-threads.h"
 
 #include <stdbool.h>
 #include <stdint.h>

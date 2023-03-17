@@ -25,13 +25,13 @@ _Pragma("once")
 #include <limits.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdnoreturn.h>
 
 #if defined(__linux__) || defined(__APPLE__)
 #if defined(__APPLE__)
 
 #define ONCE_FLAG_INIT      PTHREAD_ONCE_INIT
 #define thread_local        __thread
-#define TSS_DTOR_ITERATIONS 4
 
 enum {
 	thrd_success  = 0,
@@ -267,13 +267,16 @@ void call_once(once_flag* flag, void (*func)(void)) {
 #endif
 
 #if defined(_WIN32)
-
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN 1
+#endif
+#pragma comment(lib, "winmm.lib")
 #include <Windows.h>
 #include <process.h>
+#include <timeapi.h>
 
 #define ONCE_FLAG_INIT      INIT_ONCE_STATIC_INIT
 #define thread_local        __declspec(thread)
-#define TSS_DTOR_ITERATIONS 4
 #define TSS_DTOR_MAX_NUM    64
 
 enum {
@@ -281,13 +284,13 @@ enum {
 	thrd_busy     = 1,
 	thrd_error    = 2,
 	thrd_nomem    = 3,
-	thrd_timedout = 4,
+	thrd_timedout = 4
 };
 
 enum {
 	mtx_plain     = 0,
 	mtx_recursive = 1,
-	mtx_timed     = 2,
+	mtx_timed     = 2
 };
 
 typedef CONDITION_VARIABLE cnd_t;
@@ -296,9 +299,9 @@ typedef DWORD              tss_t;
 typedef CRITICAL_SECTION   mtx_t;
 typedef INIT_ONCE          once_flag;
 
-typedef struct c11_thrdctx_s c11_thrdctx_t;
-typedef struct c11_oncectx_s c11_oncectx_t;
-typedef struct c11_tss_dtor_entry_s c11_tss_dtor_entry_t;
+typedef struct c11_thrdctx_s         c11_thrdctx_t;
+typedef struct c11_oncectx_s         c11_oncectx_t;
+typedef struct c11_tss_dtor_entry_s  c11_tss_dtor_entry_t;
 
 typedef int  (*thrd_start_t)(void*);
 typedef void (*tss_dtor_t)(void*);
@@ -319,7 +322,7 @@ struct c11_tss_dtor_entry_s {
 
 static c11_tss_dtor_entry_t c11_tss_dtor_entry_tbl[TSS_DTOR_MAX_NUM];
 
-static int c11_tss_dtor_register(tss_t key, tss_dtor_t dtor)
+static inline int c11_tss_dtor_register(tss_t key, tss_dtor_t dtor)
 {
 	int i;
 	for (i = 0; i < TSS_DTOR_MAX_NUM; i++) {
@@ -335,8 +338,12 @@ static int c11_tss_dtor_register(tss_t key, tss_dtor_t dtor)
 	return 0;
 }
 
-void* tss_get(tss_t key);
-static void c11_tss_dtor_invoke() {
+static inline void* tss_get(tss_t key) {
+
+	return TlsGetValue(key);
+}
+
+static inline void c11_tss_dtor_invoke() {
 
 	for (int i = 0; i < TSS_DTOR_MAX_NUM; i++) {
 		if (c11_tss_dtor_entry_tbl[i].dtor) {
@@ -348,7 +355,7 @@ static void c11_tss_dtor_invoke() {
 	}
 }
 
-static unsigned int __stdcall c11_thrd_start(void* arg) {
+static inline unsigned int __stdcall c11_thrd_start(void* arg) {
 
 	c11_thrdctx_t* pctx;
 	c11_thrdctx_t  ctx;
@@ -361,7 +368,7 @@ static unsigned int __stdcall c11_thrd_start(void* arg) {
 	return ctx.func(ctx.arg);
 }
 
-static BOOL __stdcall c11_once_start(PINIT_ONCE once, PVOID param, PVOID* context) {
+static inline BOOL __stdcall c11_once_start(PINIT_ONCE once, PVOID param, PVOID* context) {
 
 	c11_oncectx_t* pctx;
 	c11_oncectx_t  ctx;
@@ -376,12 +383,12 @@ static BOOL __stdcall c11_once_start(PINIT_ONCE once, PVOID param, PVOID* contex
 	return TRUE;
 }
 
-static time_t c11_timespec2msec(const struct timespec* ts)
+static inline time_t c11_timespec2msec(const struct timespec* ts)
 {
 	return (ts->tv_sec * 1000U) + (ts->tv_nsec / 1000000L);
 }
 
-int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
+static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
 
 	c11_thrdctx_t* pctx;
 	uintptr_t handle;
@@ -402,7 +409,7 @@ int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
 	return thrd_success;
 }
 
-thrd_t thrd_current(void) {
+static inline thrd_t thrd_current(void) {
 
 	HANDLE self;
 	_Bool ret;
@@ -417,24 +424,24 @@ thrd_t thrd_current(void) {
 	return self;
 }
 
-int thrd_detach(thrd_t thr) {
+static inline int thrd_detach(thrd_t thr) {
 
 	CloseHandle(thr);
 	return thrd_success;
 }
 
-int thrd_equal(thrd_t thr0, thrd_t thr1) {
+static inline int thrd_equal(thrd_t thr0, thrd_t thr1) {
 
 	return GetThreadId(thr0) == GetThreadId(thr1);
 }
 
-_Noreturn void thrd_exit(int res) {
+static inline _Noreturn void thrd_exit(int res) {
 
 	c11_tss_dtor_invoke();
 	_endthreadex((unsigned)res);
 }
 
-int thrd_join(thrd_t thr, int* res) {
+static inline int thrd_join(thrd_t thr, int* res) {
 
 	DWORD event;
 	event = WaitForSingleObject(thr, INFINITE);
@@ -451,9 +458,8 @@ int thrd_join(thrd_t thr, int* res) {
 	return thrd_success;
 }
 
-int thrd_sleep(const struct timespec* duration, struct timespec* remaining) {
+static inline int thrd_sleep(const struct timespec* duration, struct timespec* remaining) {
 
-	(void)remaining;
 
 	timeBeginPeriod(1);
 	Sleep((DWORD)c11_timespec2msec(duration));
@@ -461,12 +467,12 @@ int thrd_sleep(const struct timespec* duration, struct timespec* remaining) {
 	return 0;
 }
 
-void thrd_yield(void) {
+static inline void thrd_yield(void) {
 
 	SwitchToThread();
 }
 
-int tss_create(tss_t* key, tss_dtor_t dtor) {
+static inline int tss_create(tss_t* key, tss_dtor_t dtor) {
 
 	*key = TlsAlloc();
 	if (dtor) {
@@ -478,22 +484,17 @@ int tss_create(tss_t* key, tss_dtor_t dtor) {
 	return (*key != TLS_OUT_OF_INDEXES) ? thrd_success : thrd_error;
 }
 
-void tss_delete(tss_t key) {
+static inline void tss_delete(tss_t key) {
 
 	TlsFree(key);
 }
 
-void* tss_get(tss_t key) {
-
-	return TlsGetValue(key);
-}
-
-int tss_set(tss_t key, void* val) {
+static inline int tss_set(tss_t key, void* val) {
 
 	return TlsSetValue(key, val) ? thrd_success : thrd_error;
 }
 
-int mtx_init(mtx_t* mtx, int type) {
+static inline int mtx_init(mtx_t* mtx, int type) {
 
 	if (type != (mtx_plain)
 		&& type != (mtx_timed)
@@ -505,23 +506,23 @@ int mtx_init(mtx_t* mtx, int type) {
 	return thrd_success;
 }
 
-void mtx_destroy(mtx_t* mtx) {
+static inline void mtx_destroy(mtx_t* mtx) {
 
 	DeleteCriticalSection(mtx);
 }
 
-int mtx_lock(mtx_t* mtx) {
+static inline int mtx_lock(mtx_t* mtx) {
 
 	EnterCriticalSection(mtx);
 	return thrd_success;
 }
 
-int mtx_trylock(mtx_t* mtx) {
+static inline int mtx_trylock(mtx_t* mtx) {
 
 	return TryEnterCriticalSection(mtx) ? thrd_success : thrd_busy;
 }
 
-int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts) {
+static inline int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts) {
 
 	while (mtx_trylock(mtx) != thrd_success) {
 
@@ -539,19 +540,19 @@ int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts) {
 	return thrd_success;
 }
 
-int mtx_unlock(mtx_t* mtx) {
+static inline int mtx_unlock(mtx_t* mtx) {
 
 	LeaveCriticalSection(mtx);
 	return thrd_success;
 }
 
-int cnd_wait(cnd_t* cond, mtx_t* mtx) {
+static inline int cnd_wait(cnd_t* cond, mtx_t* mtx) {
 
 	SleepConditionVariableCS(cond, mtx, INFINITE);
 	return thrd_success;
 }
 
-int cnd_timedwait(cnd_t* restrict cond, mtx_t* restrict mtx, const struct timespec* restrict ts) {
+static inline int cnd_timedwait(cnd_t* restrict cond, mtx_t* restrict mtx, const struct timespec* restrict ts) {
 
 	struct timespec tsp;
 	timespec_get(&tsp, TIME_UTC);
@@ -565,30 +566,29 @@ int cnd_timedwait(cnd_t* restrict cond, mtx_t* restrict mtx, const struct timesp
 	return (GetLastError() == ERROR_TIMEOUT) ? thrd_timedout : thrd_error;
 }
 
-int cnd_signal(cnd_t* cond) {
+static inline int cnd_signal(cnd_t* cond) {
 
 	WakeConditionVariable(cond);
 	return thrd_success;
 }
 
-int cnd_init(cnd_t* cond) {
+static inline int cnd_init(cnd_t* cond) {
 
 	InitializeConditionVariable(cond);
 	return thrd_success;
 }
 
-void cnd_destroy(cnd_t* cond) {
+static inline void cnd_destroy(cnd_t* cond) {
 
-	(void)cond;
 }
 
-int cnd_broadcast(cnd_t* cond) {
+static inline int cnd_broadcast(cnd_t* cond) {
 
 	WakeAllConditionVariable(cond);
 	return thrd_success;
 }
 
-void call_once(once_flag* flag, void (*func)(void)) {
+static inline void call_once(once_flag* flag, void (*func)(void)) {
 
 	c11_oncectx_t* pctx;
 
