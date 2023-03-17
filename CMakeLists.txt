@@ -81,7 +81,6 @@ if(WIN32)
 #		src/platform/win/win-poller.c
 		src/platform/win/win-string.c
 		src/platform/win/wepoll/wepoll.c
-		src/platform/win/win-rwlock.c
 		src/platform/win/win-systid.c
 	)
 endif()
@@ -97,7 +96,6 @@ if(UNIX)
 #		src/platform/unix/unix-poller.c
 #		src/platform/unix/unix-event.c
 		src/platform/unix/unix-string.c
-		src/platform/unix/unix-rwlock.c
 		src/platform/unix/unix-systid.c
 	)
 endif()

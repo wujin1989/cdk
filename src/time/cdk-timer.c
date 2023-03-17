@@ -123,22 +123,21 @@ static int cdk_timer_thrdfunc(void* arg) {
 			continue;
 		}
 		cdk_rbtree_erase(&timer.rbtree, &jobs->n);
+		mtx_unlock(&timer.rbmtx);
 
-		if (timer.status) {
+		cdk_timer_job_t* job;
+		while (!cdk_queue_empty(&jobs->jobs)) {
+			job = cdk_queue_data(cdk_queue_dequeue(&jobs->jobs), cdk_timer_job_t, n);
 
-			cdk_timer_job_t* job;
-			while (!cdk_queue_empty(&jobs->jobs)) {
-				job = cdk_queue_data(cdk_queue_dequeue(&jobs->jobs), cdk_timer_job_t, n);
+			if (timer.status) {
 				job->routine(job->arg);
-
 				if (job->repeat) {
 					cdk_timer_add(job->routine, job->arg, (uint32_t)(jobs->n.rb_key.u64 - jobs->timebase), job->repeat);
 				}
-				cdk_memory_free(job);
 			}
+			cdk_memory_free(job);
 		}
 		cdk_memory_free(jobs);
-		mtx_unlock(&timer.rbmtx);
 	}
 	return 0;
 }

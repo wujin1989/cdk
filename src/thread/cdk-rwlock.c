@@ -18,36 +18,3 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
-
-#include "platform-rwlock.h"
-#include "cdk/cdk-types.h"
-
-void cdk_rwlock_init(cdk_rwlock_t* restrict rw) {
-
-	platform_rwlock_init(rw);
-}
-
-void cdk_rwlock_destroy(cdk_rwlock_t* rw) {
-
-	platform_rwlock_destroy(rw);
-}
-
-void cdk_rwlock_rlock(cdk_rwlock_t* rw) {
-
-	platform_rwlock_rlock(rw);
-}
-
-void cdk_rwlock_runlock(cdk_rwlock_t* rw) {
-
-	platform_rwlock_runlock(rw);
-}
-
-void cdk_rwlock_wlock(cdk_rwlock_t* rw) {
-
-	platform_rwlock_wlock(rw);
-}
-
-void cdk_rwlock_wunlock(cdk_rwlock_t* rw) {
-
-	platform_rwlock_wunlock(rw);
-}
