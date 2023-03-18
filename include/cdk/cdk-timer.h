@@ -22,6 +22,7 @@
 _Pragma("once")
 
 #include <stdint.h>
+#include <stdbool.h>
 
 extern void cdk_timer_create(int nthrds);
 extern void cdk_timer_destroy(void);

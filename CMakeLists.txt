@@ -48,8 +48,6 @@ set(SRCS
 	src/encoding/cdk-varint.c
 	src/encoding/cdk-base64.c
 	src/encoding/cdk-json.c
-	src/encoding/cJSON/cJSON.c
-	src/encoding/cJSON/cJSON_Utils.c
 	src/container/cdk-list.c
 	src/container/cdk-queue.c
 	src/container/cdk-stack.c

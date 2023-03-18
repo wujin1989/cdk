@@ -1,4 +1,5 @@
 #include "cdk.h"
+#include <stdio.h>
 
 #if defined(__linux__) || defined(__APPLE__)
 #define PATH "../../../../src/examples/file/load-library-libs/libcalc.so"

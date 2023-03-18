@@ -1,4 +1,5 @@
 #include "cdk.h"
+#include <stdio.h>
 
 typedef struct userdata_s {
 	int value;
