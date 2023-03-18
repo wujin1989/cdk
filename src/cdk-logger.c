@@ -109,11 +109,13 @@ static inline void cdk_logger_asyncbase(int level, const char* restrict file, in
 	ret++;
 
 	cdk_thrdpool_job_t* job = malloc(sizeof(cdk_thrdpool_job_t));
-	job->routine = cdk_logger_printer;
-	job->arg = malloc(ret);
-	memcpy(job->arg, buf, ret);
+	if (job) {
+		job->routine = cdk_logger_printer;
+		job->arg = malloc(ret);
+		memcpy(job->arg, buf, ret);
 
-	cdk_thrdpool_post(logger.pool, job);
+		cdk_thrdpool_post(logger.pool, job);
+	}
 }
 
 void cdk_logger_create(const char* restrict out, int nthrds) {
