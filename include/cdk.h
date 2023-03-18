@@ -51,7 +51,10 @@ _Pragma("once")
  */
 #include "cdk/deprecated/c11-threads.h"
 #include <time.h>
-#include <uchar.h>
+/**
+ * MacOSX not support.
+ */
+//#include <uchar.h>
 #include <wchar.h>
 #include <wctype.h>
 
