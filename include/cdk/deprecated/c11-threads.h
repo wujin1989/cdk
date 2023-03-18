@@ -29,6 +29,8 @@ _Pragma("once")
 
 #include <pthread.h>
 #include <sched.h>
+#include <errno.h>
+#include <time.h>
 
 #define ONCE_FLAG_INIT      PTHREAD_ONCE_INIT
 #define thread_local        __thread
