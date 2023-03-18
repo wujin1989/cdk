@@ -21,7 +21,7 @@
 
 #include "cdk/cdk-types.h"
 
-void cdk_list_create(cdk_list_t* l) {
+void cdk_list_init(cdk_list_t* l) {
 
 	(l)->n = (l);
 	(l)->p = (l);

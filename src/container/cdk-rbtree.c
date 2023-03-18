@@ -210,7 +210,7 @@ static inline void cdk_rbtree_rotate_right(cdk_rbtree_node_t* node, cdk_rbtree_t
 	node->rb_parent = left;
 }
 
-void cdk_rbtree_create(cdk_rbtree_t* tree, cdk_rbtree_node_keytype_t type) {
+void cdk_rbtree_init(cdk_rbtree_t* tree, cdk_rbtree_node_keytype_t type) {
 
 	tree->rb_root = NULL;
 	tree->rb_keytype = type;

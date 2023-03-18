@@ -21,9 +21,9 @@
 
 #include "cdk/container/cdk-list.h"
 
-void cdk_queue_create(cdk_queue_t* q) {
+void cdk_queue_init(cdk_queue_t* q) {
 
-	cdk_list_create(q);
+	cdk_list_init(q);
 }
 
 void cdk_queue_enqueue(cdk_queue_t* q, cdk_queue_node_t* x) {

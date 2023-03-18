@@ -92,12 +92,13 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 	}
 	else {
 		jobs = malloc(sizeof(cdk_timer_jobqueue_t));
-
-		jobs->timebase = timebase;
-		jobs->n.rb_key = key;
-		cdk_queue_create(&jobs->jobs);
-		cdk_queue_enqueue(&jobs->jobs, &job->n);
-		cdk_timer_post(jobs);
+		if (jobs) {
+			jobs->timebase = timebase;
+			jobs->n.rb_key = key;
+			cdk_queue_init(&jobs->jobs);
+			cdk_queue_enqueue(&jobs->jobs, &job->n);
+			cdk_timer_post(jobs);
+		}
 	}
 	mtx_unlock(&timer.rbmtx);
 }
@@ -166,7 +167,7 @@ void cdk_timer_create(int nthrds) {
 	if (atomic_flag_test_and_set(&once_create)) {
 		return;
 	}
-	cdk_rbtree_create(&timer.rbtree, RB_KEYTYPE_UINT64);
+	cdk_rbtree_init(&timer.rbtree, RB_KEYTYPE_UINT64);
 
 	mtx_init(&timer.tmtx, mtx_plain);
 	mtx_init(&timer.rbmtx, mtx_plain);

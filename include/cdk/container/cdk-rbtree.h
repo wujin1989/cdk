@@ -25,7 +25,7 @@ _Pragma("once")
 
 #define cdk_rbtree_data   cdk_list_data
 
-extern void               cdk_rbtree_create(cdk_rbtree_t* tree, cdk_rbtree_node_keytype_t keytype);
+extern void               cdk_rbtree_init(cdk_rbtree_t* tree, cdk_rbtree_node_keytype_t keytype);
 extern void               cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_node_key_t key);
 extern void               cdk_rbtree_erase(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);

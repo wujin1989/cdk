@@ -69,7 +69,7 @@ cdk_thrdpool_t* cdk_thrdpool_create(int nthrds) {
 
 	cdk_thrdpool_t* pool = malloc(sizeof(cdk_thrdpool_t));
 
-	cdk_queue_create(&pool->queue);
+	cdk_queue_init(&pool->queue);
 
 	mtx_init(&pool->tmtx, mtx_plain);
 	mtx_init(&pool->qmtx, mtx_plain);

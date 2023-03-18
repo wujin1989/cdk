@@ -21,9 +21,9 @@
 
 #include "cdk/container/cdk-list.h"
 
-void cdk_stack_create(cdk_stack_t* s) {
+void cdk_stack_init(cdk_stack_t* s) {
 
-	cdk_list_create(s);
+	cdk_list_init(s);
 }
 
 void cdk_stack_push(cdk_stack_t* s, cdk_stack_node_t* x) {

@@ -80,7 +80,7 @@ static uint32_t cdk_ringbuf_internal_read_peek(cdk_ringbuf_t* ring, void* buf, u
     return len;
 }
 
-void cdk_ringbuf_create(cdk_ringbuf_t* ring, uint32_t esize, void* buf, uint32_t bsize) {
+void cdk_ringbuf_init(cdk_ringbuf_t* ring, uint32_t esize, void* buf, uint32_t bsize) {
 
     ring->b    = buf;
     ring->esz  = esize;
