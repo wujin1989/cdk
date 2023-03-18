@@ -23,9 +23,7 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void cdk_rwlock_init(cdk_rwlock_t* restrict rw);
-extern void cdk_rwlock_destroy(cdk_rwlock_t* rw);
-extern void cdk_rwlock_rlock(cdk_rwlock_t* rw);
-extern void cdk_rwlock_runlock(cdk_rwlock_t* rw);
-extern void cdk_rwlock_wlock(cdk_rwlock_t* rw);
-extern void cdk_rwlock_wunlock(cdk_rwlock_t* rw);
+extern void cdk_rwlock_init(cdk_rwlock_t* rwlock);
+extern void cdk_rwlock_rdlock(cdk_rwlock_t* rwlock);
+extern void cdk_rwlock_wrlock(cdk_rwlock_t* rwlock);
+extern void cdk_rwlock_unlock(cdk_rwlock_t* rwlock);

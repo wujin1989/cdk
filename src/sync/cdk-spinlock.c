@@ -18,3 +18,18 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  */
+
+#include "cdk/cdk-types.h"
+
+void cdk_spinlock_init(cdk_spinlock_t* lock) {
+    atomic_init(&lock->locked, false);
+}
+
+void cdk_spinlock_lock(cdk_spinlock_t* lock) {
+    while (atomic_exchange(&lock->locked, true)) {
+    }
+}
+
+void cdk_spinlock_unlock(cdk_spinlock_t* lock) {
+    atomic_exchange(&lock->locked, false);
+}

@@ -53,7 +53,8 @@ set(SRCS
 	src/container/cdk-stack.c
 	src/container/cdk-rbtree.c
 	src/container/cdk-ringbuffer.c
-	src/cdk-rwlock.c
+	src/sync/cdk-rwlock.c
+	src/sync/cdk-spinlock.c
 	src/cdk-threadpool.c
 	src/cdk-loader.c
 	src/cdk-logger.c

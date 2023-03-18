@@ -25,6 +25,7 @@ _Pragma("once")
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdatomic.h>
 
 #if defined(_WIN32)
 #undef WIN32_LEAN_AND_MEAN
@@ -83,6 +84,8 @@ typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
+typedef struct cdk_rwlock_s              cdk_rwlock_t;
+typedef struct cdk_spinlock_s            cdk_spinlock_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -95,7 +98,6 @@ typedef pid_t                cdk_tid_t;
 
 #define INVALID_SOCKET       -1
 typedef pid_t                cdk_pid_t;
-typedef pthread_rwlock_t     cdk_rwlock_t;
 typedef int                  cdk_sock_t;
 
 #endif
@@ -104,7 +106,6 @@ typedef int                  cdk_sock_t;
 
 typedef DWORD                       cdk_tid_t;
 typedef DWORD                       cdk_pid_t;
-typedef SRWLOCK                     cdk_rwlock_t;
 typedef SOCKET                      cdk_sock_t;
 typedef int                         socklen_t;
 typedef SSIZE_T                     ssize_t;
@@ -130,6 +131,15 @@ struct cdk_rbtree_node_s
 	struct cdk_rbtree_node_s* rb_right;
 	struct cdk_rbtree_node_s* rb_left;
 	char rb_color;
+};
+
+struct cdk_rwlock_s {
+	atomic_int  rdcnt;
+	atomic_bool wrlock;
+};
+
+struct cdk_spinlock_s {
+	atomic_bool locked;
 };
 
 struct cdk_rbtree_s
