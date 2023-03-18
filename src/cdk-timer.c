@@ -20,14 +20,14 @@
  */
 
 #include "cdk/cdk-types.h"
-#include "cdk/cdk-memory.h"
-#include "cdk/thread/cdk-threadpool.h"
+#include "cdk/cdk-threadpool.h"
 #include "cdk/container/cdk-rbtree.h"
-#include "cdk/cdk-sysinfo.h"
+#include "cdk/cdk-utils.h"
 #include "cdk/container/cdk-queue.h"
-#include "cdk/time/cdk-time.h"
+#include "cdk/cdk-time.h"
 #include <stdint.h>
 #include <stdatomic.h>
+#include <stdlib.h>
 
 typedef struct cdk_timer_s {
 	thrd_t* thrds;
@@ -78,7 +78,7 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 	timebase = cdk_time_now();
 	key.u64 = timebase + expire;
 
-	job = cdk_memory_malloc(sizeof(cdk_timer_job_t));
+	job = malloc(sizeof(cdk_timer_job_t));
 
 	job->routine = routine;
 	job->arg = arg;
@@ -91,7 +91,7 @@ void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repe
 		cdk_queue_enqueue(&jobs->jobs, &job->n);
 	}
 	else {
-		jobs = cdk_memory_malloc(sizeof(cdk_timer_jobqueue_t));
+		jobs = malloc(sizeof(cdk_timer_jobqueue_t));
 
 		jobs->timebase = timebase;
 		jobs->n.rb_key = key;
@@ -135,9 +135,11 @@ static int cdk_timer_thrdfunc(void* arg) {
 					cdk_timer_add(job->routine, job->arg, (uint32_t)(jobs->n.rb_key.u64 - jobs->timebase), job->repeat);
 				}
 			}
-			cdk_memory_free(job);
+			free(job);
+			job = NULL;
 		}
-		cdk_memory_free(jobs);
+		free(jobs);
+		jobs = NULL;
 	}
 	return 0;
 }
@@ -197,6 +199,7 @@ void cdk_timer_destroy(void) {
 	mtx_destroy(&timer.tmtx);
 	cnd_destroy(&timer.rbcnd);
 
-	cdk_memory_free(timer.thrds);
+	free(timer.thrds);
+	timer.thrds = NULL;
 }
 

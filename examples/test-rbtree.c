@@ -11,7 +11,7 @@ int main(void) {
 	cdk_rbtree_create(&tree, RB_KEYTYPE_INT32);
 
 	for (int i = 0; i < 10; i++) {
-		userdata_t* ud = cdk_memory_malloc(sizeof(userdata_t));
+		userdata_t* ud = malloc(sizeof(userdata_t));
 		ud->value = i;
 		ud->node.rb_key.i32 = i;
 		cdk_rbtree_insert(&tree, &ud->node);

@@ -24,7 +24,6 @@ _Pragma("once")
 #include "cdk/cdk-types.h"
 #include <stddef.h>
 
-
 #define cdk_list_data(x, t, m)                              \
     ((t *) ((char *) (x) - offsetof(t, m)))
 

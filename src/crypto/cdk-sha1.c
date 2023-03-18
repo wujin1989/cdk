@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-#include "cdk/cdk-sysinfo.h"
 #include "cdk/cdk-types.h"
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))

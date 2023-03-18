@@ -21,32 +21,57 @@
 
 _Pragma("once")
 
-#include "cdk/time/cdk-timer.h"
+#include <assert.h>
+#include <complex.h>
+#include <ctype.h>
+#include <errno.h>
+#include <fenv.h>
+#include <float.h>
+#include <inttypes.h>
+#include <iso646.h>
+#include <limits.h>
+#include <locale.h>
+#include <math.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdalign.h>
+#include <stdarg.h>
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdnoreturn.h>
+#include <string.h>
+#include <tgmath.h>
+//#include <threads.h>
+/**
+ * This is a backup, it will be removed when threads.h for vs and xcode are released.
+ */
+#include "cdk/deprecated/c11-threads.h"
+#include <time.h>
+#include <uchar.h>
+#include <wchar.h>
+#include <wctype.h>
+
+#include "cdk/cdk-timer.h"
 #include "cdk/cdk-process.h"
-#include "cdk/cdk-math.h"
-#include "cdk/time/cdk-time.h"
+#include "cdk/cdk-time.h"
 #include "cdk/cdk-logger.h"
-#include "cdk/thread/cdk-threadpool.h"
-#include "cdk/thread/cdk-systid.h"
+#include "cdk/cdk-threadpool.h"
 #include "cdk/cdk-types.h"
 #include "cdk/cdk-net.h"
 #include "cdk/container/cdk-queue.h"
 #include "cdk/container/cdk-stack.h"
-#include "cdk/cdk-sysinfo.h"
+#include "cdk/cdk-utils.h"
 #include "cdk/container/cdk-list.h"
-#include "cdk/cdk-memory.h"
 #include "cdk/cdk-loader.h"
-#include "cdk/cdk-file.h"
 #include "cdk/container/cdk-rbtree.h"
 #include "cdk/cdk-string.h"
 #include "cdk/encoding/cdk-varint.h"
-#include "cdk/thread/cdk-rwlock.h"
+#include "cdk/cdk-rwlock.h"
 #include "cdk/crypto/cdk-sha256.h"
 #include "cdk/crypto/cdk-sha1.h"
 #include "cdk/encoding/cdk-base64.h"
 #include "cdk/encoding/cdk-json.h"
-
-/**
- * When Apple and Microsoft support C11 threads, it will be removed from CDK. 
- */
-#include "cdk/deprecated/c11-threads.h"

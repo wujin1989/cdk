@@ -19,11 +19,8 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk/time/cdk-time.h"
-#include "cdk/cdk-string.h"
-#include "cdk/cdk-file.h"
-#include "cdk/thread/cdk-threadpool.h"
-#include "cdk/cdk-memory.h"
+#include "cdk/cdk-time.h"
+#include "cdk/cdk-threadpool.h"
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,7 +55,8 @@ static inline void cdk_logger_printer(void* arg) {
 
 	fprintf(logger.file, "%s", (char*)arg);
 	fflush(logger.file);
-	cdk_memory_free(arg);
+	free(arg);
+	arg = NULL;
 }
 
 static inline void cdk_logger_syncbase(int level, const char* restrict file, int line) {
@@ -95,7 +93,7 @@ static inline void cdk_logger_asyncbase(int level, const char* restrict file, in
 	cdk_time_localtime(&tsc.tv_sec, &tm);
 
 	memset(buf, 0, sizeof(buf));
-	ret = cdk_string_sprintf(buf, sizeof(buf),                         \
+	ret = sprintf(buf,                                                 \
 		"%04d-%02d-%02d %02d:%02d:%02d.%03d %5s %s:%d ",               \
 		tm.tm_year + 1900,                                             \
 		tm.tm_mon + 1,                                                 \
@@ -107,12 +105,12 @@ static inline void cdk_logger_asyncbase(int level, const char* restrict file, in
 		levels[level],                                                 \
 		file, line
 	);
-	ret += cdk_string_vsprintf(buf + ret, sizeof(buf) - ret, fmt, v);
+	ret += vsprintf(buf + ret, fmt, v);
 	ret++;
 
-	cdk_thrdpool_job_t* job = cdk_memory_malloc(sizeof(cdk_thrdpool_job_t));
+	cdk_thrdpool_job_t* job = malloc(sizeof(cdk_thrdpool_job_t));
 	job->routine = cdk_logger_printer;
-	job->arg = cdk_memory_malloc(ret);
+	job->arg = malloc(ret);
 	memcpy(job->arg, buf, ret);
 
 	cdk_thrdpool_post(logger.pool, job);
@@ -131,7 +129,7 @@ void cdk_logger_create(const char* restrict out, int nthrds) {
 		logger.file = stdout;
 		return; 
 	}
-	cdk_file_fopen(&logger.file, out, "a+");
+	logger.file = fopen(out, "a+");
 }
 
 void cdk_logger_destroy(void) {
@@ -143,7 +141,7 @@ void cdk_logger_destroy(void) {
 		cdk_thrdpool_destroy(logger.pool);
 	}
 	if (logger.file) {
-		cdk_file_fclose(logger.file);
+		fclose(logger.file);
 	}
 }
 

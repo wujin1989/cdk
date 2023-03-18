@@ -31,6 +31,7 @@ set(CMAKE_C_STANDARD 11)
 
 if(WIN32)
 add_compile_options("/experimental:c11atomics")
+add_compile_options("/D_CRT_SECURE_NO_WARNINGS")
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -42,12 +43,8 @@ include_directories(include)
 include_directories(src/platform)
 	
 set(SRCS
-    src/cdk-file.c
 	src/crypto/cdk-sha1.c
 	src/crypto/cdk-sha256.c
-	src/thread/cdk-rwlock.c
-	src/thread/cdk-threadpool.c
-	src/thread/cdk-systid.c
 	src/encoding/cdk-varint.c
 	src/encoding/cdk-base64.c
 	src/encoding/cdk-json.c
@@ -58,45 +55,39 @@ set(SRCS
 	src/container/cdk-stack.c
 	src/container/cdk-rbtree.c
 	src/container/cdk-ringbuffer.c
+	src/cdk-rwlock.c
+	src/cdk-threadpool.c
 	src/cdk-loader.c
 	src/cdk-logger.c
-	src/cdk-math.c
-	src/cdk-memory.c
 #	src/cdk-net.c
 	src/cdk-process.c
 	src/cdk-string.c
-	src/cdk-sysinfo.c
-	src/time/cdk-time.c
-	src/time/cdk-timer.c
+	src/cdk-utils.c
+	src/cdk-time.c
+	src/cdk-timer.c
 )
 
 if(WIN32)
 	list(APPEND SRCS 
-		src/platform/win/win-process.c
-		src/platform/win/win-time.c
-		src/platform/win/win-socket.c
-		src/platform/win/win-sysinfo.c
-		src/platform/win/win-loader.c
-		src/platform/win/win-file.c
-#		src/platform/win/win-poller.c
-		src/platform/win/win-string.c
+		src/platform/win/platform-process.c
+		src/platform/win/platform-time.c
+		src/platform/win/platform-socket.c
+		src/platform/win/platform-utils.c
+		src/platform/win/platform-loader.c
+#		src/platform/win/platform-poller.c
 		src/platform/win/wepoll/wepoll.c
-		src/platform/win/win-systid.c
 	)
 endif()
 
 if(UNIX)
 	list(APPEND SRCS 
-		src/platform/unix/unix-process.c
-		src/platform/unix/unix-time.c
-		src/platform/unix/unix-socket.c
-		src/platform/unix/unix-sysinfo.c
-		src/platform/unix/unix-loader.c
-		src/platform/unix/unix-file.c
-#		src/platform/unix/unix-poller.c
-#		src/platform/unix/unix-event.c
-		src/platform/unix/unix-string.c
-		src/platform/unix/unix-systid.c
+		src/platform/unix/platform-process.c
+		src/platform/unix/platform-time.c
+		src/platform/unix/platform-socket.c
+		src/platform/unix/platform-utils.c
+		src/platform/unix/platform-loader.c
+#		src/platform/unix/platform-poller.c
+#		src/platform/unix/platform-event.c
 	)
 endif()
 

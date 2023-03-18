@@ -19,6 +19,31 @@
  *  IN THE SOFTWARE.
  */
 
-_Pragma("once")
+#include <unistd.h>
+#include "cdk/cdk-types.h"
 
-extern int platform_sysinfo_cpus(void);
+#if defined(__linux__)
+#include <sys/syscall.h>
+#endif
+
+#if defined(__APPLE__)
+cdk_tid_t platform_utils_systemtid(void) {
+
+	uint64_t tid;
+	pthread_threadid_np(NULL, &tid);
+
+	return tid;
+}
+#endif
+
+#if defined(__linux__)
+cdk_tid_t platform_utils_systemtid(void) {
+
+	return syscall(SYS_gettid);
+}
+#endif
+
+int platform_utils_cpus(void) {
+
+	return (int)sysconf(_SC_NPROCESSORS_ONLN);
+}

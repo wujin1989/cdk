@@ -19,10 +19,12 @@
  *  IN THE SOFTWARE.
  */
 
+_Pragma("once")
+
 #include "cdk/cdk-types.h"
-#include "platform-systid.h"
 
-cdk_tid_t cdk_systid_get(void) {
+extern int cdk_utils_byteorder(void);
+extern int cdk_utils_cpus(void);
+cdk_tid_t  cdk_utils_systemtid(void);
+extern int cdk_utils_rand(int min, int max);
 
-	return platform_systid_get();
-}

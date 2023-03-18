@@ -19,48 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-string.h"
 #include <string.h>
-#include <stdarg.h>
-
-int cdk_string_sprintf(char* s, size_t sz, const char* f, ...) {
-
-	int     r;
-	va_list v;
-	va_start(v, f);
-	r = platform_string_sprintf(s, sz, f, v);
-	va_end(v);
-
-	return r;
-}
-
-int cdk_string_vsprintf(char* s, size_t sz, const char* f, va_list v) {
-
-	return platform_string_sprintf(s, sz, f, v);
-}
-
-void cdk_string_sscanf(const char* s, const char* f, ...) {
-
-	va_list v;
-	va_start(v, f);
-	platform_string_sscanf(s, f, v);
-	va_end(v);
-}
-
-char* cdk_string_strtok(char* s, const char* d, char** c) {
-
-	return platform_string_strtok(s, d, c);
-}
-
-void cdk_string_strcat(char* d, size_t n, const char* s) {
-
-	platform_string_strcat(d, n, s);
-}
-
-char* cdk_string_strdup(const char* s) {
-
-	return platform_string_strdup(s);
-}
 
 void cdk_string_replace(char* s, char from, char to) {
 

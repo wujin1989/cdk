@@ -19,40 +19,32 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk.h"
-#include "platform-thread.h"
+#include "platform-utils.h"
+#include <time.h>
+#include <stdlib.h>
 
-cdk_tid_t cdk_thread_gettid(void) {
-
-	return platform_thread_gettid();
+int cdk_utils_cpus(void) {
+	
+	return (int)platform_utils_cpus();
 }
 
-void cdk_thread_rwlock_init(cdk_rwlock_t* restrict rw) {
+cdk_tid_t cdk_utils_systemtid(void) {
 
-	platform_thread_rwlock_init(rw);
+    return platform_utils_systemtid();
 }
 
-void cdk_thread_rwlock_destroy(cdk_rwlock_t* rw) {
-
-	platform_thread_rwlock_destroy(rw);
+int cdk_utils_byteorder(void) {
+	
+	return (!*((unsigned char*)(&(unsigned short){ 0x01 })));
 }
 
-void cdk_thread_rwlock_rlock(cdk_rwlock_t* rw) {
+int cdk_utils_rand(int min, int max) {
 
-	platform_thread_rwlock_rlock(rw);
-}
+    static unsigned int s = 0;
 
-void cdk_thread_rwlock_runlock(cdk_rwlock_t* rw) {
-
-	platform_thread_rwlock_runlock(rw);
-}
-
-void cdk_thread_rwlock_wlock(cdk_rwlock_t* rw) {
-
-	platform_thread_rwlock_wlock(rw);
-}
-
-void cdk_thread_rwlock_wunlock(cdk_rwlock_t* rw) {
-
-	platform_thread_rwlock_wunlock(rw);
+    if (s == 0) {
+        s = (unsigned int)time(NULL);
+        srand(s);
+    }
+    return min + (int)((double)((double)(max)-(min)+1.0) * (rand() / ((RAND_MAX)+1.0)));
 }

@@ -21,16 +21,15 @@
 
 _Pragma("once")
 
-/**
- * When Apple and Microsoft support C11 threads, it will be removed from CDK.
- */
 #include "cdk/deprecated/c11-threads.h"
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stddef.h>
 
 #if defined(_WIN32)
+#undef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+
 #include <WinSock2.h>
 #include <Windows.h>
 #include <ws2ipdef.h>
@@ -39,7 +38,8 @@ _Pragma("once")
 #if defined(__linux__) || defined(__APPLE__)
 #include <netinet/in.h>
 #if defined(__linux__)
-#include <sys/types.h>
+#endif
+#if defined(__APPLE__)
 #endif
 #endif
 

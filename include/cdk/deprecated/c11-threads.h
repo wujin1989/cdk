@@ -21,11 +21,8 @@
 
 _Pragma("once")
 
-#include "cdk/cdk-memory.h"
-#include <limits.h>
-#include <stdlib.h>
 #include <time.h>
-#include <stdnoreturn.h>
+#include <stdlib.h>
 
 #if defined(__linux__) || defined(__APPLE__)
 #if defined(__APPLE__)
@@ -267,10 +264,9 @@ void call_once(once_flag* flag, void (*func)(void)) {
 #endif
 
 #if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN 1
-#endif
-#pragma comment(lib, "winmm.lib")
+
+#undef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <process.h>
 #include <timeapi.h>
@@ -278,6 +274,8 @@ void call_once(once_flag* flag, void (*func)(void)) {
 #define ONCE_FLAG_INIT      INIT_ONCE_STATIC_INIT
 #define thread_local        __declspec(thread)
 #define TSS_DTOR_MAX_NUM    64
+
+#pragma comment(lib, "winmm.lib")
 
 enum {
 	thrd_success  = 0,
@@ -363,7 +361,8 @@ static inline unsigned int __stdcall c11_thrd_start(void* arg) {
 	pctx = arg;
 	ctx = *pctx;
 
-	cdk_memory_free(pctx);
+	free(pctx);
+	pctx = NULL;
 
 	return ctx.func(ctx.arg);
 }
@@ -376,7 +375,8 @@ static inline BOOL __stdcall c11_once_start(PINIT_ONCE once, PVOID param, PVOID*
 	pctx = param;
 	ctx = *pctx;
 
-	cdk_memory_free(pctx);
+	free(pctx);
+	pctx = NULL;
 
 	ctx.func();
 
@@ -393,7 +393,7 @@ static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
 	c11_thrdctx_t* pctx;
 	uintptr_t handle;
 
-	pctx = cdk_memory_malloc(sizeof(c11_thrdctx_t));
+	pctx = malloc(sizeof(c11_thrdctx_t));
 	if (!pctx) {
 		return thrd_nomem;
 	}
@@ -402,7 +402,8 @@ static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
 
 	handle = _beginthreadex(NULL, 0, c11_thrd_start, pctx, 0, NULL);
 	if (handle == 0) {
-		cdk_memory_free(pctx);
+		free(pctx);
+		pctx = NULL;
 		return thrd_error;
 	}
 	*thr = (thrd_t)handle;
@@ -592,7 +593,7 @@ static inline void call_once(once_flag* flag, void (*func)(void)) {
 
 	c11_oncectx_t* pctx;
 
-	pctx = cdk_memory_malloc(sizeof(c11_oncectx_t));
+	pctx = malloc(sizeof(c11_oncectx_t));
 	pctx->func = func;
 
 	InitOnceExecuteOnce(flag, c11_once_start, pctx, NULL);

@@ -24,7 +24,8 @@
  *  IN THE SOFTWARE.
  */
 
-#include <stdint.h>
+_Pragma("once")
+
 #include "cdk/cdk-types.h"
 
 extern void cdk_sha1_init(cdk_sha1_t* ctx);

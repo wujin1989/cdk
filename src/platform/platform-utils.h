@@ -19,14 +19,9 @@
  *  IN THE SOFTWARE.
  */
 
-#include <Windows.h>
+_Pragma("once")
 
-int platform_sysinfo_cpus(void) {
+#include "cdk/cdk-types.h"
 
-	SYSTEM_INFO si;
-	GetSystemInfo(&si);
-
-	return (int)si.dwNumberOfProcessors;
-}
-
-
+extern int        platform_utils_cpus(void);
+extern cdk_tid_t  platform_utils_systemtid(void);

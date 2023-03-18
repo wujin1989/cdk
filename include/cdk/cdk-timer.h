@@ -19,14 +19,10 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-sysinfo.h"
+_Pragma("once")
 
-int cdk_sysinfo_cpus(void) {
-	
-	return (int)platform_sysinfo_cpus();
-}
+#include <stdint.h>
 
-int cdk_sysinfo_byteorder(void) {
-	
-	return (!*(unsigned char*) & (unsigned short) { 1 });
-}
+extern void cdk_timer_create(int nthrds);
+extern void cdk_timer_destroy(void);
+extern void cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat);

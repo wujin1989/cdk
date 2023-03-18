@@ -19,8 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk/cdk-sysinfo.h"
-#include "cdk/cdk-memory.h"
+#include "cdk/cdk-utils.h"
 #include "cdk/container/cdk-queue.h"
 #include "cdk/cdk-types.h"
 #include <stdlib.h>
@@ -42,7 +41,8 @@ static int cdk_thrdpool_thrdfunc(void* arg) {
 		if (pool->status) {
 			job->routine(job->arg);
 		}
-		cdk_memory_free(job);
+		free(job);
+		job = NULL;
 		mtx_unlock(&pool->qmtx);
 	}
 	return 0;
@@ -67,7 +67,7 @@ static void cdk_thrdpool_createthread(cdk_thrdpool_t* pool) {
 
 cdk_thrdpool_t* cdk_thrdpool_create(int nthrds) {
 
-	cdk_thrdpool_t* pool = cdk_memory_malloc(sizeof(cdk_thrdpool_t));
+	cdk_thrdpool_t* pool = malloc(sizeof(cdk_thrdpool_t));
 
 	cdk_queue_create(&pool->queue);
 
@@ -100,7 +100,8 @@ void cdk_thrdpool_destroy(cdk_thrdpool_t* pool) {
 	mtx_destroy(&pool->tmtx);
 	cnd_destroy(&pool->qcnd);
 
-	cdk_memory_free(pool->thrds);
+	free(pool->thrds);
+	pool->thrds = NULL;
 }
 
 void cdk_thrdpool_post(cdk_thrdpool_t* pool, cdk_thrdpool_job_t* job) {

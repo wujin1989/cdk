@@ -21,7 +21,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include "cdk/cdk-memory.h"
 
 void cdk_base64_encode(uint8_t* src, size_t srclen, uint8_t* dst, size_t* dstlen) {
 

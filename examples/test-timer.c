@@ -18,7 +18,7 @@ void callback(void* p) {
 
 int main(void) {
 
-	cdk_timer_create(cdk_sysinfo_cpus());
+	cdk_timer_create(cdk_utils_cpus());
 	cdk_logger_create(NULL, 0);
 	atomic_init(&i, 0);
 

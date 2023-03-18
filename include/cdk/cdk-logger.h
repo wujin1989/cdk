@@ -21,8 +21,6 @@
 
 _Pragma("once")
 
-#include <stdbool.h>
-
 enum {
 	LEVEL_INFO    = 0,
 	LEVEL_DEBUG   = 1,
