@@ -92,4 +92,8 @@ endif()
 add_library(cdk STATIC ${SRCS})
 target_link_libraries(cdk PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
 
+if(WIN32)
+	target_link_libraries(cdk PUBLIC winmm ws2_32)
+endif()
+
 add_subdirectory(examples)

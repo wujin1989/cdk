@@ -23,8 +23,6 @@
 #include <time.h>
 #include <Windows.h>
 
-#pragma comment(lib, "winmm.lib")
-
 void platform_time_localtime(const time_t* t, struct tm* r) {
 
 	_tzset();

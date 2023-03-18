@@ -288,8 +288,6 @@ static inline void call_once(once_flag* flag, void (*func)(void)) {
 #define thread_local        __declspec(thread)
 #define TSS_DTOR_MAX_NUM    64
 
-#pragma comment(lib, "winmm.lib")
-
 enum {
 	thrd_success  = 0,
 	thrd_busy     = 1,
