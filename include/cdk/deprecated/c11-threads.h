@@ -19,6 +19,9 @@
  *  IN THE SOFTWARE.
  */
 
+#ifndef __C11_THREADS_H__
+#define __C11_THREADS_H__
+
 _Pragma("once")
 
 #include <time.h>
@@ -611,5 +614,7 @@ static inline void call_once(once_flag* flag, void (*func)(void)) {
 
 	InitOnceExecuteOnce(flag, c11_once_start, pctx, NULL);
 }
+
+#endif
 
 #endif
