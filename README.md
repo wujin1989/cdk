@@ -8,7 +8,7 @@
 [![Snyk Security](https://github.com/wujin1989/cdk/actions/workflows/snyk-security.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/snyk-security.yml)
 
 # Overview
-CDK is a clean and concise cross-platform C development kits that complements the standard C library. It provides developers with powerful tools and functions to simplify the process of developing portable C applications. CDK is well-documented, designed to support best coding practices, and ensures code compiles without warnings on all supported platforms and compilers.
+CDK is a clean and concise cross-platform C development kits that complements the standard C library. It provides developers with powerful tools and functions to simplify the process of developing portable C applications. CDK is well-documented, designed to support best coding practices.
 
 # Requirement
 The compiler needs to support C11.
