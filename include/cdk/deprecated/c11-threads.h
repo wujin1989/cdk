@@ -19,16 +19,14 @@
  *  IN THE SOFTWARE.
  */
 
-#ifndef __C11_THREADS_H__
-#define __C11_THREADS_H__
-
 _Pragma("once")
 
 #include <time.h>
 #include <stdlib.h>
 
 #if defined(__linux__) || defined(__APPLE__)
-#if defined(__APPLE__)
+
+#if defined(__STDC_NO_THREADS__)
 
 #include <pthread.h>
 #include <sched.h>
@@ -273,7 +271,7 @@ void call_once(once_flag* flag, void (*func)(void)) {
 }
 #endif
 
-#if defined(__linux__)
+#if !defined(__STDC_NO_THREADS__)
 #include <threads.h>
 #endif
 #endif
@@ -614,7 +612,5 @@ static inline void call_once(once_flag* flag, void (*func)(void)) {
 
 	InitOnceExecuteOnce(flag, c11_once_start, pctx, NULL);
 }
-
-#endif
 
 #endif

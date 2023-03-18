@@ -46,10 +46,6 @@ _Pragma("once")
 #include <string.h>
 #include <tgmath.h>
 //#include <threads.h>
-/**
- * This is a backup, it will be removed when threads.h for vs and xcode are released.
- */
-#include "cdk/deprecated/c11-threads.h"
 #include <time.h>
 /**
  * MacOSX not support.
@@ -65,16 +61,21 @@ _Pragma("once")
 #include "cdk/cdk-threadpool.h"
 #include "cdk/cdk-types.h"
 #include "cdk/cdk-net.h"
+#include "cdk/cdk-utils.h"
+#include "cdk/cdk-loader.h"
+#include "cdk/cdk-string.h"
+#include "cdk/cdk-rwlock.h"
 #include "cdk/container/cdk-queue.h"
 #include "cdk/container/cdk-stack.h"
-#include "cdk/cdk-utils.h"
 #include "cdk/container/cdk-list.h"
-#include "cdk/cdk-loader.h"
 #include "cdk/container/cdk-rbtree.h"
-#include "cdk/cdk-string.h"
 #include "cdk/encoding/cdk-varint.h"
-#include "cdk/cdk-rwlock.h"
-#include "cdk/crypto/cdk-sha256.h"
-#include "cdk/crypto/cdk-sha1.h"
 #include "cdk/encoding/cdk-base64.h"
 #include "cdk/encoding/cdk-json.h"
+#include "cdk/crypto/cdk-sha256.h"
+#include "cdk/crypto/cdk-sha1.h"
+
+/**
+ * This is a backup, it will be removed when threads.h for vs and xcode are released.
+ */
+#include "cdk/deprecated/c11-threads.h"
