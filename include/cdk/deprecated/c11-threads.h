@@ -27,6 +27,9 @@ _Pragma("once")
 #if defined(__linux__) || defined(__APPLE__)
 #if defined(__APPLE__)
 
+#include <pthread.h>
+#include <sched.h>
+
 #define ONCE_FLAG_INIT      PTHREAD_ONCE_INIT
 #define thread_local        __thread
 
@@ -73,14 +76,15 @@ static void* c11_thrd_start(void* arg) {
 	pctx = arg;
 	ctx = *pctx;
 
-	cdk_memory_free(pctx);
+	free(pctx);
+	pctx = NULL;
 	return (void*)(intptr_t)ctx.func(ctx.arg);
 }
 
 int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
 
 	c11_thrdctx_t* pctx;
-	pctx = cdk_memory_malloc(sizeof(c11_thrdctx_t));
+	pctx = malloc(sizeof(c11_thrdctx_t));
 	if (!pctx) {
 		return thrd_nomem;
 	}
@@ -88,7 +92,8 @@ int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
 	pctx->arg = arg;
 
 	if (pthread_create(thr, NULL, c11_thrd_start, pctx)) {
-		cdk_memory_free(pctx);
+		free(pctx);
+		pctx = NULL;
 		return thrd_error;
 	}
 	return thrd_success;
@@ -267,6 +272,7 @@ void call_once(once_flag* flag, void (*func)(void)) {
 
 #undef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+
 #include <Windows.h>
 #include <process.h>
 #include <timeapi.h>
