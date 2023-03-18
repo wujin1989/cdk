@@ -30,7 +30,6 @@ _Pragma("once")
 #include <pthread.h>
 #include <sched.h>
 #include <errno.h>
-#include <time.h>
 
 #define ONCE_FLAG_INIT      PTHREAD_ONCE_INIT
 #define thread_local        __thread
@@ -203,19 +202,25 @@ int mtx_lock(mtx_t* mtx) {
 	return (pthread_mutex_lock(mtx) == 0) ? thrd_success : thrd_error;
 }
 
-int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts) {
-
-	int rt;
-	rt = pthread_mutex_timedlock(mtx, ts);
-	if (rt == 0) {
-		return thrd_success;
-	}
-	return (rt == ETIMEDOUT) ? thrd_timedout : thrd_error;
-}
-
 int mtx_trylock(mtx_t* mtx) {
 
 	return (pthread_mutex_trylock(mtx) == 0) ? thrd_success : thrd_busy;
+}
+
+int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts) {
+
+	time_t expire = time(NULL);
+	expire += ts->tv_sec;
+
+	while (mtx_trylock(mtx) != thrd_success) {
+
+		time_t now = time(NULL);
+		if (expire < now) {
+			return thrd_busy;
+		}
+		thrd_yield();
+	}
+	return thrd_success;
 }
 
 int mtx_unlock(mtx_t* mtx) {
