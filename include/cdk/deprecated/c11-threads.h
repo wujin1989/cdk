@@ -35,17 +35,17 @@ _Pragma("once")
 #define thread_local        __thread
 
 enum {
-	thrd_success  = 0,
-	thrd_busy     = 1,
-	thrd_error    = 2,
-	thrd_nomem    = 3,
+	thrd_success = 0,
+	thrd_busy = 1,
+	thrd_error = 2,
+	thrd_nomem = 3,
 	thrd_timedout = 4,
 };
 
 enum {
-	mtx_plain     = 0,
+	mtx_plain = 0,
 	mtx_recursive = 1,
-	mtx_timed     = 2,
+	mtx_timed = 2,
 };
 
 typedef pthread_cond_t  cnd_t;
@@ -69,8 +69,8 @@ struct c11_oncectx_s {
 	void (*func)(void);
 };
 
-static inline void* c11_thrd_start(void* arg) {
-
+static inline void* c11_thrd_start(void* arg) 
+{
 	c11_thrdctx_t* pctx;
 	c11_thrdctx_t  ctx;
 
@@ -82,17 +82,19 @@ static inline void* c11_thrd_start(void* arg) {
 	return (void*)(intptr_t)ctx.func(ctx.arg);
 }
 
-static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
-
+static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg)
+{
 	c11_thrdctx_t* pctx;
 	pctx = malloc(sizeof(c11_thrdctx_t));
-	if (!pctx) {
+	if (!pctx) 
+	{
 		return thrd_nomem;
 	}
 	pctx->func = func;
 	pctx->arg = arg;
 
-	if (pthread_create(thr, NULL, c11_thrd_start, pctx)) {
+	if (pthread_create(thr, NULL, c11_thrd_start, pctx))
+	{
 		free(pctx);
 		pctx = NULL;
 		return thrd_error;
@@ -100,28 +102,28 @@ static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
 	return thrd_success;
 }
 
-static inline thrd_t thrd_current(void) {
-
+static inline thrd_t thrd_current(void) 
+{
 	return pthread_self();
 }
 
-static inline int thrd_detach(thrd_t thr) {
-
+static inline int thrd_detach(thrd_t thr)
+{
 	return (pthread_detach(thr) == 0) ? thrd_success : thrd_error;
 }
 
-static inline int thrd_equal(thrd_t thr0, thrd_t thr1) {
-
+static inline int thrd_equal(thrd_t thr0, thrd_t thr1) 
+{
 	return pthread_equal(thr0, thr1);
 }
 
-static inline _Noreturn void thrd_exit(int res) {
-
+static inline _Noreturn void thrd_exit(int res) 
+{
 	pthread_exit((void*)(intptr_t)res);
 }
 
-static inline int thrd_join(thrd_t thr, int* res) {
-
+static inline int thrd_join(thrd_t thr, int* res) 
+{
 	void* code;
 	if (pthread_join(thr, &code) != 0) {
 		return thrd_error;
@@ -132,10 +134,11 @@ static inline int thrd_join(thrd_t thr, int* res) {
 	return thrd_success;
 }
 
-static inline int thrd_sleep(const struct timespec* duration, struct timespec* remaining) {
-
+static inline int thrd_sleep(const struct timespec* duration, struct timespec* remaining) 
+{
 	int ret = nanosleep(duration, remaining);
-	if (ret < 0) {
+	if (ret < 0) 
+	{
 		if (errno == EINTR) {
 			return -1;
 		}
@@ -146,42 +149,44 @@ static inline int thrd_sleep(const struct timespec* duration, struct timespec* r
 	return 0;
 }
 
-static inline void thrd_yield(void) {
-
+static inline void thrd_yield(void) 
+{
 	sched_yield();
 }
 
-static inline int tss_create(tss_t* key, tss_dtor_t dtor) {
-
+static inline int tss_create(tss_t* key, tss_dtor_t dtor) 
+{
 	return (pthread_key_create(key, dtor) == 0) ? thrd_success : thrd_error;
 }
 
-static inline void tss_delete(tss_t key) {
-
+static inline void tss_delete(tss_t key) 
+{
 	pthread_key_delete(key);
 }
 
-static inline void* tss_get(tss_t key) {
-
+static inline void* tss_get(tss_t key) 
+{
 	return pthread_getspecific(key);
 }
 
-static inline int tss_set(tss_t key, void* val) {
-
+static inline int tss_set(tss_t key, void* val) 
+{
 	return (pthread_setspecific(key, val) == 0) ? thrd_success : thrd_error;
 }
 
-static inline int mtx_init(mtx_t* mtx, int type) {
-
+static inline int mtx_init(mtx_t* mtx, int type)
+{
 	pthread_mutexattr_t attr;
 
-	if (type != (mtx_plain) 
-	 && type != (mtx_timed)
-	 && type != (mtx_plain | mtx_recursive)
-	 && type != (mtx_timed | mtx_recursive)) {
+	if (type != (mtx_plain)
+		&& type != (mtx_timed)
+		&& type != (mtx_plain | mtx_recursive)
+		&& type != (mtx_timed | mtx_recursive)) 
+	{
 		return thrd_error;
 	}
-	if ((type & mtx_recursive) == 0) {
+	if ((type & mtx_recursive) == 0) 
+	{
 		pthread_mutex_init(mtx, NULL);
 		return thrd_success;
 	}
@@ -192,28 +197,28 @@ static inline int mtx_init(mtx_t* mtx, int type) {
 	return thrd_success;
 }
 
-static inline void mtx_destroy(mtx_t* mtx) {
-
+static inline void mtx_destroy(mtx_t* mtx)
+{
 	pthread_mutex_destroy(mtx);
 }
 
-static inline int mtx_lock(mtx_t* mtx) {
-
+static inline int mtx_lock(mtx_t* mtx) 
+{
 	return (pthread_mutex_lock(mtx) == 0) ? thrd_success : thrd_error;
 }
 
-static inline int mtx_trylock(mtx_t* mtx) {
-
+static inline int mtx_trylock(mtx_t* mtx) 
+{
 	return (pthread_mutex_trylock(mtx) == 0) ? thrd_success : thrd_busy;
 }
 
-static inline int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts) {
-
+static inline int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts) 
+{
 	time_t expire = time(NULL);
 	expire += ts->tv_sec;
 
-	while (mtx_trylock(mtx) != thrd_success) {
-
+	while (mtx_trylock(mtx) != thrd_success) 
+	{
 		time_t now = time(NULL);
 		if (expire < now) {
 			return thrd_busy;
@@ -223,49 +228,50 @@ static inline int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* rest
 	return thrd_success;
 }
 
-static inline int mtx_unlock(mtx_t* mtx) {
-
+static inline int mtx_unlock(mtx_t* mtx) 
+{
 	return (pthread_mutex_unlock(mtx) == 0) ? thrd_success : thrd_error;
 }
 
-static inline int cnd_wait(cnd_t* cond, mtx_t* mtx) {
-
+static inline int cnd_wait(cnd_t* cond, mtx_t* mtx)
+{
 	return (pthread_cond_wait(cond, mtx) == 0) ? thrd_success : thrd_error;
 }
 
-static inline int cnd_timedwait(cnd_t* restrict cond, mtx_t* restrict mtx, const struct timespec* restrict ts) {
-
+static inline int cnd_timedwait(cnd_t* restrict cond, mtx_t* restrict mtx, const struct timespec* restrict ts) 
+{
 	int ret;
 
 	ret = pthread_cond_timedwait(cond, mtx, ts);
-	if (ret == ETIMEDOUT) {
+	if (ret == ETIMEDOUT) 
+	{
 		return thrd_timedout;
 	}
 	return (ret == 0) ? thrd_success : thrd_error;
 }
 
-static inline int cnd_signal(cnd_t* cond) {
-
+static inline int cnd_signal(cnd_t* cond)
+{
 	return (pthread_cond_signal(cond) == 0) ? thrd_success : thrd_error;
 }
 
-static inline int cnd_init(cnd_t* cond) {
-
+static inline int cnd_init(cnd_t* cond) 
+{
 	return (pthread_cond_init(cond, NULL) == 0) ? thrd_success : thrd_error;
 }
 
-static inline void cnd_destroy(cnd_t* cond) {
-
+static inline void cnd_destroy(cnd_t* cond) 
+{
 	pthread_cond_destroy(cond);
 }
 
-static inline int cnd_broadcast(cnd_t* cond) {
-
+static inline int cnd_broadcast(cnd_t* cond)
+{
 	return (pthread_cond_broadcast(cond) == 0) ? thrd_success : thrd_error;
 }
 
-static inline void call_once(once_flag* flag, void (*func)(void)) {
-
+static inline void call_once(once_flag* flag, void (*func)(void))
+{
 	pthread_once(flag, func);
 }
 #endif
@@ -289,17 +295,17 @@ static inline void call_once(once_flag* flag, void (*func)(void)) {
 #define TSS_DTOR_MAX_NUM    64
 
 enum {
-	thrd_success  = 0,
-	thrd_busy     = 1,
-	thrd_error    = 2,
-	thrd_nomem    = 3,
+	thrd_success = 0,
+	thrd_busy = 1,
+	thrd_error = 2,
+	thrd_nomem = 3,
 	thrd_timedout = 4
 };
 
 enum {
-	mtx_plain     = 0,
+	mtx_plain = 0,
 	mtx_recursive = 1,
-	mtx_timed     = 2
+	mtx_timed = 2
 };
 
 typedef CONDITION_VARIABLE cnd_t;
@@ -348,24 +354,26 @@ static inline int c11_tss_dtor_register(tss_t key, tss_dtor_t dtor)
 }
 
 static inline void* tss_get(tss_t key) {
-
 	return TlsGetValue(key);
 }
 
-static inline void c11_tss_dtor_invoke() {
-
-	for (int i = 0; i < TSS_DTOR_MAX_NUM; i++) {
-		if (c11_tss_dtor_entry_tbl[i].dtor) {
+static inline void c11_tss_dtor_invoke() 
+{
+	for (int i = 0; i < TSS_DTOR_MAX_NUM; i++) 
+	{
+		if (c11_tss_dtor_entry_tbl[i].dtor) 
+		{
 			void* val = tss_get(c11_tss_dtor_entry_tbl[i].key);
-			if (val) {
+			if (val) 
+			{
 				(c11_tss_dtor_entry_tbl[i].dtor)(val);
 			}
 		}
 	}
 }
 
-static inline unsigned int __stdcall c11_thrd_start(void* arg) {
-
+static inline unsigned int __stdcall c11_thrd_start(void* arg)
+{
 	c11_thrdctx_t* pctx;
 	c11_thrdctx_t  ctx;
 
@@ -378,8 +386,8 @@ static inline unsigned int __stdcall c11_thrd_start(void* arg) {
 	return ctx.func(ctx.arg);
 }
 
-static inline BOOL __stdcall c11_once_start(PINIT_ONCE once, PVOID param, PVOID* context) {
-
+static inline BOOL __stdcall c11_once_start(PINIT_ONCE once, PVOID param, PVOID* context) 
+{
 	c11_oncectx_t* pctx;
 	c11_oncectx_t  ctx;
 
@@ -399,8 +407,8 @@ static inline time_t c11_timespec2msec(const struct timespec* ts)
 	return (ts->tv_sec * 1000U) + (ts->tv_nsec / 1000000L);
 }
 
-static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
-
+static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg)
+{
 	c11_thrdctx_t* pctx;
 	uintptr_t handle;
 
@@ -421,47 +429,50 @@ static inline int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
 	return thrd_success;
 }
 
-static inline thrd_t thrd_current(void) {
-
+static inline thrd_t thrd_current(void)
+{
 	HANDLE self;
 	_Bool ret;
 
-	ret = DuplicateHandle(GetCurrentProcess(), 
-		                  GetCurrentThread(), 
-		                  GetCurrentProcess(), 
-		                  &self, 0, FALSE, DUPLICATE_SAME_ACCESS);
+	ret = DuplicateHandle(GetCurrentProcess(),
+		GetCurrentThread(),
+		GetCurrentProcess(),
+		&self, 0, FALSE, DUPLICATE_SAME_ACCESS);
 	if (!ret) {
 		self = GetCurrentThread();
 	}
 	return self;
 }
 
-static inline int thrd_detach(thrd_t thr) {
-
+static inline int thrd_detach(thrd_t thr)
+{
 	CloseHandle(thr);
 	return thrd_success;
 }
 
-static inline int thrd_equal(thrd_t thr0, thrd_t thr1) {
-
+static inline int thrd_equal(thrd_t thr0, thrd_t thr1)
+{
 	return GetThreadId(thr0) == GetThreadId(thr1);
 }
 
-static inline _Noreturn void thrd_exit(int res) {
-
+static inline _Noreturn void thrd_exit(int res) 
+{
 	c11_tss_dtor_invoke();
 	_endthreadex((unsigned)res);
 }
 
-static inline int thrd_join(thrd_t thr, int* res) {
-
+static inline int thrd_join(thrd_t thr, int* res) 
+{
 	DWORD event;
 	event = WaitForSingleObject(thr, INFINITE);
-	if (event != WAIT_OBJECT_0) {
+	if (event != WAIT_OBJECT_0) 
+	{
 		return thrd_error;
 	}
-	if (res) {
-		if (!GetExitCodeThread(thr, (DWORD*)res)) {
+	if (res) 
+	{
+		if (!GetExitCodeThread(thr, (DWORD*)res)) 
+		{
 			CloseHandle(thr);
 			return thrd_error;
 		}
@@ -470,25 +481,25 @@ static inline int thrd_join(thrd_t thr, int* res) {
 	return thrd_success;
 }
 
-static inline int thrd_sleep(const struct timespec* duration, struct timespec* remaining) {
-
-
+static inline int thrd_sleep(const struct timespec* duration, struct timespec* remaining) 
+{
 	timeBeginPeriod(1);
 	Sleep((DWORD)c11_timespec2msec(duration));
 	timeEndPeriod(1);
 	return 0;
 }
 
-static inline void thrd_yield(void) {
-
+static inline void thrd_yield(void) 
+{
 	SwitchToThread();
 }
 
-static inline int tss_create(tss_t* key, tss_dtor_t dtor) {
-
+static inline int tss_create(tss_t* key, tss_dtor_t dtor) 
+{
 	*key = TlsAlloc();
 	if (dtor) {
-		if (c11_tss_dtor_register(*key, dtor)) {
+		if (c11_tss_dtor_register(*key, dtor)) 
+		{
 			TlsFree(*key);
 			return thrd_error;
 		}
@@ -496,52 +507,53 @@ static inline int tss_create(tss_t* key, tss_dtor_t dtor) {
 	return (*key != TLS_OUT_OF_INDEXES) ? thrd_success : thrd_error;
 }
 
-static inline void tss_delete(tss_t key) {
-
+static inline void tss_delete(tss_t key) 
+{
 	TlsFree(key);
 }
 
-static inline int tss_set(tss_t key, void* val) {
-
+static inline int tss_set(tss_t key, void* val) 
+{
 	return TlsSetValue(key, val) ? thrd_success : thrd_error;
 }
 
-static inline int mtx_init(mtx_t* mtx, int type) {
-
+static inline int mtx_init(mtx_t* mtx, int type) 
+{
 	if (type != (mtx_plain)
 		&& type != (mtx_timed)
 		&& type != (mtx_plain | mtx_recursive)
-		&& type != (mtx_timed | mtx_recursive)) {
+		&& type != (mtx_timed | mtx_recursive)) 
+	{
 		return thrd_error;
 	}
 	InitializeCriticalSection(mtx);
 	return thrd_success;
 }
 
-static inline void mtx_destroy(mtx_t* mtx) {
-
+static inline void mtx_destroy(mtx_t* mtx) 
+{
 	DeleteCriticalSection(mtx);
 }
 
-static inline int mtx_lock(mtx_t* mtx) {
-
+static inline int mtx_lock(mtx_t* mtx)
+{
 	EnterCriticalSection(mtx);
 	return thrd_success;
 }
 
-static inline int mtx_trylock(mtx_t* mtx) {
-
+static inline int mtx_trylock(mtx_t* mtx) 
+{
 	return TryEnterCriticalSection(mtx) ? thrd_success : thrd_busy;
 }
 
-static inline int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts) {
-
+static inline int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* restrict ts)
+{
 	while (mtx_trylock(mtx) != thrd_success) {
 
 		struct timespec tsp;
 		timespec_get(&tsp, TIME_UTC);
 
-		DWORD diff = 
+		DWORD diff =
 			(c11_timespec2msec(ts) > c11_timespec2msec(&tsp)) ? (DWORD)(c11_timespec2msec(ts) - c11_timespec2msec(&tsp)) : 0;
 
 		if (diff == 0) {
@@ -552,20 +564,20 @@ static inline int mtx_timedlock(mtx_t* restrict mtx, const struct timespec* rest
 	return thrd_success;
 }
 
-static inline int mtx_unlock(mtx_t* mtx) {
-
+static inline int mtx_unlock(mtx_t* mtx)
+{
 	LeaveCriticalSection(mtx);
 	return thrd_success;
 }
 
-static inline int cnd_wait(cnd_t* cond, mtx_t* mtx) {
-
+static inline int cnd_wait(cnd_t* cond, mtx_t* mtx) 
+{
 	SleepConditionVariableCS(cond, mtx, INFINITE);
 	return thrd_success;
 }
 
-static inline int cnd_timedwait(cnd_t* restrict cond, mtx_t* restrict mtx, const struct timespec* restrict ts) {
-
+static inline int cnd_timedwait(cnd_t* restrict cond, mtx_t* restrict mtx, const struct timespec* restrict ts) 
+{
 	struct timespec tsp;
 	timespec_get(&tsp, TIME_UTC);
 
@@ -578,30 +590,30 @@ static inline int cnd_timedwait(cnd_t* restrict cond, mtx_t* restrict mtx, const
 	return (GetLastError() == ERROR_TIMEOUT) ? thrd_timedout : thrd_error;
 }
 
-static inline int cnd_signal(cnd_t* cond) {
-
+static inline int cnd_signal(cnd_t* cond) 
+{
 	WakeConditionVariable(cond);
 	return thrd_success;
 }
 
-static inline int cnd_init(cnd_t* cond) {
-
+static inline int cnd_init(cnd_t* cond) 
+{
 	InitializeConditionVariable(cond);
 	return thrd_success;
 }
 
-static inline void cnd_destroy(cnd_t* cond) {
-
+static inline void cnd_destroy(cnd_t* cond) 
+{
 }
 
-static inline int cnd_broadcast(cnd_t* cond) {
-
+static inline int cnd_broadcast(cnd_t* cond)
+{
 	WakeAllConditionVariable(cond);
 	return thrd_success;
 }
 
-static inline void call_once(once_flag* flag, void (*func)(void)) {
-
+static inline void call_once(once_flag* flag, void (*func)(void))
+{
 	c11_oncectx_t* pctx;
 
 	pctx = malloc(sizeof(c11_oncectx_t));
