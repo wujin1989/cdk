@@ -52,8 +52,8 @@ endif()
 add_executable(test-rwlock "test-rwlock.c")
 target_link_libraries(test-rwlock PUBLIC cdk Threads::Threads)
 
-add_executable(test-rwlock2 "test-rwlock2.c")
-target_link_libraries(test-rwlock2 PUBLIC cdk Threads::Threads)
+add_executable(test-spinlock "test-spinlock.c")
+target_link_libraries(test-spinlock PUBLIC cdk Threads::Threads)
 
 #add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
 #target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)

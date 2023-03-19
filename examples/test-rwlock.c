@@ -32,9 +32,8 @@ int main(void) {
 	cdk_logger_create(NULL, 0);
 	cdk_rwlock_init(&rwlock);
 
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 15; i++) {
 		thrd_t t;
-		thrd_create(&t, reader, NULL);
 		thrd_create(&t, reader, NULL);
 		thrd_detach(t);
 	}
