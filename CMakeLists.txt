@@ -90,10 +90,14 @@ if(UNIX)
 endif()
 
 add_library(cdk STATIC ${SRCS})
-target_link_libraries(cdk PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
+target_link_libraries(cdk PUBLIC Threads::Threads)
 
 if(WIN32)
 	target_link_libraries(cdk PUBLIC winmm ws2_32)
+endif()
+
+if(UNIX)
+	target_link_libraries(cdk PUBLIC ${CMAKE_DL_LIBS})
 endif()
 
 add_subdirectory(examples)
