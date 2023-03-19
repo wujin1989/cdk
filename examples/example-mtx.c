@@ -5,22 +5,25 @@ mtx_t mtx;
 
 int func1(void* p) {
 
-	while (true) {
+	while (true) 
+	{
 		mtx_lock(&mtx);
 		cdk_logi("func1: cnt is %d\n", cnt++);
 		mtx_unlock(&mtx);
 
-		//cdk_time_sleep(2000);
+		cdk_time_sleep(2000);
 	}
 }
 
-int func2(void* p) {
-	while (true) {
+int func2(void* p) 
+{
+	while (true)
+	{
 		mtx_lock(&mtx);
 		cdk_logi("func2: cnt is %d\n", cnt++);
 		mtx_unlock(&mtx);
 
-		//cdk_time_sleep(2000);
+		cdk_time_sleep(2000);
 	}
 }
 int main(void) {
