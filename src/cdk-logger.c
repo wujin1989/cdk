@@ -39,7 +39,7 @@
 
 typedef struct cdk_logger_s {
 	FILE* file;
-	mtx_t mtx;    /* used by sync log with rwlock case. */
+	mtx_t mtx;
 	_Bool async;
 	cdk_thrdpool_t* pool;
 }cdk_logger_t;
