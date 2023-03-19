@@ -20,11 +20,15 @@
  */
 
 #include <windows.h>
-#include "cdk/cdk-string.h"
+#include <string.h>
 
 void* platform_loader_create(char* m) {
 
-	cdk_string_replace(m, '/', '\\');
+	for (int i = 0; i < strlen(m); i++) {
+		if (m[i] == '/') {
+			m[i] = '\\';
+		}
+	}
 	return (void*)LoadLibrary(TEXT(m));
 }
 

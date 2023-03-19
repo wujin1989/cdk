@@ -60,7 +60,6 @@ set(SRCS
 	src/cdk-logger.c
 #	src/cdk-net.c
 	src/cdk-process.c
-	src/cdk-string.c
 	src/cdk-utils.c
 	src/cdk-time.c
 	src/cdk-timer.c
