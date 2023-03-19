@@ -26,4 +26,5 @@ _Pragma("once")
 extern void cdk_rwlock_init(cdk_rwlock_t* rwlock);
 extern void cdk_rwlock_rdlock(cdk_rwlock_t* rwlock);
 extern void cdk_rwlock_wrlock(cdk_rwlock_t* rwlock);
-extern void cdk_rwlock_unlock(cdk_rwlock_t* rwlock);
+extern void cdk_rwlock_rdunlock(cdk_rwlock_t* rwlock);
+extern void cdk_rwlock_wrunlock(cdk_rwlock_t* rwlock);

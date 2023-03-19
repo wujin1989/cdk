@@ -43,12 +43,12 @@ void cdk_rwlock_wrlock(cdk_rwlock_t* rwlock) {
     }
 }
 
-void cdk_rwlock_unlock(cdk_rwlock_t* rwlock) {
+void cdk_rwlock_wrunlock(cdk_rwlock_t* rwlock) {
 
-    if (atomic_load(&rwlock->wrlock)) {
-        atomic_exchange(&rwlock->wrlock, false);
-    }
-    else {
-        atomic_fetch_sub(&rwlock->rdcnt, 1);
-    }
+    atomic_exchange(&rwlock->wrlock, false);
+}
+
+void cdk_rwlock_rdunlock(cdk_rwlock_t* rwlock) {
+
+    atomic_fetch_sub(&rwlock->rdcnt, 1);
 }
