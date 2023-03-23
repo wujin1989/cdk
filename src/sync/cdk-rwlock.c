@@ -29,18 +29,20 @@ void cdk_rwlock_init(cdk_rwlock_t* rwlock) {
 
 void cdk_rwlock_rdlock(cdk_rwlock_t* rwlock) {
 
-    while (atomic_exchange(&rwlock->wrlock, true)) {
+    while (true) {
+        while (atomic_load(&rwlock->wrlock)) {}
+        atomic_fetch_add(&rwlock->rdcnt, 1);
+        if (!atomic_load(&rwlock->wrlock)) {
+            break;
+        }
+        atomic_fetch_sub(&rwlock->rdcnt, 1);
     }
-    atomic_fetch_add(&rwlock->rdcnt, 1);
-    atomic_exchange(&rwlock->wrlock, false);
 }
 
 void cdk_rwlock_wrlock(cdk_rwlock_t* rwlock) {
 
-    while (atomic_exchange(&rwlock->wrlock, true)) {
-    }
-    while (atomic_load(&rwlock->rdcnt) > 0) {
-    }
+    while (atomic_exchange(&rwlock->wrlock, true)) {}
+    while (atomic_load(&rwlock->rdcnt)) {}
 }
 
 void cdk_rwlock_wrunlock(cdk_rwlock_t* rwlock) {

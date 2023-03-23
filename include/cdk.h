@@ -46,6 +46,10 @@ _Pragma("once")
 #include <string.h>
 #include <tgmath.h>
 //#include <threads.h>
+/**
+ * This is a backup, it will be removed when threads.h for vs and xcode are released.
+ */
+#include "cdk/deprecated/c11-threads.h"
 #include <time.h>
 /**
  * MacOSX not support.
@@ -74,8 +78,3 @@ _Pragma("once")
 #include "cdk/encoding/cdk-json.h"
 #include "cdk/crypto/cdk-sha256.h"
 #include "cdk/crypto/cdk-sha1.h"
-
-/**
- * This is a backup, it will be removed when threads.h for vs and xcode are released.
- */
-#include "cdk/deprecated/c11-threads.h"
