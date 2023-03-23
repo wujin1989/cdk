@@ -77,6 +77,7 @@ typedef struct cdk_list_node_s           cdk_stack_t;
 typedef struct cdk_list_node_s           cdk_stack_node_t;
 typedef struct cdk_thrdpool_job_s        cdk_thrdpool_job_t;
 typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
+typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_spliter_type_e        cdk_spliter_type_t;
 typedef struct cdk_spliter_s             cdk_spliter_t;
@@ -167,6 +168,16 @@ struct cdk_thrdpool_s {
 	mtx_t       qmtx;
 	cnd_t       qcnd;
 	bool        status;
+};
+
+struct cdk_timer_s {
+	thrd_t* thrds;
+	size_t thrdcnt;
+	cdk_rbtree_t rbtree;
+	mtx_t tmtx;
+	mtx_t rbmtx;
+	cnd_t rbcnd;
+	bool status;
 };
 
 struct cdk_ringbuf_s {

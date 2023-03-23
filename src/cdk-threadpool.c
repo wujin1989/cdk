@@ -65,24 +65,23 @@ static void cdk_thrdpool_createthread(cdk_thrdpool_t* pool) {
 	mtx_unlock(&pool->tmtx);
 }
 
-cdk_thrdpool_t* cdk_thrdpool_create(int nthrds) {
+void cdk_thrdpool_create(cdk_thrdpool_t* pool, int nthrds) {
 
-	cdk_thrdpool_t* pool = malloc(sizeof(cdk_thrdpool_t));
+	if (pool) {
+		cdk_queue_init(&pool->queue);
 
-	cdk_queue_init(&pool->queue);
+		mtx_init(&pool->tmtx, mtx_plain);
+		mtx_init(&pool->qmtx, mtx_plain);
+		cnd_init(&pool->qcnd);
 
-	mtx_init(&pool->tmtx, mtx_plain);
-	mtx_init(&pool->qmtx, mtx_plain);
-	cnd_init(&pool->qcnd);
+		pool->thrdcnt = 0;
+		pool->status = true;
+		pool->thrds = NULL;
 
-	pool->thrdcnt = 0;
-	pool->status  = true;
-	pool->thrds   = NULL;
-
-	for (int i = 0; i < nthrds; i++) {
-		cdk_thrdpool_createthread(pool);
+		for (int i = 0; i < nthrds; i++) {
+			cdk_thrdpool_createthread(pool);
+		}
 	}
-	return pool;
 }
 
 void cdk_thrdpool_destroy(cdk_thrdpool_t* pool) {
