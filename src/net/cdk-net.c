@@ -21,7 +21,8 @@
 
 #include "platform-socket.h"
 #include "platform-event.h"
-#include "cdk/deprecated/c11-threads.h"
+#include "cdk-net-poller.h"
+#include "cdk-net-connection.h"
 
 static void cdk_net_inet_ntop(int af, const void* restrict src, char* restrict dst) {
     if (af == AF_INET) {
@@ -112,65 +113,22 @@ void cdk_net_set_sendbuf(cdk_sock_t sock, int val) {
     platform_socket_set_sendbuf(sock, val);
 }
 
-static cdk_net_conn_t* __connection_create(cdk_sock_t sock, int cmd, cdk_net_handler_t* handler)
+cdk_net_conn_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_net_handler_t* handler)
 {
-    cdk_net_conn_t* conn = malloc(sizeof(cdk_net_conn_t));
-
-    conn->cmd = cmd;
-    conn->fd = sock;
-    conn->h = handler;
-    conn->type = platform_socket_socktype(sock);
-    conn->state = true;
-    cdk_mtx_init(&conn->mutex);
-
-    if (conn->type == SOCK_STREAM) {
-        conn->tcp.ibuf.len = MAX_IOBUF_SIZE;
-        conn->tcp.ibuf.off = 0;
-        conn->tcp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-        cdk_list_create(&(conn->tcp.olist));
-    }
-    if (conn->type == SOCK_DGRAM) {
-        conn->udp.ibuf.len = MAX_IOBUF_SIZE;
-        conn->udp.ibuf.off = 0;
-        conn->udp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-        cdk_list_create(&(conn->udp.olist));
-    }
-    platform_event_add(conn->poller.pfd, conn->fd, cmd, conn);
-    return conn;
-}
-
-static void __connection_modify(cdk_net_conn_t* conn) {
-    
-}
-
-static void __connection_destroy(cdk_net_conn_t* conn) {
-
-}
-
-static void __poller_create(void) {
-    if (atomic_flag_test_and_set(&once_create)) {
-        return;
-    }
-    platform_socket_startup();
-}
-
-static void __poller_destroy(void) {
-    platform_socket_cleanup();
-}
-
-cdk_net_conn_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_net_handler_t* handler) {
     cdk_sock_t sock;
     cdk_net_conn_t* conn;
 
-    __poller_create();
+    cdk_net_poller_create();
 
-    if (!strncmp(type, "tcp", strlen("tcp"))) {
+    if (!strncmp(type, "tcp", strlen("tcp")))
+    {
         sock = platform_socket_listen(host, port, SOCK_STREAM);
-        conn = __connection_create(sock, PLATFORM_EVENT_A, handler);
+        conn = cdk_net_connection_create(sock, PLATFORM_EVENT_A, handler);
     }
-    if (!strncmp(type, "udp", strlen("udp"))) {
+    if (!strncmp(type, "udp", strlen("udp")))
+    {
         sock = platform_socket_listen(host, port, SOCK_DGRAM);
-        conn = __connection_create(sock, PLATFORM_EVENT_R, handler);
+        conn = cdk_net_connection_create(sock, PLATFORM_EVENT_R, handler);
     }
     return conn;
 }
@@ -182,7 +140,7 @@ cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* por
 void cdk_net_poll(void) {
 
 
-    __poller_destroy();
+    cdk_net_poller_destroy();
 }
 
 void cdk_net_postrecv(cdk_net_conn_t* conn) {

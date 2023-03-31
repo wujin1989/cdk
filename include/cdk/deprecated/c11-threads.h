@@ -484,7 +484,7 @@ static inline int thrd_join(thrd_t thr, int* res)
 static inline int thrd_sleep(const struct timespec* duration, struct timespec* remaining) 
 {
 	timeBeginPeriod(1);
-	Sleep((DWORD)c11_timespec2msec(duration));
+	Sleep((DWORD)__timespec2msec(duration));
 	timeEndPeriod(1);
 	return 0;
 }

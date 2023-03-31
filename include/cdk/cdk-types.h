@@ -229,7 +229,7 @@ struct cdk_spliter_s {
 		}binary;
 
 		struct {
-			void (*split)(cdk_tcp_conn_t* conn);
+			void (*split)(cdk_net_conn_t* conn);
 		}userdefined;
 	};
 };

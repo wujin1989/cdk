@@ -64,7 +64,7 @@ void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32
 	timebase = cdk_time_now();
 	key.u64 = timebase + expire;
 
-	job = malloc(sizeof(cdk_timer_job_t));
+	job = malloc(sizeof(timer_job_t));
 
 	job->routine = routine;
 	job->arg = arg;
@@ -83,7 +83,7 @@ void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32
 			jobs->n.rb_key = key;
 			cdk_queue_init(&jobs->jobs);
 			cdk_queue_enqueue(&jobs->jobs, &job->n);
-			cdk_timer_post(timer, jobs);
+			__timer_post(timer, jobs);
 		}
 	}
 	mtx_unlock(&timer->rbmtx);
@@ -144,7 +144,7 @@ static void __timer_createthread(cdk_timer_t* timer) {
 		return;
 	}
 	timer->thrds = thrds;
-	thrd_create(timer->thrds + timer->thrdcnt, cdk_timer_thrdfunc, timer);
+	thrd_create(timer->thrds + timer->thrdcnt, __timer_thrdfunc, timer);
 
 	timer->thrdcnt++;
 	mtx_unlock(&timer->tmtx);
