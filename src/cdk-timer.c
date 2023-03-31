@@ -29,20 +29,20 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 
-typedef struct cdk_timer_job_s {
+typedef struct timer_job_s {
 	void  (*routine)(void*);
 	void* arg;
 	bool  repeat;
 	cdk_queue_node_t n;
-}cdk_timer_job_t;
+}timer_job_t;
 
-typedef struct cdk_timer_jobqueue_s {
+typedef struct timer_jobqueue_s {
 	uint64_t          timebase;
 	cdk_queue_t       jobs;
 	cdk_rbtree_node_t n;
-}cdk_timer_jobqueue_t;
+}timer_jobqueue_t;
 
-static void cdk_timer_post(cdk_timer_t* timer, cdk_timer_jobqueue_t* jobs) {
+static void __timer_post(cdk_timer_t* timer, timer_jobqueue_t* jobs) {
 
 	if (!jobs) {
 		return;
@@ -53,8 +53,8 @@ static void cdk_timer_post(cdk_timer_t* timer, cdk_timer_jobqueue_t* jobs) {
 
 void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat) {
 
-	cdk_timer_jobqueue_t* jobs;
-	cdk_timer_job_t* job;
+	timer_jobqueue_t* jobs;
+	timer_job_t* job;
 	cdk_rbtree_node_key_t key;
 	cdk_rbtree_node_t* node;
 	uint64_t timebase;
@@ -73,11 +73,11 @@ void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32
 	node = cdk_rbtree_find(&timer->rbtree, key);
 
 	if (node) {
-		jobs = cdk_rbtree_data(node, cdk_timer_jobqueue_t, n);
+		jobs = cdk_rbtree_data(node, timer_jobqueue_t, n);
 		cdk_queue_enqueue(&jobs->jobs, &job->n);
 	}
 	else {
-		jobs = malloc(sizeof(cdk_timer_jobqueue_t));
+		jobs = malloc(sizeof(timer_jobqueue_t));
 		if (jobs) {
 			jobs->timebase = timebase;
 			jobs->n.rb_key = key;
@@ -89,19 +89,19 @@ void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32
 	mtx_unlock(&timer->rbmtx);
 }
 
-static int cdk_timer_thrdfunc(void* arg) {
+static int __timer_thrdfunc(void* arg) {
 
 	cdk_timer_t* timer = arg;
 
 	while (timer->status) {
 
 		mtx_lock(&timer->rbmtx);
-		cdk_timer_jobqueue_t* jobs;
+		timer_jobqueue_t* jobs;
 
 		while (timer->status && cdk_rbtree_empty(&timer->rbtree)) {
 			cnd_wait(&timer->rbcnd, &timer->rbmtx);
 		}
-		jobs = cdk_rbtree_data(cdk_rbtree_first(&timer->rbtree), cdk_timer_jobqueue_t, n);
+		jobs = cdk_rbtree_data(cdk_rbtree_first(&timer->rbtree), timer_jobqueue_t, n);
 
 		uint64_t now = cdk_time_now();
 
@@ -114,9 +114,9 @@ static int cdk_timer_thrdfunc(void* arg) {
 		cdk_rbtree_erase(&timer->rbtree, &jobs->n);
 		mtx_unlock(&timer->rbmtx);
 
-		cdk_timer_job_t* job;
+		timer_job_t* job;
 		while (!cdk_queue_empty(&jobs->jobs)) {
-			job = cdk_queue_data(cdk_queue_dequeue(&jobs->jobs), cdk_timer_job_t, n);
+			job = cdk_queue_data(cdk_queue_dequeue(&jobs->jobs), timer_job_t, n);
 
 			if (timer->status) {
 				job->routine(job->arg);
@@ -133,7 +133,7 @@ static int cdk_timer_thrdfunc(void* arg) {
 	return 0;
 }
 
-static void cdk_timer_createthread(cdk_timer_t* timer) {
+static void __timer_createthread(cdk_timer_t* timer) {
 
 	void* thrds;
 
@@ -163,7 +163,7 @@ void cdk_timer_create(cdk_timer_t* timer, int nthrds) {
 	timer->thrds = NULL;
 
 	for (int i = 0; i < nthrds; i++) {
-		cdk_timer_createthread(timer);
+		__timer_createthread(timer);
 	}
 }
 

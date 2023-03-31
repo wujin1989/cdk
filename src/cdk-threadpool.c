@@ -24,7 +24,7 @@
 #include "cdk/cdk-types.h"
 #include <stdlib.h>
 
-static int cdk_thrdpool_thrdfunc(void* arg) {
+static int __thrdpool_thrdfunc(void* arg) {
 	
 	cdk_thrdpool_t* pool = arg;
 
@@ -48,7 +48,7 @@ static int cdk_thrdpool_thrdfunc(void* arg) {
 	return 0;
 }
 
-static void cdk_thrdpool_createthread(cdk_thrdpool_t* pool) {
+static void __thrdpool_createthread(cdk_thrdpool_t* pool) {
 
 	void* thrds;
 
@@ -59,7 +59,7 @@ static void cdk_thrdpool_createthread(cdk_thrdpool_t* pool) {
 		return;
 	}
 	pool->thrds = thrds;
-	thrd_create(pool->thrds + pool->thrdcnt, cdk_thrdpool_thrdfunc, pool);
+	thrd_create(pool->thrds + pool->thrdcnt, __thrdpool_thrdfunc, pool);
 
 	pool->thrdcnt++;
 	mtx_unlock(&pool->tmtx);
@@ -79,7 +79,7 @@ void cdk_thrdpool_create(cdk_thrdpool_t* pool, int nthrds) {
 		pool->thrds = NULL;
 
 		for (int i = 0; i < nthrds; i++) {
-			cdk_thrdpool_createthread(pool);
+			__thrdpool_createthread(pool);
 		}
 	}
 }

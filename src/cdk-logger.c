@@ -37,22 +37,22 @@
 
 #define BUFSIZE    4096
 
-typedef struct cdk_logger_s {
+typedef struct logger_s {
 	FILE* file;
 	mtx_t mtx;
 	_Bool async;
 	cdk_thrdpool_t pool;
-}cdk_logger_t;
+}logger_t;
 
 static const char* levels[] = {
 	"INFO", "DEBUG", "WARN", "ERROR"
 };
 
-static cdk_logger_t logger;
+static logger_t logger;
 static atomic_flag once_create  = ATOMIC_FLAG_INIT;
 static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
 
-static inline void cdk_logger_printer(void* arg) {
+static inline void __logger_printer(void* arg) {
 
 	fprintf(logger.file, "%s", (char*)arg);
 	fflush(logger.file);
@@ -60,7 +60,7 @@ static inline void cdk_logger_printer(void* arg) {
 	arg = NULL;
 }
 
-static inline void cdk_logger_syncbase(int level, const char* restrict file, int line) {
+static inline void __logger_syncbase(int level, const char* restrict file, int line) {
 
 	struct timespec tsc;
 	struct tm       tm;
@@ -81,7 +81,7 @@ static inline void cdk_logger_syncbase(int level, const char* restrict file, int
 	);
 }
 
-static inline void cdk_logger_asyncbase(int level, const char* restrict file, int line, const char* restrict fmt, va_list v) {
+static inline void __logger_asyncbase(int level, const char* restrict file, int line, const char* restrict fmt, va_list v) {
 
 	struct timespec tsc;
 	struct tm       tm;
@@ -111,7 +111,7 @@ static inline void cdk_logger_asyncbase(int level, const char* restrict file, in
 
 	cdk_thrdpool_job_t* job = malloc(sizeof(cdk_thrdpool_job_t));
 	if (job) {
-		job->routine = cdk_logger_printer;
+		job->routine = __logger_printer;
 		job->arg = malloc(ret);
 		memcpy(job->arg, buf, ret);
 
@@ -160,10 +160,10 @@ void cdk_logger_log(int level, const char* restrict file, int line, const char* 
 	if (!logger.async) {
 		
 		if (!p) {
-			cdk_logger_syncbase(level, file, line);
+			__logger_syncbase(level, file, line);
 		}
 		if (p) {
-			cdk_logger_syncbase(level, ++p, line);
+			__logger_syncbase(level, ++p, line);
 		}
 		va_list v;
 		va_start(v, fmt);
@@ -180,10 +180,10 @@ void cdk_logger_log(int level, const char* restrict file, int line, const char* 
 		va_start(v, fmt);
 
 		if (!p) {
-			cdk_logger_asyncbase(level, file, line, fmt, v);
+			__logger_asyncbase(level, file, line, fmt, v);
 		}
 		if (p) {
-			cdk_logger_asyncbase(level, ++p, line, fmt, v);
+			__logger_asyncbase(level, ++p, line, fmt, v);
 		}
 		va_end(v);
 	}
