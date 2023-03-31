@@ -20,8 +20,6 @@
  */
 
 #include "cdk/cdk-types.h"
-#include "platform-socket.h"
-#include <WS2tcpip.h>
 
 void platform_socket_nonblock(cdk_sock_t sock) {
 
@@ -31,18 +29,22 @@ void platform_socket_nonblock(cdk_sock_t sock) {
     }
 }
 
-void platform_socket_recvbuf(cdk_sock_t sock, int val) {
+void platform_socket_set_recvbuf(cdk_sock_t sock, int val) {
 
     if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&val, sizeof(int))) {
         abort();
     }
 }
 
-void platform_socket_sendbuf(cdk_sock_t sock, int val) {
+void platform_socket_set_sendbuf(cdk_sock_t sock, int val) {
 
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&val, sizeof(int))) {
         abort();
     }
+}
+
+void platform_socket_close(cdk_sock_t sock) {
+    closesocket(sock);
 }
 
 cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
@@ -91,6 +93,19 @@ void platform_socket_keepalive(cdk_sock_t sock) {
     if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const char*)&c, sizeof(c))) {
         abort();
     }
+}
+
+int platform_socket_af(cdk_sock_t sock) {
+
+    WSAPROTOCOL_INFOW info; /* using unicode name to avoiding ninja build warning */
+    socklen_t len;
+
+    len = sizeof(WSAPROTOCOL_INFOW);
+    if (getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len)) {
+        abort();
+    }
+
+    return info.iAddressFamily;
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
@@ -235,24 +250,6 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
     }
     freeaddrinfo(res);
     return sock;
-}
-
-void platform_socket_close(cdk_sock_t sock) {
-
-    closesocket(sock);
-}
-
-int platform_socket_af(cdk_sock_t sock) {
-
-    WSAPROTOCOL_INFOW info; /* using unicode name to avoiding ninja build warning */
-    socklen_t len;
-
-    len = sizeof(WSAPROTOCOL_INFOW);
-    if (getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len)) {
-        abort();
-    }
-
-    return info.iAddressFamily;
 }
 
 int platform_socket_socktype(cdk_sock_t sock) {

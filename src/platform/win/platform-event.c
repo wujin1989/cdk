@@ -20,10 +20,10 @@
  */
 
 #include "platform-event.h"
-
-#if defined(__linux__)
+#include "wepoll/wepoll.h"
 
 void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
+
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
 
@@ -41,10 +41,12 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
 		break;
 	}
 	ee.data.ptr = ud;
+
 	epoll_ctl(pfd, EPOLL_CTL_ADD, sfd, (struct epoll_event*)&ee);
 }
 
 void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
+
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
 
@@ -62,16 +64,20 @@ void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
 		break;
 	}
 	ee.data.ptr = ud;
+
 	epoll_ctl(pfd, EPOLL_CTL_MOD, sfd, (struct epoll_event*)&ee);
 }
 
 void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
+
 	epoll_ctl(pfd, EPOLL_CTL_DEL, sfd, NULL);
 }
 
 int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
+
 	struct epoll_event __events[MAX_PROCESS_EVENTS];
 	int n;
+
 	do {
 		n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, -1);
 	} while (n == -1 && errno == EINTR);
@@ -84,4 +90,3 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
 	}
 	return n;
 }
-#endif

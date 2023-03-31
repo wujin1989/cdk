@@ -25,8 +25,8 @@ _Pragma("once")
 
 extern void        platform_socket_startup(void);
 extern void        platform_socket_cleanup(void);
-extern void        platform_socket_recvbuf(cdk_sock_t sock, int val);
-extern void        platform_socket_sendbuf(cdk_sock_t sock, int val);
+extern void        platform_socket_set_recvbuf(cdk_sock_t sock, int val);
+extern void        platform_socket_set_sendbuf(cdk_sock_t sock, int val);
 extern cdk_sock_t  platform_socket_accept(cdk_sock_t sock);
 extern void        platform_socket_nodelay(cdk_sock_t sock, bool on);
 extern void        platform_socket_keepalive(cdk_sock_t sock);

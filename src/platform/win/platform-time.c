@@ -19,9 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include <stdint.h>
-#include <time.h>
-#include <Windows.h>
+#include "cdk/cdk-types.h"
 
 void platform_time_localtime(const time_t* t, struct tm* r) {
 

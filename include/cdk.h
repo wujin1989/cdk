@@ -64,7 +64,6 @@ _Pragma("once")
 #include "cdk/cdk-logger.h"
 #include "cdk/cdk-threadpool.h"
 #include "cdk/cdk-types.h"
-#include "cdk/cdk-net.h"
 #include "cdk/cdk-utils.h"
 #include "cdk/cdk-loader.h"
 #include "cdk/sync/cdk-rwlock.h"
@@ -78,3 +77,4 @@ _Pragma("once")
 #include "cdk/encoding/cdk-json.h"
 #include "cdk/crypto/cdk-sha256.h"
 #include "cdk/crypto/cdk-sha1.h"
+#include "cdk/net/cdk-net.h"

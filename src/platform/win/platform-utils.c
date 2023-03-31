@@ -20,8 +20,6 @@
  */
 
 #include "cdk/cdk-types.h"
-#include <process.h>
-#include <Windows.h>
 
 int platform_utils_cpus(void) {
 

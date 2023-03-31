@@ -19,17 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <errno.h>
 #include "cdk/cdk-types.h"
-#include "platform-socket.h"
 
 #define TCPv4_MSS       536
 #define TCPv6_MSS       1220
@@ -57,6 +47,10 @@ void platform_socket_sendbuf(cdk_sock_t sock, int val) {
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void*)&val, sizeof(int))) {
         abort();
     }
+}
+
+void platform_socket_close(cdk_sock_t sock) {
+    close(sock);
 }
 
 cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
@@ -96,6 +90,33 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
         abort();
     }
 }
+
+#if defined(__linux__)
+int platform_socket_af(cdk_sock_t sock) {
+
+    int af;
+    socklen_t len;
+
+    len = sizeof(int);
+    if (getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &af, &len)) {
+        abort();
+    }
+    return af;
+}
+#endif
+
+#if defined(__APPLE__)
+int platform_socket_af(cdk_sock_t sock) {
+
+    struct sockaddr_storage ss;
+    socklen_t len;
+
+    len = sizeof(struct sockaddr_storage);
+    getsockname(sock, (struct sockaddr*)&ss, &len);
+
+    return ss.ss_family;
+}
+#endif
 
 #if defined(__linux__)
 
@@ -297,38 +318,6 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
     freeaddrinfo(res);
     return sock;
 }
-
-void platform_socket_close(cdk_sock_t sock) {
-    
-    close(sock);
-}
-
-#if defined(__linux__)
-int platform_socket_af(cdk_sock_t sock) {
-
-    int af;
-    socklen_t len;
-
-    len = sizeof(int);
-    if (getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &af, &len)) {
-        abort();
-    }
-    return af;
-}
-#endif
-
-#if defined(__APPLE__)
-int platform_socket_af(cdk_sock_t sock) {
-
-    struct sockaddr_storage ss;
-    socklen_t len;
-
-    len = sizeof(struct sockaddr_storage);
-    getsockname(sock, (struct sockaddr*)&ss, &len);
-
-    return ss.ss_family;
-}
-#endif
 
 int platform_socket_socktype(cdk_sock_t sock) {
 

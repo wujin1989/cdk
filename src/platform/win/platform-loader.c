@@ -19,8 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include <windows.h>
-#include <string.h>
+#include "cdk/cdk-types.h"
 
 void* platform_loader_create(char* m) {
 

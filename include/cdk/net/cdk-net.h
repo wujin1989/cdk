@@ -23,15 +23,16 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void           _poller_create(void);
-extern void           _poller_destroy(void);
-extern poller_conn_t* _poller_conn_create(int pfd, sock_t s, int c, poller_handler_t* h);
-extern void           _poller_conn_modify(poller_conn_t* conn);
-extern void           _poller_conn_destroy(poller_conn_t* conn);
-extern poller_conn_t* _poller_listen(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
-extern poller_conn_t* _poller_dial(const char* restrict t, const char* restrict h, const char* restrict p, poller_handler_t* handler);
-extern void           _poller_postrecv(poller_conn_t* conn);
-extern void           _poller_postsend(poller_conn_t* conn, void* data, size_t size);
-extern void           _poller_setup_splicer(poller_conn_t* conn, splicer_profile_t* splicer);
-extern void           _poller_master(void);
-extern void           _poller_concurrent_slaves(int64_t num);
+extern void            cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai);
+extern void            cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
+extern void            cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
+extern int             cdk_net_af(cdk_sock_t sock);
+extern int             cdk_net_socktype(cdk_sock_t sock);
+extern void            cdk_net_set_recvbuf(cdk_sock_t sock, int val);
+extern void            cdk_net_set_sendbuf(cdk_sock_t sock, int val);
+extern cdk_net_conn_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_net_handler_t* handler);
+extern cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* port, cdk_net_handler_t* handler);
+extern void            cdk_net_poll(void);
+extern void            cdk_net_postrecv(cdk_net_conn_t* conn);
+extern void            cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size);
+extern void            cdk_net_close(cdk_net_conn_t* conn);

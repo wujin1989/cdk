@@ -19,10 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include <unistd.h>
-#include <time.h>
-#include <stdint.h>
-#include <errno.h>
+#include "cdk/cdk-types.h"
 
 #define USEC   (1000000UL)
 

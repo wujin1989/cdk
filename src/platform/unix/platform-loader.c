@@ -19,8 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include <dlfcn.h>
-#include <stdio.h>
+#include "cdk/cdk-types.h"
 
 void* platform_loader_create(const char* m) {
 

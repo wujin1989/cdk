@@ -26,6 +26,11 @@ _Pragma("once")
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdatomic.h>
+#include <string.h>
+#include <errno.h>
+#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #if defined(_WIN32)
 #undef WIN32_LEAN_AND_MEAN
@@ -34,12 +39,26 @@ _Pragma("once")
 #include <WinSock2.h>
 #include <Windows.h>
 #include <ws2ipdef.h>
+#include <WS2tcpip.h>
+#include <process.h>
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <dlfcn.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+#include <fcntl.h>
+
 #if defined(__linux__)
+#include <sys/epoll.h>
+#include <sys/syscall.h>
 #endif
+
 #if defined(__APPLE__)
 #endif
 #endif
@@ -63,8 +82,8 @@ enum cdk_rbtree_node_keytype_e {
 	RB_KEYTYPE_STR    ,
 };
 
-typedef struct cdk_poller_conn_s         cdk_poller_conn_t;
-typedef struct cdk_poller_handler_s      cdk_poller_handler_t;
+typedef struct cdk_net_conn_s            cdk_net_conn_t;
+typedef struct cdk_net_handler_s         cdk_net_handler_t;
 typedef union  cdk_rbtree_node_key_u     cdk_rbtree_node_key_t;
 typedef struct cdk_rbtree_node_s         cdk_rbtree_node_t;
 typedef enum   cdk_rbtree_node_keytype_e cdk_rbtree_node_keytype_t;
@@ -100,17 +119,16 @@ typedef pid_t                cdk_tid_t;
 #define INVALID_SOCKET       -1
 typedef pid_t                cdk_pid_t;
 typedef int                  cdk_sock_t;
-
+typedef int                  cdk_pollfd_t;
 #endif
 
 #if defined(_WIN32)
-
 typedef DWORD                       cdk_tid_t;
 typedef DWORD                       cdk_pid_t;
 typedef SOCKET                      cdk_sock_t;
 typedef int                         socklen_t;
 typedef SSIZE_T                     ssize_t;
-
+typedef HANDLE                      cdk_pollfd_t;
 #endif
 
 union cdk_rbtree_node_key_u {
@@ -211,7 +229,7 @@ struct cdk_spliter_s {
 		}binary;
 
 		struct {
-			void (*split)(cdk_poller_conn_t* conn);
+			void (*split)(cdk_tcp_conn_t* conn);
 		}userdefined;
 	};
 };
@@ -229,27 +247,25 @@ struct cdk_addrinfo_s {
 };
 
 typedef struct cdk_poller_s {
-	int		    pfd;
-	cdk_tid_t   tid;
+	cdk_pollfd_t pfd;
+	cdk_tid_t tid;
+	cdk_list_node_t node;
 }cdk_poller_t;
 
-struct cdk_poller_conn_s {
-	cdk_poller_t          poller;
-	cdk_sock_t            fd;
-	int                   cmd;
-	cdk_poller_handler_t* h;
-	int                   type;
-	bool                  state;
-	cdk_rbtree_t          owners;
-	mtx_t                 mutex;
-
+struct cdk_net_conn_s {
+	cdk_sock_t         fd;
+	int                cmd;
+	cdk_net_handler_t* h;
+	int                type;
+	bool               state;
+	cdk_rbtree_t       owners;
+	mtx_t              mutex;
 	union {
 		struct {
 			cdk_offset_buf_t ibuf;
 			cdk_list_t       olist;
 			cdk_spliter_t    splicer;
 		}tcp;
-
 		struct {
 			cdk_offset_buf_t ibuf;
 			cdk_list_t       olist;
@@ -262,12 +278,12 @@ struct cdk_poller_conn_s {
 	cdk_list_node_t n;
 };
 
-struct cdk_poller_handler_s {
-	void (*on_accept) (cdk_poller_conn_t*);
-	void (*on_connect)(cdk_poller_conn_t*);
-	void (*on_read)   (cdk_poller_conn_t*, void* buf, size_t len);
-	void (*on_write)  (cdk_poller_conn_t*, void* buf, size_t len);
-	void (*on_close)  (cdk_poller_conn_t*);
+struct cdk_net_handler_s {
+	void (*on_accept) (cdk_net_conn_t*);
+	void (*on_connect)(cdk_net_conn_t*);
+	void (*on_read)   (cdk_net_conn_t*, void* buf, size_t len);
+	void (*on_write)  (cdk_net_conn_t*, void* buf, size_t len);
+	void (*on_close)  (cdk_net_conn_t*);
 };
 
 struct cdk_sha256_s {

@@ -21,26 +21,24 @@
 
 _Pragma("once")
 
-#include <stdio.h>
-#include "cdk.h"
+#include "cdk/cdk-types.h"
 
 #define MAX_PROCESS_EVENTS 1024
 
 enum {
 
-	_EVENT_R,
-	_EVENT_W,
-	_EVENT_A,
-	_EVENT_C,
-	_EVENT_U,
+	PLATFORM_EVENT_R,
+	PLATFORM_EVENT_W,
+	PLATFORM_EVENT_A,
+	PLATFORM_EVENT_C,
+	PLATFORM_EVENT_U,
 };
 
-typedef struct __event_t__ {
-
+typedef struct cdk_pollevent_s {
 	void* ptr;
-}event_t;
+}cdk_pollevent_t;
 
-extern void _event_add(int pfd, sock_t sfd, int type, void* ud);
-extern void _event_mod(int pfd, sock_t sfd, int type, void* ud);
-extern void _event_del(int pfd, sock_t sfd);
-extern int  _event_wait(int pfd, event_t* events, int timeout);
+extern void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud);
+extern void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud);
+extern void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd);
+extern int  platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events);

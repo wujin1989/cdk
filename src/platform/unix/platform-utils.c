@@ -19,12 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include <unistd.h>
 #include "cdk/cdk-types.h"
-
-#if defined(__linux__)
-#include <sys/syscall.h>
-#endif
 
 #if defined(__APPLE__)
 cdk_tid_t platform_utils_systemtid(void) {
