@@ -19,7 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-utils.h"
+#include "platform/platform-utils.h"
 #include <time.h>
 #include <stdlib.h>
 

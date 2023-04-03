@@ -19,16 +19,16 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-socket.h"
-#include "platform-event.h"
-#include "platform-connection.h"
+#include "platform/platform-socket.h"
+#include "platform/platform-event.h"
+#include "net/cdk-net-connection.h"
 #include "cdk/deprecated/c11-threads.h"
 #include "cdk/container/cdk-list.h"
 
 static atomic_flag once_create = ATOMIC_FLAG_INIT;
 static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
 static cdk_list_t pollerlst;
-static atomic_uint nslaves;
+static atomic_int nslaves;
 
 static cdk_poller_t* __retrive_suitable_poller(void) {
 
@@ -40,6 +40,17 @@ static cdk_poller_t* __retrive_suitable_poller(void) {
         }
     }
     return NULL;
+}
+
+cdk_poller_t* platform_poller_retrive(void) {
+    cdk_poller_t* poller;
+    if (nslaves == 0) {
+        poller = cdk_list_data(cdk_list_head(&pollerlst), cdk_poller_t, node);
+    }
+    else {
+
+    }
+    return poller;
 }
 
 int platform_poller_poll(void* arg) {
@@ -54,12 +65,13 @@ int platform_poller_poll(void* arg) {
         for (int i = 0; i < nevents; i++)
         {
             cdk_net_conn_t* conn = events[i].ptr;
-            platform_connection_process(conn);
+            cdk_net_connection_process(conn);
         }
     }
     return 0;
 }
 
+#if defined(__linux__)
 void platform_poller_create(void)
 {
     if (atomic_flag_test_and_set(&once_create)) {
@@ -78,7 +90,7 @@ void platform_poller_create(void)
     else {
         for (int i = 0; i < nslaves; i++) {
             thrd_t tid;
-            thrd_create(&tid, cdk_net_poller_poll, NULL);
+            thrd_create(&tid, platform_poller_poll, NULL);
             thrd_detach(tid);
 
             cdk_poller_t* poller = malloc(sizeof(cdk_poller_t));
@@ -89,7 +101,7 @@ void platform_poller_create(void)
             }
         }
     }
-}
+    }
 
 void platform_poller_destroy(void)
 {
@@ -102,8 +114,22 @@ void platform_poller_destroy(void)
         cdk_list_remove(&poller->node);
         n = cdk_list_next(&poller->node);
 
+        close(poller->pfd);
         free(poller);
         poller = NULL;
     }
     platform_socket_cleanup();
 }
+#endif
+
+#if defined(__APPLE__)
+void platform_poller_create(void)
+{
+    
+}
+
+void platform_poller_destroy(void)
+{
+    
+}
+#endif

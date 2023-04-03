@@ -19,9 +19,9 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-socket.h"
-#include "platform-event.h"
-#include "platform-connection.h"
+#include "platform/platform-socket.h"
+#include "platform/platform-event.h"
+#include "net/cdk-net-connection.h"
 #include "cdk/deprecated/c11-threads.h"
 #include "cdk/container/cdk-list.h"
 #include "wepoll/wepoll.h"
@@ -66,7 +66,7 @@ int platform_poller_poll(void* arg) {
         for (int i = 0; i < nevents; i++)
         {
             cdk_net_conn_t* conn = events[i].ptr;
-            platform_connection_process(conn);
+            cdk_net_connection_process(conn);
         }
     }
     return 0;
@@ -114,6 +114,7 @@ void platform_poller_destroy(void)
         cdk_list_remove(&poller->node);
         n = cdk_list_next(&poller->node);
 
+        epoll_close(poller->pfd);
         free(poller);
         poller = NULL;
     }

@@ -19,7 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-process.h"
+#include "platform/platform-process.h"
 
 cdk_pid_t cdk_process_getpid(void) {
 

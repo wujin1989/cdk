@@ -19,7 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-loader.h"
+#include "platform/platform-loader.h"
 
 void* cdk_loader_create(char* m) {
 

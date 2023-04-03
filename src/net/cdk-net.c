@@ -19,10 +19,10 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-socket.h"
-#include "platform-event.h"
-#include "platform-poller.h"
-#include "platform-connection.h"
+#include "platform/platform-socket.h"
+#include "platform/platform-event.h"
+#include "platform/platform-poller.h"
+#include "net/cdk-net-connection.h"
 
 static void cdk_net_inet_ntop(int af, const void* restrict src, char* restrict dst) {
     if (af == AF_INET) {
@@ -123,12 +123,12 @@ cdk_net_conn_t* cdk_net_listen(const char* type, const char* host, const char* p
     if (!strncmp(type, "tcp", strlen("tcp")))
     {
         sock = platform_socket_listen(host, port, SOCK_STREAM);
-        conn = platform_connection_create(platform_poller_retrive(), sock, PLATFORM_EVENT_A, handler);
+        conn = cdk_net_connection_create(platform_poller_retrive(), sock, PLATFORM_EVENT_A, handler);
     }
     if (!strncmp(type, "udp", strlen("udp")))
     {
         sock = platform_socket_listen(host, port, SOCK_DGRAM);
-        conn = platform_connection_create(platform_poller_retrive(), sock, PLATFORM_EVENT_R, handler);
+        conn = cdk_net_connection_create(platform_poller_retrive(), sock, PLATFORM_EVENT_R, handler);
     }
     return conn;
 }

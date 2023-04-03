@@ -23,7 +23,7 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_net_conn_t* platform_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler);
-extern void            platform_connection_modify(cdk_net_conn_t* conn);
-extern void            platform_connection_destroy(cdk_net_conn_t* conn);
-extern void            platform_connection_process(cdk_net_conn_t* conn);
+extern cdk_net_conn_t* cdk_net_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler);
+extern void            cdk_net_connection_modify(cdk_net_conn_t* conn);
+extern void            cdk_net_connection_destroy(cdk_net_conn_t* conn);
+extern void            cdk_net_connection_process(cdk_net_conn_t* conn);

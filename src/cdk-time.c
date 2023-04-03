@@ -19,7 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-time.h"
+#include "platform/platform-time.h"
 
 #define USEC                        (1000000UL)
 #define MSEC                        (1000UL)

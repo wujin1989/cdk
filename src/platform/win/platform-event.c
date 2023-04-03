@@ -19,7 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-event.h"
+#include "platform/platform-event.h"
 #include "wepoll/wepoll.h"
 
 void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {

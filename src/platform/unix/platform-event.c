@@ -19,7 +19,7 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform-event.h"
+#include "platform/platform-event.h"
 
 #if defined(__linux__)
 
