@@ -19,7 +19,46 @@
  *  IN THE SOFTWARE.
  */
 
-_Pragma("once")
+#include "platform-socket.h"
+#include "platform-event.h"
 
-extern void cdk_net_poller_create(void);
-extern void cdk_net_poller_destroy(void);
+#define MAX_IOBUF_SIZE 4096
+
+cdk_net_conn_t* platform_connection_create(cdk_sock_t sock, int cmd, cdk_net_handler_t* handler)
+{
+    cdk_net_conn_t* conn = malloc(sizeof(cdk_net_conn_t));
+
+    /*conn->cmd = cmd;
+    conn->fd = sock;
+    conn->h = handler;
+    conn->type = platform_socket_socktype(sock);
+    conn->state = true;
+    mtx_init(&conn->mutex, mtx_plain);
+
+    if (conn->type == SOCK_STREAM) {
+        conn->tcp.ibuf.len = MAX_IOBUF_SIZE;
+        conn->tcp.ibuf.off = 0;
+        conn->tcp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+        cdk_list_create(&(conn->tcp.olist));
+    }
+    if (conn->type == SOCK_DGRAM) {
+        conn->udp.ibuf.len = MAX_IOBUF_SIZE;
+        conn->udp.ibuf.off = 0;
+        conn->udp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
+        cdk_list_create(&(conn->udp.olist));
+    }
+    platform_event_add(conn->poller.pfd, conn->fd, cmd, conn);*/
+    return conn;
+}
+
+void platform_connection_modify(cdk_net_conn_t* conn) {
+
+}
+
+void platform_connection_destroy(cdk_net_conn_t* conn) {
+
+}
+
+void platform_connection_process(cdk_net_conn_t* conn) {
+
+}

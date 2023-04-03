@@ -19,13 +19,14 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk-net-connection.h"
 #include "platform-socket.h"
 #include "platform-event.h"
+#include "cdk/container/cdk-rbtree.h"
+#include "cdk/container/cdk-list.h"
 
 #define MAX_IOBUF_SIZE 4096
 
-cdk_net_conn_t* cdk_net_connection_create(cdk_sock_t sock, int cmd, cdk_net_handler_t* handler)
+cdk_net_conn_t* platform_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler)
 {
     cdk_net_conn_t* conn = malloc(sizeof(cdk_net_conn_t));
 
@@ -33,29 +34,36 @@ cdk_net_conn_t* cdk_net_connection_create(cdk_sock_t sock, int cmd, cdk_net_hand
     conn->fd = sock;
     conn->h = handler;
     conn->type = platform_socket_socktype(sock);
-    conn->state = true;
-    mtx_init(&conn->mutex, mtx_plain);
+    conn->active = true;
+    cdk_rbtree_init(&(conn->owners), RB_KEYTYPE_UINT32);
+    mtx_init(&conn->txmtx, mtx_plain);
 
     if (conn->type == SOCK_STREAM) {
-        conn->tcp.ibuf.len = MAX_IOBUF_SIZE;
-        conn->tcp.ibuf.off = 0;
-        conn->tcp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-        cdk_list_create(&(conn->tcp.olist));
+        conn->tcp.rxbuf.len = MAX_IOBUF_SIZE;
+        conn->tcp.rxbuf.off = 0;
+        conn->tcp.rxbuf.buf = malloc(MAX_IOBUF_SIZE);
+        memset(conn->tcp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
+        cdk_list_init(&(conn->tcp.txlist));
     }
     if (conn->type == SOCK_DGRAM) {
-        conn->udp.ibuf.len = MAX_IOBUF_SIZE;
-        conn->udp.ibuf.off = 0;
-        conn->udp.ibuf.buf = cdk_malloc(MAX_IOBUF_SIZE);
-        cdk_list_create(&(conn->udp.olist));
+        conn->udp.rxbuf.len = MAX_IOBUF_SIZE;
+        conn->udp.rxbuf.off = 0;
+        conn->udp.rxbuf.buf = malloc(MAX_IOBUF_SIZE);
+        memset(conn->udp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
+        cdk_list_init(&(conn->udp.txlist));
     }
-    platform_event_add(conn->poller.pfd, conn->fd, cmd, conn);
+    platform_event_add(poller->pfd, conn->fd, cmd, conn);
     return conn;
 }
 
-void cdk_net_connection_modify(cdk_net_conn_t* conn) {
+void platform_connection_modify(cdk_net_conn_t* conn) {
 
 }
 
-void cdk_net_connection_destroy(cdk_net_conn_t* conn) {
+void platform_connection_destroy(cdk_net_conn_t* conn) {
+
+}
+
+void platform_connection_process(cdk_net_conn_t* conn) {
 
 }

@@ -248,7 +248,7 @@ struct cdk_addrinfo_s {
 
 typedef struct cdk_poller_s {
 	cdk_pollfd_t pfd;
-	cdk_tid_t tid;
+	thrd_t tid;
 	cdk_list_node_t node;
 }cdk_poller_t;
 
@@ -257,21 +257,21 @@ struct cdk_net_conn_s {
 	int                cmd;
 	cdk_net_handler_t* h;
 	int                type;
-	bool               state;
+	bool               active;
 	cdk_rbtree_t       owners;
-	mtx_t              mutex;
+	mtx_t              txmtx;
 	union {
 		struct {
-			cdk_offset_buf_t ibuf;
-			cdk_list_t       olist;
+			cdk_offset_buf_t rxbuf;
+			cdk_list_t       txlist;
 			cdk_spliter_t    splicer;
 		}tcp;
 		struct {
-			cdk_offset_buf_t ibuf;
-			cdk_list_t       olist;
+			cdk_offset_buf_t rxbuf;
+			cdk_list_t       txlist;
 			struct {
 				struct sockaddr_storage ss;
-				socklen_t               sslen;
+				socklen_t sslen;
 			}peer;
 		}udp;
 	};

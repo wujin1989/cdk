@@ -56,8 +56,6 @@ set(SRCS
 	src/sync/cdk-rwlock.c
 	src/sync/cdk-spinlock.c
 	src/net/cdk-net.c
-	src/net/cdk-net-poller.c
-	src/net/cdk-net-connection.c
 	src/cdk-threadpool.c
 	src/cdk-loader.c
 	src/cdk-logger.c
@@ -76,6 +74,8 @@ if(WIN32)
 		src/platform/win/platform-loader.c
 		src/platform/win/wepoll/wepoll.c
 		src/platform/win/platform-event.c
+		src/platform/win/platform-poller.c
+		src/platform/win/platform-connection.c
 	)
 endif()
 
@@ -87,6 +87,8 @@ if(UNIX)
 		src/platform/unix/platform-utils.c
 		src/platform/unix/platform-loader.c
 		src/platform/unix/platform-event.c
+		src/platform/unix/platform-poller.c
+		src/platform/unix/platform-connection.c
 	)
 endif()
 

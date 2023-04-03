@@ -19,19 +19,11 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk-net-poller.h"
-#include "platform-socket.h"
-#include "cdk/deprecated/c11-threads.h"
+_Pragma("once")
 
-void cdk_net_poller_create(void)
-{
-    if (atomic_flag_test_and_set(&once_create)) {
-        return;
-    }
-    platform_socket_startup();
-}
+#include "cdk/cdk-types.h"
 
-void cdk_net_poller_destroy(void)
-{
-    platform_socket_cleanup();
-}
+extern cdk_net_conn_t* platform_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler);
+extern void            platform_connection_modify(cdk_net_conn_t* conn);
+extern void            platform_connection_destroy(cdk_net_conn_t* conn);
+extern void            platform_connection_process(cdk_net_conn_t* conn);
