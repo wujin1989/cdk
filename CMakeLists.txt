@@ -57,6 +57,7 @@ set(SRCS
 	src/sync/cdk-spinlock.c
 	src/net/cdk-net.c
 	src/net/cdk-net-connection.c
+	src/net/cdk-net-unpack.c
 	src/cdk-threadpool.c
 	src/cdk-loader.c
 	src/cdk-logger.c

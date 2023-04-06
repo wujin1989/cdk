@@ -23,6 +23,7 @@
 #include "platform/platform-event.h"
 #include "platform/platform-poller.h"
 #include "net/cdk-net-connection.h"
+#include "cdk/container/cdk-list.h"
 
 static void cdk_net_inet_ntop(int af, const void* restrict src, char* restrict dst) {
     if (af == AF_INET) {
@@ -118,40 +119,88 @@ cdk_net_conn_t* cdk_net_listen(const char* type, const char* host, const char* p
     cdk_sock_t sock;
     cdk_net_conn_t* conn;
 
+    platform_socket_startup();
     platform_poller_create();
 
     if (!strncmp(type, "tcp", strlen("tcp")))
     {
         sock = platform_socket_listen(host, port, SOCK_STREAM);
-        conn = cdk_net_connection_create(platform_poller_retrive(), sock, PLATFORM_EVENT_A, handler);
+        conn = cdk_net_connection_create(platform_poller_retrieve(true), sock, PLATFORM_EVENT_A, handler);
     }
     if (!strncmp(type, "udp", strlen("udp")))
     {
         sock = platform_socket_listen(host, port, SOCK_DGRAM);
-        conn = cdk_net_connection_create(platform_poller_retrive(), sock, PLATFORM_EVENT_R, handler);
+        conn = cdk_net_connection_create(platform_poller_retrieve(false), sock, PLATFORM_EVENT_R, handler);
     }
     return conn;
 }
 
-cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* port, cdk_net_handler_t* handler) {
+cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* port, cdk_net_handler_t* handler)
+{
+    cdk_sock_t sock;
+    cdk_net_conn_t* conn;
+    cdk_addrinfo_t ai;
+    struct sockaddr_storage ss;
 
-    return NULL;
+    platform_socket_startup();
+    platform_poller_create();
+
+    memset(&ai, 0, sizeof(cdk_addrinfo_t));
+    memset(&ss, 0, sizeof(struct sockaddr_storage));
+
+    if (!strncmp(type, "tcp", strlen("tcp"))) {
+
+        sock = platform_socket_dial(host, port, SOCK_STREAM);
+        conn = cdk_net_connection_create(platform_poller_retrieve(false), sock, PLATFORM_EVENT_C, handler);
+    }
+    if (!strncmp(type, "udp", strlen("udp"))) {
+
+        sock = platform_socket_dial(host, port, SOCK_DGRAM);
+        conn = cdk_net_connection_create(platform_poller_retrieve(false), sock, PLATFORM_EVENT_W, handler);
+
+        memcpy(ai.a, host, strlen(host));
+        ai.p = (uint16_t)strtoul(port, NULL, 10);
+        ai.f = cdk_net_af(sock);
+
+        cdk_net_pton(&ai, &ss);
+
+        conn->udp.peer.ss = ss;
+        conn->udp.peer.sslen = sizeof(struct sockaddr_storage);
+    }
+    return conn;
 }
 
 void cdk_net_poll(void) {
 
-
+    platform_poller_poll(platform_poller_retrieve(true));
     platform_poller_destroy();
+    platform_socket_cleanup();
 }
 
 void cdk_net_postrecv(cdk_net_conn_t* conn) {
-
+    cdk_net_connection_postrecv(conn);
 }
 
 void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
+    inner_offset_buf_t* buffer = malloc(sizeof(inner_offset_buf_t) + size);
+    if (buffer) {
+        memset(buffer, 0, sizeof(inner_offset_buf_t) + size);
+        memcpy(buffer->buf, data, size);
+        buffer->len = size;
+        buffer->off = 0;
 
+        mtx_lock(&conn->txmtx);
+        if (conn->type == SOCK_STREAM) {
+            cdk_list_insert_tail(&(conn->tcp.txlist), &(buffer->n));
+        }
+        if (conn->type == SOCK_DGRAM) {
+            cdk_list_insert_tail(&(conn->udp.txlist), &(buffer->n));
+        }
+        cdk_net_connection_postsend(conn);
+        mtx_unlock(&conn->txmtx);
+    }
 }
 
 void cdk_net_close(cdk_net_conn_t* conn) {
-
+    cdk_net_connection_destroy(conn);
 }

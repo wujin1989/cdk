@@ -63,11 +63,11 @@ _Pragma("once")
 #endif
 #endif
 
-enum cdk_spliter_type_e {
-	SPLITER_TYPE_FIXED        ,
-	SPLITER_TYPE_TEXTPLAIN    ,
-	SPLITER_TYPE_BINARY       ,
-	SPLITER_TYPE_USER_DEFINED ,
+enum cdk_unpack_type_e {
+	UNPACK_TYPE_FIXEDLEN    ,
+	UNPACK_TYPE_DELIMITER   ,
+	UNPACK_TYPE_LENGTHFIELD ,
+	UNPACK_TYPE_USERDEFINED ,
 };
 
 enum cdk_rbtree_node_keytype_e {
@@ -98,8 +98,8 @@ typedef struct cdk_thrdpool_job_s        cdk_thrdpool_job_t;
 typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
 typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
-typedef enum   cdk_spliter_type_e        cdk_spliter_type_t;
-typedef struct cdk_spliter_s             cdk_spliter_t;
+typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
+typedef struct cdk_unpack_s              cdk_unpack_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
@@ -206,16 +206,16 @@ struct cdk_ringbuf_s {
 	uint32_t esz; /* entry size */
 };
 
-struct cdk_spliter_s {
-	cdk_spliter_type_t type;
+struct cdk_unpack_s {
+	cdk_unpack_type_t type;
 	union {
 		struct {
 			uint32_t len;
-		}fixed;
+		}fixedlen;
 
 		struct {
 			char delimiter[8];
-		}textplain;
+		}delimiter;
 
 		struct {
 			uint32_t  payload;   /* payload offset          */
@@ -226,18 +226,18 @@ struct cdk_spliter_s {
 				LEN_FIELD_VARINT,
 				LEN_FIELD_FIXEDINT
 			}coding;             /* length field coding     */
-		}binary;
+		}lengthfield;
 
 		struct {
-			void (*split)(cdk_net_conn_t* conn);
+			void (*unpack)(cdk_net_conn_t* conn);
 		}userdefined;
 	};
 };
 
 struct cdk_offset_buf_s {
 	void* buf;
-	uint32_t len;
-	uint32_t off;
+	ssize_t len;
+	ssize_t off;
 };
 
 struct cdk_addrinfo_s {
@@ -249,22 +249,21 @@ struct cdk_addrinfo_s {
 typedef struct cdk_poller_s {
 	cdk_pollfd_t pfd;
 	thrd_t tid;
-	cdk_list_node_t node;
 }cdk_poller_t;
 
 struct cdk_net_conn_s {
+	cdk_poller_t       poller;
 	cdk_sock_t         fd;
 	int                cmd;
 	cdk_net_handler_t* h;
 	int                type;
 	bool               active;
-	cdk_rbtree_t       owners;
 	mtx_t              txmtx;
 	union {
 		struct {
 			cdk_offset_buf_t rxbuf;
 			cdk_list_t       txlist;
-			cdk_spliter_t    splicer;
+			cdk_unpack_t     unpacker;
 		}tcp;
 		struct {
 			cdk_offset_buf_t rxbuf;
@@ -275,7 +274,6 @@ struct cdk_net_conn_s {
 			}peer;
 		}udp;
 	};
-	cdk_list_node_t n;
 };
 
 struct cdk_net_handler_s {
@@ -283,7 +281,7 @@ struct cdk_net_handler_s {
 	void (*on_connect)(cdk_net_conn_t*);
 	void (*on_read)   (cdk_net_conn_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_net_conn_t*, void* buf, size_t len);
-	void (*on_close)  (cdk_net_conn_t*);
+	void (*on_close)  (cdk_net_conn_t*, int err);
 };
 
 struct cdk_sha256_s {

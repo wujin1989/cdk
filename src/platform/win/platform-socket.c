@@ -21,6 +21,8 @@
 
 #include "cdk/cdk-types.h"
 
+static atomic_flag initialized = ATOMIC_FLAG_INIT;
+
 void platform_socket_nonblock(cdk_sock_t sock) {
 
     u_long on = 1;
@@ -188,17 +190,23 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
     return sock;
 }
 
-void platform_socket_startup(void) {
-
-    WSADATA  d;
-    if (WSAStartup(MAKEWORD(2, 2), &d)) {
-        abort();
+void platform_socket_startup(void)
+{
+    if (!atomic_flag_test_and_set(&initialized))
+    {
+        WSADATA  d;
+        if (WSAStartup(MAKEWORD(2, 2), &d)) {
+            abort();
+        }
     }
 }
 
-void platform_socket_cleanup(void) {
-
-    WSACleanup();
+void platform_socket_cleanup(void)
+{
+    if (atomic_flag_test_and_set(&initialized)) {
+        atomic_flag_clear(&initialized);
+        WSACleanup();
+    }
 }
 
 cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol) {
