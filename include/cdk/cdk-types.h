@@ -248,7 +248,7 @@ struct cdk_addrinfo_s {
 
 typedef struct cdk_poller_s {
 	cdk_pollfd_t pfd;
-	thrd_t tid;
+	cdk_tid_t tid;
 }cdk_poller_t;
 
 struct cdk_net_conn_s {
@@ -258,7 +258,8 @@ struct cdk_net_conn_s {
 	cdk_net_handler_t* h;
 	int                type;
 	bool               active;
-	mtx_t              txmtx;
+	bool               connected;
+	mtx_t              mtx;
 	union {
 		struct {
 			cdk_offset_buf_t rxbuf;
@@ -281,7 +282,7 @@ struct cdk_net_handler_s {
 	void (*on_connect)(cdk_net_conn_t*);
 	void (*on_read)   (cdk_net_conn_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_net_conn_t*, void* buf, size_t len);
-	void (*on_close)  (cdk_net_conn_t*, int err);
+	void (*on_close)  (cdk_net_conn_t*);
 };
 
 struct cdk_sha256_s {

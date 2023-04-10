@@ -27,7 +27,7 @@
 void platform_socket_nonblock(cdk_sock_t sock) {
 
     int flag = fcntl(sock, F_GETFL, 0);
-    if (flag) {
+    if (flag == -1) {
         abort();
     }
     if (fcntl(sock, F_SETFL, flag | O_NONBLOCK)) {
@@ -35,14 +35,14 @@ void platform_socket_nonblock(cdk_sock_t sock) {
     }
 }
 
-void platform_socket_recvbuf(cdk_sock_t sock, int val) {
+void platform_socket_set_recvbuf(cdk_sock_t sock, int val) {
 
     if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void*)&val, sizeof(int))) {
         abort();
     }
 }
 
-void platform_socket_sendbuf(cdk_sock_t sock, int val) {
+void platform_socket_set_sendbuf(cdk_sock_t sock, int val) {
 
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void*)&val, sizeof(int))) {
         abort();
@@ -265,7 +265,7 @@ void platform_socket_cleanup(void) {
 
 }
 
-cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict port, int protocol) {
+cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected) {
 
     int ret;
     cdk_sock_t sock;
@@ -291,23 +291,27 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
         if (sock == INVALID_SOCKET) {
             continue;
         }
+        platform_socket_nonblock(sock);
+
         if (protocol == SOCK_STREAM) {
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
-        }
-        platform_socket_nonblock(sock);
-        do {
-            ret = connect(sock, rp->ai_addr, rp->ai_addrlen);
-        } while (ret == -1 && errno == EINTR);
 
-        if (ret == -1) {
-            if (errno != EINPROGRESS) {
-                platform_socket_close(sock);
-                continue;
+            do {
+                ret = connect(sock, rp->ai_addr, rp->ai_addrlen);
+            } while (ret == -1 && errno == EINTR);
+            if (ret == -1) {
+                if (errno != EINPROGRESS) {
+                    platform_socket_close(sock);
+                    continue;
+                }
+                if (errno == EINPROGRESS) {
+                    break;
+                }
             }
-            if (errno == EINPROGRESS) {
-                break;
+            else {
+                *connected = true;
             }
         }
         break;

@@ -31,10 +31,10 @@ typedef struct inner_offset_buf_s {
     char buf[];
 }inner_offset_buf_t;
 
-extern cdk_net_conn_t* cdk_net_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler);
-extern void            cdk_net_connection_modify(cdk_net_conn_t* conn);
-extern void            cdk_net_connection_destroy(cdk_net_conn_t* conn);
-extern void            cdk_net_connection_process(cdk_net_conn_t* conn);
-extern void            cdk_net_connection_postaccept(cdk_net_conn_t* conn);
-extern void            cdk_net_connection_postrecv(cdk_net_conn_t* conn);
-extern void            cdk_net_connection_postsend(cdk_net_conn_t* conn);
+extern cdk_net_conn_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler);
+extern void            cdk_connection_modify(cdk_net_conn_t* conn);
+extern void            cdk_connection_destroy(cdk_net_conn_t* conn);
+extern void            cdk_connection_process(cdk_net_conn_t* conn);
+extern void            cdk_connection_postaccept(cdk_net_conn_t* conn);
+extern void            cdk_connection_postrecv(cdk_net_conn_t* conn);
+extern void            cdk_connection_postsend(cdk_net_conn_t* conn);

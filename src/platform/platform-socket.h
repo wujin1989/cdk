@@ -35,7 +35,7 @@ extern void        platform_socket_nonblock(cdk_sock_t sock);
 extern void        platform_socket_reuse_addr(cdk_sock_t sock);
 extern void        platform_socket_reuse_port(cdk_sock_t sock);
 extern cdk_sock_t  platform_socket_listen(const char* restrict host, const char* restrict port, int protocol);
-extern cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol);
+extern cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected);
 extern void        platform_socket_close(cdk_sock_t sock);
 extern int         platform_socket_af(cdk_sock_t sock);
 extern int         platform_socket_socktype(cdk_sock_t sock);

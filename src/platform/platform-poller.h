@@ -27,3 +27,4 @@ extern void          platform_poller_create(void);
 extern void          platform_poller_destroy(void);
 extern int           platform_poller_poll(void* arg);
 extern cdk_poller_t* platform_poller_retrieve(bool master);
+extern void          platform_poller_concurrent_slaves(int num);

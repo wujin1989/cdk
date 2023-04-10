@@ -17,8 +17,8 @@ set(CMAKE_C_STANDARD 11)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
-#add_executable(cdk-asyn-net "cdk-asyn-net.c")
-#target_link_libraries(cdk-asyn-net PUBLIC cdk Threads::Threads)
+add_executable(example-tcpserver "example-tcpserver.c")
+target_link_libraries(example-tcpserver PUBLIC cdk Threads::Threads)
 
 add_executable(example-rwlock "example-rwlock.c")
 target_link_libraries(example-rwlock PUBLIC cdk Threads::Threads)
@@ -26,14 +26,14 @@ target_link_libraries(example-rwlock PUBLIC cdk Threads::Threads)
 add_executable(example-spinlock "example-spinlock.c")
 target_link_libraries(example-spinlock PUBLIC cdk Threads::Threads)
 
-#add_executable(cdk-asyn-net-client "cdk-asyn-net-client.c")
-#target_link_libraries(cdk-asyn-net-client PUBLIC cdk Threads::Threads)
+add_executable(example-tcpclient "example-tcpclient.c")
+target_link_libraries(example-tcpclient PUBLIC cdk Threads::Threads)
 
-#add_executable(udp-client "udp-client.c")
-#target_link_libraries(udp-client PUBLIC cdk Threads::Threads)
+add_executable(example-udpclient "example-udpclient.c")
+target_link_libraries(example-udpclient PUBLIC cdk Threads::Threads)
 
-#add_executable(udp-server "udp-server.c")
-#target_link_libraries(udp-server PUBLIC cdk Threads::Threads)
+add_executable(example-udpserver "example-udpserver.c")
+target_link_libraries(example-udpserver PUBLIC cdk Threads::Threads)
 
 add_executable(example-rbtree "example-rbtree.c")
 target_link_libraries(example-rbtree PUBLIC cdk)

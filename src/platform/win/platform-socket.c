@@ -209,7 +209,7 @@ void platform_socket_cleanup(void)
     }
 }
 
-cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol) {
+cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected) {
 
     cdk_sock_t sock;
     struct addrinfo  hints;
@@ -234,21 +234,25 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
         if (sock == INVALID_SOCKET) {
             continue;
         }
+        platform_socket_nonblock(sock);
+
         if (protocol == SOCK_STREAM) {
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
-        }
-        platform_socket_nonblock(sock);
 
-        if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
+            if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
 
-            if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                platform_socket_close(sock);
-                continue;
+                if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                    platform_socket_close(sock);
+                    continue;
+                }
+                if (WSAGetLastError() == WSAEWOULDBLOCK) {
+                    break;
+                }
             }
-            if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                break;
+            else {
+                *connected = true;
             }
         }
         break;

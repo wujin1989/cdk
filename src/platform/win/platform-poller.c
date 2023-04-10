@@ -21,9 +21,11 @@
 
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
-#include "net/cdk-net-connection.h"
+#include "net/cdk-connection.h"
 #include "cdk/deprecated/c11-threads.h"
 #include "cdk/container/cdk-list.h"
+#include "cdk/cdk-timer.h"
+#include "cdk/cdk-utils.h"
 #include "wepoll/wepoll.h"
 
 static atomic_flag once_create = ATOMIC_FLAG_INIT;
@@ -31,6 +33,7 @@ static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
 static cdk_poller_t* pollers;
 static atomic_size_t nslaves;
 static atomic_size_t idx;
+cdk_timer_t timer;
 
 cdk_poller_t* platform_poller_retrieve(bool master)
 {
@@ -40,14 +43,14 @@ cdk_poller_t* platform_poller_retrieve(bool master)
     if (atomic_load(&idx) == atomic_load(&nslaves)) {
         atomic_store(&idx, 0);
     }
-    return (pollers + (atomic_fetch_add(&idx, 1) % atomic_load(&nslaves)));
+    return (pollers + 1 + (atomic_fetch_add(&idx, 1) % atomic_load(&nslaves)));
 }
 
 int platform_poller_poll(void* arg) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS];
 
     cdk_poller_t* poller = arg;
-    poller->tid = thrd_current();
+    poller->tid = cdk_utils_systemtid();
 
     while (true)
     {
@@ -55,7 +58,7 @@ int platform_poller_poll(void* arg) {
         for (int i = 0; i < nevents; i++)
         {
             cdk_net_conn_t* conn = events[i].ptr;
-            cdk_net_connection_process(conn);
+            cdk_connection_process(conn);
         }
     }
     return 0;
@@ -66,6 +69,9 @@ void platform_poller_create(void)
     if (atomic_flag_test_and_set(&once_create)) {
         return;
     }
+    cdk_timer_create(&timer, 1);
+    atomic_init(&idx, 0);
+
     pollers = malloc(sizeof(cdk_poller_t) * (atomic_load(&nslaves) + 1));
     if (pollers) {
         memset(pollers, 0, sizeof(cdk_poller_t) * (atomic_load(&nslaves) + 1));
@@ -91,4 +97,8 @@ void platform_poller_destroy(void)
     }
     free(pollers);
     pollers = NULL;
+}
+
+void platform_poller_concurrent_slaves(int num) {
+    atomic_init(&nslaves, num);
 }

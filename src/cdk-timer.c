@@ -65,25 +65,26 @@ void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32
 	key.u64 = timebase + expire;
 
 	job = malloc(sizeof(timer_job_t));
+	if (job) {
+		job->routine = routine;
+		job->arg = arg;
+		job->repeat = repeat;
 
-	job->routine = routine;
-	job->arg = arg;
-	job->repeat = repeat;
+		node = cdk_rbtree_find(&timer->rbtree, key);
 
-	node = cdk_rbtree_find(&timer->rbtree, key);
-
-	if (node) {
-		jobs = cdk_rbtree_data(node, timer_jobqueue_t, n);
-		cdk_queue_enqueue(&jobs->jobs, &job->n);
-	}
-	else {
-		jobs = malloc(sizeof(timer_jobqueue_t));
-		if (jobs) {
-			jobs->timebase = timebase;
-			jobs->n.rb_key = key;
-			cdk_queue_init(&jobs->jobs);
+		if (node) {
+			jobs = cdk_rbtree_data(node, timer_jobqueue_t, n);
 			cdk_queue_enqueue(&jobs->jobs, &job->n);
-			__timer_post(timer, jobs);
+		}
+		else {
+			jobs = malloc(sizeof(timer_jobqueue_t));
+			if (jobs) {
+				jobs->timebase = timebase;
+				jobs->n.rb_key = key;
+				cdk_queue_init(&jobs->jobs);
+				cdk_queue_enqueue(&jobs->jobs, &job->n);
+				__timer_post(timer, jobs);
+			}
 		}
 	}
 	mtx_unlock(&timer->rbmtx);

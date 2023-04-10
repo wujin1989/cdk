@@ -23,7 +23,7 @@
 #include "cdk/cdk-utils.h"
 #include "cdk/encoding/cdk-varint.h"
 
-static void __net_unpack_fixedlen(cdk_net_conn_t* conn) {
+static void __unpack_fixedlen(cdk_net_conn_t* conn) {
 
 	char* head = conn->tcp.rxbuf.buf;
 	char* tail = (char*)conn->tcp.rxbuf.buf + conn->tcp.rxbuf.off;
@@ -51,7 +51,7 @@ static void __net_unpack_fixedlen(cdk_net_conn_t* conn) {
 	return;
 }
 
-static void __net_unpack_delimiter(cdk_net_conn_t* conn) {
+static void __unpack_delimiter(cdk_net_conn_t* conn) {
 
 	char* head = conn->tcp.rxbuf.buf;
 	char* tail = (char*)conn->tcp.rxbuf.buf + conn->tcp.rxbuf.off;
@@ -112,7 +112,7 @@ static void __net_unpack_delimiter(cdk_net_conn_t* conn) {
 	return;
 }
 
-static void __net_unpack_lengthfield(cdk_net_conn_t* conn) {
+static void __unpack_lengthfield(cdk_net_conn_t* conn) {
 
 	uint32_t fs; /* frame size   */
 	uint32_t hs; /* header size  */
@@ -172,29 +172,29 @@ static void __net_unpack_lengthfield(cdk_net_conn_t* conn) {
 	return;
 }
 
-static void __net_unpack_userdefined(cdk_net_conn_t* conn) {
+static void __unpack_userdefined(cdk_net_conn_t* conn) {
 
 	conn->tcp.unpacker.userdefined.unpack(conn);
 }
 
-void cdk_net_unpack(cdk_net_conn_t* conn) {
+void cdk_unpack(cdk_net_conn_t* conn) {
 
 	switch (conn->tcp.unpacker.type)
 	{
 	case UNPACK_TYPE_FIXEDLEN: {
-		__net_unpack_fixedlen(conn);
+		__unpack_fixedlen(conn);
 		break;
 	}
 	case UNPACK_TYPE_DELIMITER: {
-		__net_unpack_delimiter(conn);
+		__unpack_delimiter(conn);
 		break;
 	}
 	case UNPACK_TYPE_LENGTHFIELD: {
-		__net_unpack_lengthfield(conn);
+		__unpack_lengthfield(conn);
 		break;
 	}
 	case UNPACK_TYPE_USERDEFINED: {
-		__net_unpack_userdefined(conn);
+		__unpack_userdefined(conn);
 		break;
 	}
 	default:
