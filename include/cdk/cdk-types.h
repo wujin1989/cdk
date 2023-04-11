@@ -101,6 +101,7 @@ typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
 typedef struct cdk_unpack_s              cdk_unpack_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
+typedef struct cdk_txlist_node_s         cdk_txlist_node_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
@@ -240,6 +241,13 @@ struct cdk_offset_buf_s {
 	ssize_t off;
 };
 
+struct cdk_txlist_node_s {
+	cdk_list_node_t n;
+	size_t len;
+	size_t off;
+	char buf[];
+};
+
 struct cdk_addrinfo_s {
 	uint16_t    f;
 	char        a[INET6_ADDRSTRLEN];
@@ -282,6 +290,7 @@ struct cdk_net_handler_s {
 	void (*on_connect)(cdk_net_conn_t*);
 	void (*on_read)   (cdk_net_conn_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_net_conn_t*, void* buf, size_t len);
+	void (*on_error)  (cdk_net_conn_t*, int error);
 	void (*on_close)  (cdk_net_conn_t*);
 };
 

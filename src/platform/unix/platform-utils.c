@@ -42,3 +42,7 @@ int platform_utils_cpus(void) {
 
 	return (int)sysconf(_SC_NPROCESSORS_ONLN);
 }
+
+int platform_utils_getlasterror(void) {
+	return errno;
+}

@@ -22,11 +22,11 @@
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
 #include "platform/platform-poller.h"
-#include "net/cdk-connection.h"
 #include "cdk/container/cdk-list.h"
+#include "cdk-connection.h"
 #include "cdk/cdk-timer.h"
 
-extern cdk_timer_t timer;
+cdk_timer_t timer;
 
 static void __connect_timeout(void* param) {
     cdk_net_conn_t* conn = param;
@@ -207,18 +207,18 @@ void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
 
     mtx_lock(&conn->mtx);
     if (conn->active) {
-        inner_offset_buf_t* buffer = malloc(sizeof(inner_offset_buf_t) + size);
-        if (buffer) {
-            memset(buffer, 0, sizeof(inner_offset_buf_t) + size);
-            memcpy(buffer->buf, data, size);
-            buffer->len = size;
-            buffer->off = 0;
+        cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
+        if (node) {
+            memset(node, 0, sizeof(cdk_txlist_node_t) + size);
+            memcpy(node->buf, data, size);
+            node->len = size;
+            node->off = 0;
 
             if (conn->type == SOCK_STREAM) {
-                cdk_list_insert_tail(&(conn->tcp.txlist), &(buffer->n));
+                cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
             }
             if (conn->type == SOCK_DGRAM) {
-                cdk_list_insert_tail(&(conn->udp.txlist), &(buffer->n));
+                cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
             }
             cdk_connection_postsend(conn);
         }

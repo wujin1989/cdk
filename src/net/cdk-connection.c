@@ -21,176 +21,35 @@
 
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
-#include "platform/platform-poller.h"
-#include "cdk/container/cdk-rbtree.h"
+#include "platform/platform-connection.h"
 #include "cdk/container/cdk-list.h"
 #include "cdk-connection.h"
-#include "cdk-unpack.h"
 #include "cdk/cdk-timer.h"
-
-#define MAX_IOBUF_SIZE 4096
 
 extern cdk_timer_t timer;
 
-static void __conn_destroy(void* param) {
+static void __connection_handle_accept(cdk_net_conn_t* conn) {
+    platform_connection_accept(conn);
+}
+
+static void __connection_handle_recv(cdk_net_conn_t* conn) {
+    platform_connection_recv(conn);
+}
+
+static void __connection_handle_send(cdk_net_conn_t* conn) {
+    platform_connection_send(conn);
+}
+
+static void __connection_handle_connect(cdk_net_conn_t* conn) {
+    platform_connection_connect(conn);
+}
+
+static void __connection_destroy(void* param) {
     cdk_net_conn_t* conn = param;
 
     mtx_destroy(&conn->mtx);
     free(conn);
     conn = NULL;
-}
-
-void cdk_connection_postaccept(cdk_net_conn_t* conn) {
-    conn->cmd = PLATFORM_EVENT_A;
-    cdk_connection_modify(conn);
-}
-
-void cdk_connection_postrecv(cdk_net_conn_t* conn) {
-    conn->cmd = PLATFORM_EVENT_R;
-    cdk_connection_modify(conn);
-}
-
-void cdk_connection_postsend(cdk_net_conn_t* conn) {
-    conn->cmd = PLATFORM_EVENT_W;
-    cdk_connection_modify(conn);
-}
-
-static void __connection_handle_accept(cdk_net_conn_t* conn) {
-    cdk_sock_t cli = platform_socket_accept(conn->fd);
-    if (cli == -1) {
-        if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-            conn->h->on_close(conn);
-        }
-        if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-            cdk_connection_postaccept(conn);
-        }
-        return;
-    }
-    cdk_net_conn_t* nconn = cdk_connection_create(platform_poller_retrieve(false), cli, PLATFORM_EVENT_R, conn->h);
-    conn->h->on_accept(nconn);
-    return;
-}
-
-static void __connection_handle_recv(cdk_net_conn_t* conn) {
-    ssize_t n;
-
-    if (conn->type == SOCK_STREAM) {
-        n = platform_socket_recv(conn->fd, (char*)(conn->tcp.rxbuf.buf) + conn->tcp.rxbuf.off, MAX_IOBUF_SIZE);
-
-        if (n == -1) {
-            if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                conn->h->on_close(conn);
-            }
-            if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-                cdk_connection_postrecv(conn);
-            }
-            return;
-        }
-        if (n == 0) {
-            conn->h->on_close(conn);
-            return;
-        }
-        conn->tcp.rxbuf.off += n;
-        cdk_unpack(conn);
-    }
-    if (conn->type == SOCK_DGRAM) {
-
-        conn->udp.peer.sslen = sizeof(struct sockaddr_storage);
-        n = platform_socket_recvfrom(conn->fd, conn->udp.rxbuf.buf, MAX_IOBUF_SIZE, &conn->udp.peer.ss, &conn->udp.peer.sslen);
-
-        if (n == -1) {
-            if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                conn->h->on_close(conn);
-            }
-            if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-                cdk_connection_postrecv(conn);
-            }
-            return;
-        }
-        conn->h->on_read(conn, conn->udp.rxbuf.buf, n);
-    }
-    return;
-}
-
-static void __connection_handle_connect(cdk_net_conn_t* conn) {
-    int err;
-    socklen_t len;
-    len = sizeof(int);
-    getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
-    if (err) {
-        conn->h->on_close(conn);
-    }
-    else {
-        conn->connected = true;
-        conn->h->on_connect(conn);
-    }
-}
-
-static void __connection_handle_send(cdk_net_conn_t* conn) {
-    if (conn->type == SOCK_STREAM) {
-        mtx_lock(&conn->mtx);
-        while (!cdk_list_empty(&(conn->tcp.txlist))) {
-
-            inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->tcp.txlist)), inner_offset_buf_t, n);
-            mtx_unlock(&conn->mtx);
-
-            while (e->off < e->len) {
-                ssize_t n = platform_socket_send(conn->fd, e->buf + e->off, (int)(e->len - e->off));
-                if (n == -1) {
-                    if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                        conn->h->on_close(conn);
-                    }
-                    if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-                        cdk_connection_postsend(conn);
-                    }
-                    return;
-                }
-                if (n == 0) {
-                    conn->h->on_close(conn);
-                    return;
-                }
-                e->off += n;
-            }
-            conn->h->on_write(conn, e->buf, e->len);
-            mtx_lock(&conn->mtx);
-            cdk_list_remove(&(e->n));
-            mtx_unlock(&conn->mtx);
-            free(e);
-            e = NULL;
-        }
-        mtx_unlock(&conn->mtx);
-    }
-    if (conn->type == SOCK_DGRAM) {
-        mtx_lock(&conn->mtx);
-        while (!cdk_list_empty(&(conn->udp.txlist))) {
-
-            inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->udp.txlist)), inner_offset_buf_t, n);
-            mtx_unlock(&conn->mtx);
-
-            ssize_t n = platform_socket_sendto(conn->fd, e->buf, (int)e->len, &(conn->udp.peer.ss), conn->udp.peer.sslen);
-            if (n == -1) {
-                if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                    conn->h->on_close(conn);
-                }
-                if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-                    cdk_connection_postsend(conn);
-                }
-                return;
-            }
-            if (n == 0) {
-                conn->h->on_close(conn);
-                return;
-            }
-            conn->h->on_write(conn, e->buf, e->len);
-            mtx_lock(&conn->mtx);
-            cdk_list_remove(&(e->n));
-            mtx_unlock(&conn->mtx);
-            free(e);
-            e = NULL;
-        }
-        mtx_unlock(&conn->mtx);
-    }
-    return;
 }
 
 cdk_net_conn_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler)
@@ -235,6 +94,21 @@ void cdk_connection_modify(cdk_net_conn_t* conn) {
     platform_event_mod(conn->poller.pfd, conn->fd, conn->cmd, conn);
 }
 
+void cdk_connection_postaccept(cdk_net_conn_t* conn) {
+    conn->cmd = PLATFORM_EVENT_A;
+    cdk_connection_modify(conn);
+}
+
+void cdk_connection_postrecv(cdk_net_conn_t* conn) {
+    conn->cmd = PLATFORM_EVENT_R;
+    cdk_connection_modify(conn);
+}
+
+void cdk_connection_postsend(cdk_net_conn_t* conn) {
+    conn->cmd = PLATFORM_EVENT_W;
+    cdk_connection_modify(conn);
+}
+
 void cdk_connection_destroy(cdk_net_conn_t* conn)
 {
     mtx_lock(&conn->mtx);
@@ -249,7 +123,7 @@ void cdk_connection_destroy(cdk_net_conn_t* conn)
         conn->tcp.rxbuf.buf = NULL;
 
         while (!cdk_list_empty(&(conn->tcp.txlist))) {
-            inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->tcp.txlist)), inner_offset_buf_t, n);
+            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(conn->tcp.txlist)), cdk_txlist_node_t, n);
             cdk_list_remove(&(e->n));
             free(e);
             e = NULL;
@@ -260,7 +134,7 @@ void cdk_connection_destroy(cdk_net_conn_t* conn)
         conn->udp.rxbuf.buf = NULL;
 
         while (!cdk_list_empty(&(conn->udp.txlist))) {
-            inner_offset_buf_t* e = cdk_list_data(cdk_list_head(&(conn->udp.txlist)), inner_offset_buf_t, n);
+            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(conn->udp.txlist)), cdk_txlist_node_t, n);
             cdk_list_remove(&(e->n));
             free(e);
             e = NULL;
@@ -268,7 +142,7 @@ void cdk_connection_destroy(cdk_net_conn_t* conn)
     }
     mtx_unlock(&conn->mtx);
 
-    cdk_timer_add(&timer, __conn_destroy, conn, 5000, false);
+    cdk_timer_add(&timer, __connection_destroy, conn, 5000, false);
 }
 
 void cdk_connection_process(cdk_net_conn_t* conn)

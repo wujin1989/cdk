@@ -21,8 +21,6 @@
 
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
-#include "net/cdk-connection.h"
-#include "cdk/deprecated/c11-threads.h"
 #include "cdk/container/cdk-list.h"
 #include "cdk/cdk-utils.h"
 #include "cdk/cdk-timer.h"
@@ -32,7 +30,9 @@ static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
 static cdk_poller_t* pollers;
 static atomic_size_t nslaves;
 static atomic_size_t idx;
-cdk_timer_t timer;
+extern cdk_timer_t timer;
+
+extern void cdk_connection_process(cdk_net_conn_t* conn);
 
 cdk_poller_t* platform_poller_retrieve(bool master)
 {

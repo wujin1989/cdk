@@ -23,6 +23,7 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern int        platform_utils_cpus(void);
-extern cdk_tid_t  platform_utils_systemtid(void);
-extern int        platform_utils_getlasterror(void);
+extern void platform_connection_recv(cdk_net_conn_t* conn);
+extern void platform_connection_send(cdk_net_conn_t* conn);
+extern void platform_connection_accept(cdk_net_conn_t* conn);
+extern void platform_connection_connect(cdk_net_conn_t* conn);
