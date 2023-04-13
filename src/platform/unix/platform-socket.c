@@ -330,6 +330,7 @@ int platform_socket_socktype(cdk_sock_t sock) {
 
     len = sizeof(int);
     if (getsockopt(sock, SOL_SOCKET, SO_TYPE, &socktype, (socklen_t*)&len)) {
+        perror("error");
         abort();
     }
     return socktype;
@@ -373,4 +374,8 @@ ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sock
     } while (n == -1 && errno == EINTR);
 
     return n;
+}
+
+int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]) {
+    return socketpair(AF_LOCAL, type, protocol, socks);
 }

@@ -31,7 +31,6 @@ enum {
 	PLATFORM_EVENT_W,
 	PLATFORM_EVENT_A,
 	PLATFORM_EVENT_C,
-	PLATFORM_EVENT_U,
 };
 
 typedef struct cdk_pollevent_s {

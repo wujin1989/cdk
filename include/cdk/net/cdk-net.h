@@ -35,6 +35,7 @@ extern cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const ch
 extern void            cdk_net_poll(void);
 extern void            cdk_net_postrecv(cdk_net_conn_t* conn);
 extern void            cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size);
+extern void            cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event);
 extern void            cdk_net_close(cdk_net_conn_t* conn);
 extern void            cdk_net_setup_unpacker(cdk_net_conn_t* conn, cdk_unpack_t* unpacker);
 extern void            cdk_net_concurrent_slaves(int num);

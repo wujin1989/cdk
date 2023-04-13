@@ -22,17 +22,54 @@
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
 #include "platform/platform-poller.h"
+#include "platform/platform-connection.h"
 #include "cdk/container/cdk-list.h"
+#include "cdk/net/cdk-net.h"
 #include "cdk-connection.h"
 #include "cdk/cdk-timer.h"
+#include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
+static atomic_flag timer_once_create = ATOMIC_FLAG_INIT;
+static atomic_flag timer_once_destroy = ATOMIC_FLAG_INIT;
+static atomic_flag one_master_poll = ATOMIC_FLAG_INIT;
 
-static void __connect_timeout(void* param) {
-    cdk_net_conn_t* conn = param;
-    if (!conn->connected) {
-        cdk_connection_destroy(conn);
+typedef struct ctx_s {
+    cdk_net_conn_t* conn;
+    cdk_txlist_node_t* node;
+}ctx_t;
+
+static void __timer_create(void) {
+    if (atomic_flag_test_and_set(&timer_once_create)) {
+        return;
     }
+    cdk_timer_create(&timer, 1);
+}
+
+static void __timer_destroy(void) {
+    if (atomic_flag_test_and_set(&timer_once_destroy)) {
+        return;
+    }
+    cdk_timer_destroy(&timer);
+}
+
+static void __postsend(void* param) {
+    ctx_t* pctx = param;
+    ctx_t ctx = *pctx;
+
+    free(pctx);
+    pctx = NULL;
+
+    cdk_net_conn_t* conn = ctx.conn;
+    cdk_txlist_node_t* node = ctx.node;
+
+    if (conn->type == SOCK_STREAM) {
+        cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
+    }
+    if (conn->type == SOCK_DGRAM) {
+        cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
+    }
+    cdk_connection_postsend(conn);
 }
 
 static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
@@ -131,6 +168,7 @@ cdk_net_conn_t* cdk_net_listen(const char* type, const char* host, const char* p
 
     platform_socket_startup();
     platform_poller_create();
+    __timer_create();
 
     if (!strncmp(type, "tcp", strlen("tcp")))
     {
@@ -157,7 +195,8 @@ cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* por
 
     platform_socket_startup();
     platform_poller_create();
-
+    __timer_create();
+    
     memset(&ai, 0, sizeof(cdk_addrinfo_t));
     memset(&ss, 0, sizeof(struct sockaddr_storage));
 
@@ -166,19 +205,27 @@ cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* por
         sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
         if (connected) {
             conn = cdk_connection_create(platform_poller_retrieve(false), sock, PLATFORM_EVENT_W, handler);
-            conn->connected = true;
+            if (!conn) {
+                return NULL;
+            }
+            conn->tcp.connected = true;
             conn->h->on_connect(conn);
         }
         else {
             conn = cdk_connection_create(platform_poller_retrieve(false), sock, PLATFORM_EVENT_C, handler);
-            cdk_timer_add(&timer, __connect_timeout, conn, timeout, false);
+            if (!conn) {
+                return NULL;
+            }
+            cdk_timer_add(&timer, platform_connection_connect_timeout, conn, timeout, false);
         }
     }
     if (!strncmp(type, "udp", strlen("udp"))) {
 
         sock = platform_socket_dial(host, port, SOCK_DGRAM, NULL);
         conn = cdk_connection_create(platform_poller_retrieve(false), sock, PLATFORM_EVENT_W, handler);
-
+        if (!conn) {
+            return NULL;
+        }
         memcpy(ai.a, host, strlen(host));
         ai.p = (uint16_t)strtoul(port, NULL, 10);
         ai.f = cdk_net_af(sock);
@@ -193,8 +240,11 @@ cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* por
 
 void cdk_net_poll(void) {
 
+    if (atomic_flag_test_and_set(&one_master_poll)) {
+        return;
+    }
     platform_poller_poll(platform_poller_retrieve(true));
-    cdk_timer_destroy(&timer);
+    __timer_destroy();
     platform_poller_destroy();
     platform_socket_cleanup();
 }
@@ -205,25 +255,38 @@ void cdk_net_postrecv(cdk_net_conn_t* conn) {
 
 void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
 
-    mtx_lock(&conn->mtx);
-    if (conn->active) {
-        cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
-        if (node) {
-            memset(node, 0, sizeof(cdk_txlist_node_t) + size);
-            memcpy(node->buf, data, size);
-            node->len = size;
-            node->off = 0;
-
-            if (conn->type == SOCK_STREAM) {
-                cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
-            }
-            if (conn->type == SOCK_DGRAM) {
-                cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
-            }
-            cdk_connection_postsend(conn);
-        }
+    cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
+    if (!node) {
+        return;
     }
-    mtx_unlock(&conn->mtx);
+	memset(node, 0, sizeof(cdk_txlist_node_t) + size);
+	memcpy(node->buf, data, size);
+	node->len = size;
+	node->off = 0;
+
+	if (conn->poller->tid != cdk_utils_systemtid()) {
+
+		ctx_t* pctx = malloc(sizeof(ctx_t));
+		if (pctx) {
+			pctx->conn = conn;
+			pctx->node = node;
+		}
+		cdk_event_t* e = malloc(sizeof(cdk_event_t));
+		if (e) {
+			e->cb = __postsend;
+			e->arg = pctx;
+			cdk_net_postevent(conn->poller, e);
+		}
+	}
+	else {
+		if (conn->type == SOCK_STREAM) {
+			cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
+		}
+		if (conn->type == SOCK_DGRAM) {
+			cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
+		}
+		cdk_connection_postsend(conn);
+	}
 }
 
 void cdk_net_close(cdk_net_conn_t* conn) {
@@ -236,4 +299,12 @@ void cdk_net_setup_unpacker(cdk_net_conn_t* conn, cdk_unpack_t* unpacker) {
 
 void cdk_net_concurrent_slaves(int num) {
     platform_poller_concurrent_slaves(num);
+}
+
+void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event) {
+    mtx_lock(&poller->evmtx);
+    cdk_list_insert_tail(&poller->evlist, &event->node);
+    int hardcode = 1;
+    platform_socket_send(poller->evfds[0], &hardcode, sizeof(int));
+    mtx_unlock(&poller->evmtx);
 }

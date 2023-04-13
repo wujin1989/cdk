@@ -294,3 +294,53 @@ ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sock
 
     return sendto(sock, buf, size, 0, (struct sockaddr*)ss, len);
 }
+
+int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2])
+{
+    SOCKADDR_IN addr;
+    SOCKET srv;
+    SOCKET cli;
+    socklen_t addrlen = sizeof(addr);
+
+    if (type != SOCK_STREAM || protocol != 0) {
+        return -1;
+    }
+    srv = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (srv == INVALID_SOCKET) {
+        return -1;
+    }
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+    if (bind(srv, (SOCKADDR*)&addr, addrlen) == SOCKET_ERROR) {
+        closesocket(srv);
+        return -1;
+    }
+    if (getsockname(srv, (SOCKADDR*)&addr, &addrlen) == SOCKET_ERROR) {
+        closesocket(srv);
+        return -1;
+    }
+    if (listen(srv, 1) == SOCKET_ERROR) {
+        closesocket(srv);
+        return -1;
+    }
+    cli = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (cli == INVALID_SOCKET) {
+        closesocket(srv);
+        return -1;
+    }
+    if (connect(cli, (SOCKADDR*)&addr, addrlen) == SOCKET_ERROR) {
+        closesocket(srv);
+        closesocket(cli);
+        return -1;
+    }
+    socks[0] = accept(srv, NULL, NULL);
+    if (socks[0] == INVALID_SOCKET) {
+        closesocket(srv);
+        closesocket(cli);
+        return -1;
+    }
+    closesocket(srv);
+    socks[1] = cli;
+    return 0;
+}

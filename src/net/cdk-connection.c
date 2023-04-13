@@ -25,6 +25,8 @@
 #include "cdk/container/cdk-list.h"
 #include "cdk-connection.h"
 #include "cdk/cdk-timer.h"
+#include "cdk/net/cdk-net.h"
+#include "cdk/container/cdk-rbtree.h"
 
 extern cdk_timer_t timer;
 
@@ -46,8 +48,6 @@ static void __connection_handle_connect(cdk_net_conn_t* conn) {
 
 static void __connection_destroy(void* param) {
     cdk_net_conn_t* conn = param;
-
-    mtx_destroy(&conn->mtx);
     free(conn);
     conn = NULL;
 }
@@ -57,16 +57,17 @@ cdk_net_conn_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int
     cdk_net_conn_t* conn = malloc(sizeof(cdk_net_conn_t));
 
     if (conn) {
-        conn->poller = *poller;
+        memset(conn, 0, sizeof(cdk_net_conn_t));
+        conn->poller = poller;
         conn->cmd = cmd;
         conn->fd = sock;
         conn->h = handler;
         conn->type = platform_socket_socktype(sock);
         conn->active = true;
-        conn->connected = false;
-        mtx_init(&conn->mtx, mtx_plain);
-
+        cdk_rbtree_init(&conn->owners, RB_KEYTYPE_INT64);
+        
         if (conn->type == SOCK_STREAM) {
+            conn->tcp.connected = false;
             conn->tcp.rxbuf.len = MAX_IOBUF_SIZE;
             conn->tcp.rxbuf.off = 0;
             conn->tcp.rxbuf.buf = malloc(MAX_IOBUF_SIZE);
@@ -91,7 +92,7 @@ cdk_net_conn_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int
 }
 
 void cdk_connection_modify(cdk_net_conn_t* conn) {
-    platform_event_mod(conn->poller.pfd, conn->fd, conn->cmd, conn);
+    platform_event_mod(conn->poller->pfd, conn->fd, conn->cmd, conn);
 }
 
 void cdk_connection_postaccept(cdk_net_conn_t* conn) {
@@ -111,14 +112,14 @@ void cdk_connection_postsend(cdk_net_conn_t* conn) {
 
 void cdk_connection_destroy(cdk_net_conn_t* conn)
 {
-    mtx_lock(&conn->mtx);
-
-    platform_event_del(conn->poller.pfd, conn->fd);
-    platform_socket_close(conn->fd);
-
     conn->active = false;
 
+    platform_event_del(conn->poller->pfd, conn->fd);
+    platform_socket_close(conn->fd);
+
     if (conn->type == SOCK_STREAM) {
+        conn->tcp.connected = false;
+
         free(conn->tcp.rxbuf.buf);
         conn->tcp.rxbuf.buf = NULL;
 
@@ -140,9 +141,13 @@ void cdk_connection_destroy(cdk_net_conn_t* conn)
             e = NULL;
         }
     }
-    mtx_unlock(&conn->mtx);
+    cdk_event_t* e = malloc(sizeof(cdk_event_t));
+    if (e) {
+        e->cb = __connection_destroy;
+        e->arg = conn;
 
-    cdk_timer_add(&timer, __connection_destroy, conn, 5000, false);
+        cdk_net_postevent(conn->poller, e);
+    }
 }
 
 void cdk_connection_process(cdk_net_conn_t* conn)

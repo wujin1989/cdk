@@ -103,6 +103,8 @@ typedef struct cdk_unpack_s              cdk_unpack_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_txlist_node_s         cdk_txlist_node_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
+typedef struct cdk_poller_s              cdk_poller_t;
+typedef struct cdk_event_s               cdk_event_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
@@ -254,22 +256,31 @@ struct cdk_addrinfo_s {
 	uint16_t    p;
 };
 
-typedef struct cdk_poller_s {
+struct cdk_poller_s {
 	cdk_pollfd_t pfd;
 	cdk_tid_t tid;
-}cdk_poller_t;
+	cdk_sock_t evfds[2];
+	cdk_list_t evlist;
+	mtx_t evmtx;
+};
+
+struct cdk_event_s {
+	void (*cb)(void* arg);
+	void* arg;
+	cdk_list_node_t node;
+};
 
 struct cdk_net_conn_s {
-	cdk_poller_t       poller;
+	cdk_poller_t*      poller;
 	cdk_sock_t         fd;
 	int                cmd;
 	cdk_net_handler_t* h;
 	int                type;
 	bool               active;
-	bool               connected;
-	mtx_t              mtx;
+	cdk_rbtree_t       owners;
 	union {
 		struct {
+			bool             connected;
 			cdk_offset_buf_t rxbuf;
 			cdk_list_t       txlist;
 			cdk_unpack_t     unpacker;
@@ -286,11 +297,12 @@ struct cdk_net_conn_s {
 };
 
 struct cdk_net_handler_s {
-	void (*on_accept) (cdk_net_conn_t*);
-	void (*on_connect)(cdk_net_conn_t*);
 	void (*on_read)   (cdk_net_conn_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_net_conn_t*, void* buf, size_t len);
 	void (*on_error)  (cdk_net_conn_t*, int error);
+	/** tcp only */
+	void (*on_accept) (cdk_net_conn_t*);
+	void (*on_connect)(cdk_net_conn_t*);
 	void (*on_close)  (cdk_net_conn_t*);
 };
 

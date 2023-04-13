@@ -27,3 +27,4 @@ extern void platform_connection_recv(cdk_net_conn_t* conn);
 extern void platform_connection_send(cdk_net_conn_t* conn);
 extern void platform_connection_accept(cdk_net_conn_t* conn);
 extern void platform_connection_connect(cdk_net_conn_t* conn);
+extern void platform_connection_connect_timeout(void* param);

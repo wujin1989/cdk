@@ -26,6 +26,15 @@
 #include "cdk/container/cdk-list.h"
 #include "net/cdk-connection.h"
 #include "net/cdk-unpack.h"
+#include "cdk/net/cdk-net.h"
+
+void __wrapper_cb(void* param) {
+    cdk_net_conn_t* conn = param;
+
+    if (!conn->tcp.connected) {
+        conn->h->on_error(conn, WSAETIMEDOUT);
+    }
+}
 
 void platform_connection_recv(cdk_net_conn_t* conn) {
     ssize_t n;
@@ -71,12 +80,9 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
 void platform_connection_send(cdk_net_conn_t* conn)
 {
     if (conn->type == SOCK_STREAM) {
-        mtx_lock(&conn->mtx);
         while (!cdk_list_empty(&(conn->tcp.txlist))) {
-
             cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(conn->tcp.txlist)), cdk_txlist_node_t, n);
-            mtx_unlock(&conn->mtx);
-
+            
             while (e->off < e->len) {
                 ssize_t n = platform_socket_send(conn->fd, e->buf + e->off, (int)(e->len - e->off));
                 if (n == -1) {
@@ -95,20 +101,14 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 e->off += n;
             }
             conn->h->on_write(conn, e->buf, e->len);
-            mtx_lock(&conn->mtx);
             cdk_list_remove(&(e->n));
-            mtx_unlock(&conn->mtx);
             free(e);
             e = NULL;
         }
-        mtx_unlock(&conn->mtx);
     }
     if (conn->type == SOCK_DGRAM) {
-        mtx_lock(&conn->mtx);
         while (!cdk_list_empty(&(conn->udp.txlist))) {
-
             cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(conn->udp.txlist)), cdk_txlist_node_t, n);
-            mtx_unlock(&conn->mtx);
 
             ssize_t n = platform_socket_sendto(conn->fd, e->buf, (int)e->len, &(conn->udp.peer.ss), conn->udp.peer.sslen);
             if (n == -1) {
@@ -121,13 +121,10 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 return;
             }
             conn->h->on_write(conn, e->buf, e->len);
-            mtx_lock(&conn->mtx);
             cdk_list_remove(&(e->n));
-            mtx_unlock(&conn->mtx);
             free(e);
             e = NULL;
         }
-        mtx_unlock(&conn->mtx);
     }
     return;
 }
@@ -152,12 +149,25 @@ void platform_connection_connect(cdk_net_conn_t* conn) {
     int err;
     socklen_t len;
     len = sizeof(int);
+  
     getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
         conn->h->on_error(conn, platform_utils_getlasterror());
     }
     else {
-        conn->connected = true;
+        conn->tcp.connected = true;
         conn->h->on_connect(conn);
+    }
+}
+
+void platform_connection_connect_timeout(void* param) {
+    cdk_net_conn_t* conn = param;
+
+    cdk_event_t* e = malloc(sizeof(cdk_event_t));
+    if (e) {
+        e->cb = __wrapper_cb;
+        e->arg = conn;
+
+        cdk_net_postevent(conn->poller, e);
     }
 }
