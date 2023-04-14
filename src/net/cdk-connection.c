@@ -48,6 +48,8 @@ static void __connection_handle_connect(cdk_net_conn_t* conn) {
 
 static void __connection_destroy(void* param) {
     cdk_net_conn_t* conn = param;
+
+    mtx_destroy(&conn->mtx);
     free(conn);
     conn = NULL;
 }
@@ -64,8 +66,8 @@ cdk_net_conn_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int
         conn->h = handler;
         conn->type = platform_socket_socktype(sock);
         conn->active = true;
-        cdk_rbtree_init(&conn->owners, RB_KEYTYPE_INT64);
-        
+        mtx_init(&conn->mtx, mtx_plain);
+
         if (conn->type == SOCK_STREAM) {
             conn->tcp.connected = false;
             conn->tcp.rxbuf.len = MAX_IOBUF_SIZE;
@@ -112,6 +114,7 @@ void cdk_connection_postsend(cdk_net_conn_t* conn) {
 
 void cdk_connection_destroy(cdk_net_conn_t* conn)
 {
+    mtx_lock(&conn->mtx);
     conn->active = false;
 
     platform_event_del(conn->poller->pfd, conn->fd);
@@ -141,13 +144,9 @@ void cdk_connection_destroy(cdk_net_conn_t* conn)
             e = NULL;
         }
     }
-    cdk_event_t* e = malloc(sizeof(cdk_event_t));
-    if (e) {
-        e->cb = __connection_destroy;
-        e->arg = conn;
+    mtx_unlock(&conn->mtx);
 
-        cdk_net_postevent(conn->poller, e);
-    }
+    cdk_timer_add(&timer, __connection_destroy, conn, 10000, false);
 }
 
 void cdk_connection_process(cdk_net_conn_t* conn)

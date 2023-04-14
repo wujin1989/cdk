@@ -277,7 +277,7 @@ struct cdk_net_conn_s {
 	cdk_net_handler_t* h;
 	int                type;
 	bool               active;
-	cdk_rbtree_t       owners;
+	mtx_t              mtx;
 	union {
 		struct {
 			bool             connected;

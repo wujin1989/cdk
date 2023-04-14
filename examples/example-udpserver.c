@@ -2,16 +2,17 @@
 
 atomic_flag once = ATOMIC_FLAG_INIT;
 
+bool running = true;
+
 int task(void* p) {
 	cdk_net_conn_t* conn = p;
 	char buf[2048] = { 0 };
 	static size_t num = 0;
-	while (true) {
+	while (running) {
 		sprintf(buf, "world_%zu", num++);
 		cdk_net_postsend(conn, buf, sizeof(buf));
 		cdk_time_sleep(500);
 	}
-	cdk_net_close(conn);
 	return 0;
 }
 
@@ -35,6 +36,7 @@ static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
 static void handle_error(cdk_net_conn_t* conn, int err) {
 
 	printf("error occurs , errno: %d ...\n", err);
+	running = false;
 	cdk_net_close(conn);
 }
 int main(void) {

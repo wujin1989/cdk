@@ -64,7 +64,10 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
         n = platform_socket_recvfrom(conn->fd, conn->udp.rxbuf.buf, MAX_IOBUF_SIZE, &conn->udp.peer.ss, &conn->udp.peer.sslen);
 
         if (n == -1) {
-            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+            /**
+             * to be compatible with the semantics of linux, WSAECONNRESET is filtered out. 
+             */
+            if (WSAGetLastError() != WSAEWOULDBLOCK && WSAGetLastError() != WSAECONNRESET) {
                 conn->h->on_error(conn, platform_utils_getlasterror());
             }
             if (WSAGetLastError() == WSAEWOULDBLOCK) {

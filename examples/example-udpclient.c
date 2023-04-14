@@ -1,5 +1,7 @@
 #include "cdk.h"
 
+bool running = true;
+
 static void handle_write(cdk_net_conn_t* conn, void* buf, size_t len) {
 
 	printf("send complete.//// %s\n", (char*)buf);
@@ -10,26 +12,24 @@ static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
 	cdk_addrinfo_t ai;
 	cdk_net_ntop(&conn->udp.peer.ss, &ai);
 	printf("recv %s from %s\n", (char*)buf, ai.a);
-	
 }
 
 static void handle_error(cdk_net_conn_t* conn, int err) {
 
 	printf("error occurs , errno: %d ...\n", err);
 	cdk_net_close(conn);
+	running = false;
 }
 static int video_thrd(void* p) {
 
 	cdk_net_conn_t* conn = p;
 	char buf[2048] = { 0 };
 	static size_t num = 0;
-	while (true) {
+	while (running) {
 		sprintf(buf, "hello_%zu", num++);
 		cdk_net_postsend(conn, buf, sizeof(buf));
 		cdk_time_sleep(500);
 	}
-	cdk_net_close(conn);
-	printf("video_thrd exit\n");
 	return 0;
 }
 int main(void) {

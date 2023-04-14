@@ -63,13 +63,15 @@ static void __postsend(void* param) {
     cdk_net_conn_t* conn = ctx.conn;
     cdk_txlist_node_t* node = ctx.node;
 
-    if (conn->type == SOCK_STREAM) {
-        cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
+    if (conn) {
+        if (conn->type == SOCK_STREAM) {
+            cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
+        }
+        if (conn->type == SOCK_DGRAM) {
+            cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
+        }
+        cdk_connection_postsend(conn);
     }
-    if (conn->type == SOCK_DGRAM) {
-        cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
-    }
-    cdk_connection_postsend(conn);
 }
 
 static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
@@ -255,6 +257,10 @@ void cdk_net_postrecv(cdk_net_conn_t* conn) {
 
 void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
 
+    mtx_lock(&conn->mtx);
+    if (!conn->active) {
+        return;
+    }
     cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
     if (!node) {
         return;
@@ -277,16 +283,18 @@ void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
 			e->arg = pctx;
 			cdk_net_postevent(conn->poller, e);
 		}
+        mtx_unlock(&conn->mtx);
+        return;
 	}
-	else {
-		if (conn->type == SOCK_STREAM) {
-			cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
-		}
-		if (conn->type == SOCK_DGRAM) {
-			cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
-		}
-		cdk_connection_postsend(conn);
+    mtx_unlock(&conn->mtx);
+
+	if (conn->type == SOCK_STREAM) {
+		cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
 	}
+	if (conn->type == SOCK_DGRAM) {
+		cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
+	}
+	cdk_connection_postsend(conn);
 }
 
 void cdk_net_close(cdk_net_conn_t* conn) {

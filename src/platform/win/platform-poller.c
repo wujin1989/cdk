@@ -25,6 +25,7 @@
 #include "net/cdk-connection.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
+#include "cdk/container/cdk-rbtree.h"
 #include "wepoll/wepoll.h"
 
 static atomic_flag once_create = ATOMIC_FLAG_INIT;
