@@ -1,45 +1,61 @@
 #include "cdk.h"
 
-atomic_flag once = ATOMIC_FLAG_INIT;
+typedef struct msg_s {
+	cdk_net_conn_t* conn;
+	cdk_queue_node_t node;
+	size_t len;
+	char   buf[];
+}msg_t;
 
-bool running = true;
+cdk_queue_t mq;
 
-int task(void* p) {
-	cdk_net_conn_t* conn = p;
-	char buf[2048] = { 0 };
-	static size_t num = 0;
-	while (running) {
-		sprintf(buf, "world_%zu", num++);
-		cdk_net_postsend(conn, buf, sizeof(buf));
-		cdk_time_sleep(500);
+int routine(void* p) {
+	
+	while (true) {
+		if (!cdk_queue_empty(&mq)) {
+			msg_t* msg = cdk_queue_data(cdk_queue_dequeue(&mq), msg_t, node);
+			printf("received buf: %s, len: %zu\n", msg->buf, msg->len);
+
+			cdk_net_postsend(msg->conn, "recvive complete.", strlen("recvive complete.") + 1);
+
+			free(msg);
+			msg = NULL;
+		}
+		else {
+			cdk_time_sleep(1000);
+		}
 	}
 	return 0;
 }
 
 static void handle_write(cdk_net_conn_t* conn, void* buf, size_t len) {
-	printf("send complete.//// %s\n", (char*)buf);
 	cdk_net_postrecv(conn);
 }
 static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
 
 	cdk_addrinfo_t ai;
 	cdk_net_ntop(&conn->udp.peer.ss, &ai);
-	printf("recv %s from %s\n", (char*)buf, ai.a);
-	
-	if (!atomic_flag_test_and_set(&once)) {
-		thrd_t tid;
-		thrd_create(&tid, task, conn);
-		thrd_detach(tid);
+
+	msg_t* msg = malloc(sizeof(msg_t) + len);
+	if (msg) {
+		msg->len = len;
+		msg->conn = conn;
+		memcpy(msg->buf, buf, len);
+		cdk_queue_enqueue(&mq, &msg->node);
 	}
 }
 
 static void handle_error(cdk_net_conn_t* conn, int err) {
-
 	printf("error occurs , errno: %d ...\n", err);
-	running = false;
 	cdk_net_close(conn);
 }
 int main(void) {
+
+	thrd_t tid;
+	thrd_create(&tid, routine, NULL);
+	thrd_detach(tid);
+
+	cdk_queue_init(&mq);
 
 	cdk_net_handler_t handler = {
 		.on_read = handle_read,

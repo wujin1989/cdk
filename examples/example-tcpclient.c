@@ -35,6 +35,9 @@ static void handle_connect(cdk_net_conn_t* conn) {
 	cdk_net_setup_unpacker(conn, &unpacker3);
 
 	net_msg_t* smsg = malloc(sizeof(net_msg_t) + strlen("hello") + 1);
+	if (!smsg) {
+		return;
+	}
 	smsg->h.p_s = htonl((uint32_t)(strlen("hello") + 1));
 	smsg->h.p_t = htonl(1);
 	memcpy(smsg->p, "hello", strlen("hello") + 1);
