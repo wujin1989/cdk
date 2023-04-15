@@ -55,15 +55,9 @@ static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
 	cdk_net_postsend(conn, smsg, sizeof(net_msg_t) + strlen("world") + 1);
 }
 
-static void handle_close(cdk_net_conn_t* conn) {
+static void handle_close(cdk_net_conn_t* conn, char* error) {
 
-	printf("recv close\n");
-	cdk_net_close(conn);
-}
-
-static void handle_error(cdk_net_conn_t* conn, int error) {
-
-	printf("recv error: err: %d\n", error);
+	printf("connection closed, reason: %s\n", error);
 	cdk_net_close(conn);
 }
 
@@ -72,9 +66,9 @@ int main(void) {
 	cdk_net_handler_t handler = {
 		.on_accept  = handle_accept,
 		.on_connect = NULL,
+		.on_connect_timeout = NULL,
 		.on_read    = handle_read,
 		.on_write   = handle_write,
-		.on_error   = handle_error,
 		.on_close   = handle_close
 	};
 	cdk_net_concurrent_slaves(4);

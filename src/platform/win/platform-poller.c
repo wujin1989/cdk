@@ -57,11 +57,7 @@ static void __handle_read(cdk_net_conn_t* conn, void* buf, size_t len)
     mtx_unlock(&conn->poller->evmtx);
 }
 
-static void __handle_close(cdk_net_conn_t* conn) {
-    cdk_connection_destroy(conn);
-}
-
-static void __handle_error(cdk_net_conn_t* conn, int error) {
+static void __handle_close(cdk_net_conn_t* conn, char* error) {
     cdk_connection_destroy(conn);
 }
 
@@ -87,7 +83,6 @@ int platform_poller_poll(void* arg) {
         .on_connect = NULL,
         .on_read = __handle_read,
         .on_write = NULL,
-        .on_error = __handle_error,
         .on_close = __handle_close
     };
     cdk_unpack_t unpacker = {

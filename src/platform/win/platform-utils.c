@@ -34,7 +34,3 @@ cdk_tid_t platform_utils_systemtid(void) {
 	return GetCurrentThreadId();
 }
 
-int platform_utils_getlasterror(void) {
-	return WSAGetLastError();
-}
-

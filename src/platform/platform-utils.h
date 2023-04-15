@@ -25,4 +25,3 @@ _Pragma("once")
 
 extern int        platform_utils_cpus(void);
 extern cdk_tid_t  platform_utils_systemtid(void);
-extern int        platform_utils_getlasterror(void);

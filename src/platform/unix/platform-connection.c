@@ -28,14 +28,6 @@
 #include "net/cdk-unpack.h"
 #include "cdk/net/cdk-net.h"
 
-void __wrapper_cb(void* param) {
-    cdk_net_conn_t* conn = param;
-
-    if (!conn->tcp.connected) {
-        conn->h->on_error(conn, ETIMEDOUT);
-    }
-}
-
 void platform_connection_recv(cdk_net_conn_t* conn) {
     ssize_t n;
 
@@ -44,12 +36,12 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
 
         if (n == -1) {
             if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                conn->h->on_error(conn, platform_utils_getlasterror());
+                conn->h->on_close(conn, strerror(errno));
             }
             return;
         }
         if (n == 0) {
-            conn->h->on_close(conn);
+            conn->h->on_close(conn, strerror(ECONNRESET));
             return;
         }
         conn->tcp.rxbuf.off += n;
@@ -62,7 +54,7 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
 
         if (n == -1) {
             if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                conn->h->on_error(conn, platform_utils_getlasterror());
+                conn->h->on_close(conn, strerror(errno));
             }
             return;
         }
@@ -81,12 +73,8 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 ssize_t n = platform_socket_send(conn->fd, e->buf + e->off, (int)(e->len - e->off));
                 if (n == -1) {
                     if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                        conn->h->on_error(conn, errno);
+                        conn->h->on_close(conn, strerror(errno));
                     }
-                    return;
-                }
-                if (n == 0) {
-                    conn->h->on_close(conn);
                     return;
                 }
                 e->off += n;
@@ -104,7 +92,7 @@ void platform_connection_send(cdk_net_conn_t* conn)
             ssize_t n = platform_socket_sendto(conn->fd, e->buf, (int)e->len, &(conn->udp.peer.ss), conn->udp.peer.sslen);
             if (n == -1) {
                 if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                    conn->h->on_error(conn, platform_utils_getlasterror());
+                    conn->h->on_close(conn, strerror(errno));
                 }
                 return;
             }
@@ -121,7 +109,7 @@ void platform_connection_accept(cdk_net_conn_t* conn) {
     cdk_sock_t cli = platform_socket_accept(conn->fd);
     if (cli == -1) {
         if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-            conn->h->on_error(conn, platform_utils_getlasterror());
+            conn->h->on_close(conn, strerror(errno));
         }
         return;
     }
@@ -137,22 +125,10 @@ void platform_connection_connect(cdk_net_conn_t* conn) {
 
     getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, &err, &len);
     if (err) {
-        conn->h->on_error(conn, platform_utils_getlasterror());
+        conn->h->on_close(conn, strerror(err));
     }
     else {
         conn->tcp.connected = true;
         conn->h->on_connect(conn);
-    }
-}
-
-void platform_connection_connect_timeout(void* param) {
-    cdk_net_conn_t* conn = param;
-
-    cdk_event_t* e = malloc(sizeof(cdk_event_t));
-    if (e) {
-        e->cb = __wrapper_cb;
-        e->arg = conn;
-
-        cdk_net_postevent(conn->poller, e);
     }
 }

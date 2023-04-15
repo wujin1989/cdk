@@ -28,12 +28,12 @@
 #include "net/cdk-unpack.h"
 #include "cdk/net/cdk-net.h"
 
-void __connect_timeout(void* param) {
-    cdk_net_conn_t* conn = param;
-
-    if (!conn->tcp.connected) {
-        conn->h->on_error(conn, WSAETIMEDOUT);
-    }
+static char* __format_lasterror(DWORD error) {
+    char* buffer = NULL;
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)&buffer, 0, NULL);
+    return buffer;
 }
 
 void platform_connection_recv(cdk_net_conn_t* conn) {
@@ -44,14 +44,14 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
 
         if (n == -1) {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                conn->h->on_error(conn, platform_utils_getlasterror());
+                conn->h->on_close(conn, __format_lasterror(WSAGetLastError()));
             }
             return;
         }
-        if (n == 0) {
-            conn->h->on_close(conn);
-            return;
-        }
+        /**
+         * windows provides the WSAECONNRESET to detect a peer disconnection, 
+         * so it is not necessary to rely on receiving 0 from recv to determine that the connection has been closed. 
+         */
         conn->tcp.rxbuf.off += n;
         cdk_unpack(conn);
     }
@@ -65,7 +65,7 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
              * to be compatible with the semantics of linux, WSAECONNRESET is filtered out. 
              */
             if (WSAGetLastError() != WSAEWOULDBLOCK && WSAGetLastError() != WSAECONNRESET) {
-                conn->h->on_error(conn, platform_utils_getlasterror());
+                conn->h->on_close(conn, __format_lasterror(WSAGetLastError()));
             }
             return;
         }
@@ -84,12 +84,8 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 ssize_t n = platform_socket_send(conn->fd, e->buf + e->off, (int)(e->len - e->off));
                 if (n == -1) {
                     if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                        conn->h->on_error(conn, errno);
+                        conn->h->on_close(conn, __format_lasterror(WSAGetLastError()));
                     }
-                    return;
-                }
-                if (n == 0) {
-                    conn->h->on_close(conn);
                     return;
                 }
                 e->off += n;
@@ -107,7 +103,7 @@ void platform_connection_send(cdk_net_conn_t* conn)
             ssize_t n = platform_socket_sendto(conn->fd, e->buf, (int)e->len, &(conn->udp.peer.ss), conn->udp.peer.sslen);
             if (n == -1) {
                 if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                    conn->h->on_error(conn, platform_utils_getlasterror());
+                    conn->h->on_close(conn, __format_lasterror(WSAGetLastError()));
                 }
                 return;
             }
@@ -124,7 +120,7 @@ void platform_connection_accept(cdk_net_conn_t* conn) {
     cdk_sock_t cli = platform_socket_accept(conn->fd);
     if (cli == -1) {
         if (WSAGetLastError() != WSAEWOULDBLOCK) {
-            conn->h->on_error(conn, platform_utils_getlasterror());
+            conn->h->on_close(conn, __format_lasterror(WSAGetLastError()));
         }
         return;
     }
@@ -140,22 +136,10 @@ void platform_connection_connect(cdk_net_conn_t* conn) {
   
     getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
-        conn->h->on_error(conn, platform_utils_getlasterror());
+        conn->h->on_close(conn, __format_lasterror(err));
     }
     else {
         conn->tcp.connected = true;
         conn->h->on_connect(conn);
-    }
-}
-
-void platform_connection_connect_timeout(void* param) {
-    cdk_net_conn_t* conn = param;
-
-    cdk_event_t* e = malloc(sizeof(cdk_event_t));
-    if (e) {
-        e->cb = __connect_timeout;
-        e->arg = conn;
-
-        cdk_net_postevent(conn->poller, e);
     }
 }

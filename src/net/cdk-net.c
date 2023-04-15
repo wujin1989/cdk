@@ -87,6 +87,26 @@ static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
     }
 }
 
+static void __connect_timeout(void* param) {
+    cdk_net_conn_t* conn = param;
+
+    if (!conn->tcp.connected) {
+        conn->h->on_connect_timeout(conn);
+    }
+}
+
+static void __handle_connect_timeout(void* param) {
+    cdk_net_conn_t* conn = param;
+
+    cdk_event_t* e = malloc(sizeof(cdk_event_t));
+    if (e) {
+        e->cb = __connect_timeout;
+        e->arg = conn;
+
+        cdk_net_postevent(conn->poller, e);
+    }
+}
+
 void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai) {
     char d[INET6_ADDRSTRLEN];
     memset(d, 0, sizeof(d));
@@ -222,7 +242,7 @@ cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* por
             if (!conn) {
                 return NULL;
             }
-            cdk_timer_add(&timer, platform_connection_connect_timeout, conn, timeout, false);
+            cdk_timer_add(&timer, __handle_connect_timeout, conn, timeout, false);
         }
     }
     if (!strncmp(type, "udp", strlen("udp"))) {

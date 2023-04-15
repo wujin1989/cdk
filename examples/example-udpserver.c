@@ -45,22 +45,22 @@ static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
 	}
 }
 
-static void handle_error(cdk_net_conn_t* conn, int err) {
-	printf("error occurs , errno: %d ...\n", err);
+static void handle_close(cdk_net_conn_t* conn, char* error) {
+	printf("connection closed, reason: %s\n", error);
 	cdk_net_close(conn);
 }
 int main(void) {
+
+	cdk_queue_init(&mq);
 
 	thrd_t tid;
 	thrd_create(&tid, routine, NULL);
 	thrd_detach(tid);
 
-	cdk_queue_init(&mq);
-
 	cdk_net_handler_t handler = {
 		.on_read = handle_read,
 		.on_write = handle_write,
-		.on_error = handle_error
+		.on_close = handle_close
 	};
 	cdk_net_concurrent_slaves(4);
 	cdk_net_listen("udp", "0.0.0.0", "9999", &handler);

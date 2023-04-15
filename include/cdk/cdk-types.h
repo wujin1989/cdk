@@ -299,11 +299,13 @@ struct cdk_net_conn_s {
 struct cdk_net_handler_s {
 	void (*on_read)   (cdk_net_conn_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_net_conn_t*, void* buf, size_t len);
-	void (*on_error)  (cdk_net_conn_t*, int error);
-	/** tcp only */
+	void (*on_close)  (cdk_net_conn_t*, char* error);
+	/**
+	 * the following callback function is only used by tcp.
+	 */
 	void (*on_accept) (cdk_net_conn_t*);
 	void (*on_connect)(cdk_net_conn_t*);
-	void (*on_close)  (cdk_net_conn_t*);
+	void (*on_connect_timeout)(cdk_net_conn_t*);
 };
 
 struct cdk_sha256_s {
