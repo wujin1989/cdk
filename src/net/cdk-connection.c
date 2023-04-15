@@ -97,21 +97,6 @@ void cdk_connection_modify(cdk_net_conn_t* conn) {
     platform_event_mod(conn->poller->pfd, conn->fd, conn->cmd, conn);
 }
 
-void cdk_connection_postaccept(cdk_net_conn_t* conn) {
-    conn->cmd = PLATFORM_EVENT_A;
-    cdk_connection_modify(conn);
-}
-
-void cdk_connection_postrecv(cdk_net_conn_t* conn) {
-    conn->cmd = PLATFORM_EVENT_R;
-    cdk_connection_modify(conn);
-}
-
-void cdk_connection_postsend(cdk_net_conn_t* conn) {
-    conn->cmd = PLATFORM_EVENT_W;
-    cdk_connection_modify(conn);
-}
-
 void cdk_connection_destroy(cdk_net_conn_t* conn)
 {
     mtx_lock(&conn->mtx);

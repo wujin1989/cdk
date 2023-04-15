@@ -60,18 +60,22 @@ static void __postsend(void* param) {
     free(pctx);
     pctx = NULL;
 
-    cdk_net_conn_t* conn = ctx.conn;
-    cdk_txlist_node_t* node = ctx.node;
-
-    if (conn) {
-        if (conn->type == SOCK_STREAM) {
-            cdk_list_insert_tail(&(conn->tcp.txlist), &(node->n));
-        }
-        if (conn->type == SOCK_DGRAM) {
-            cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
-        }
-        cdk_connection_postsend(conn);
+    if (!ctx.conn) {
+        return;
     }
+    if (!ctx.conn->active) {
+        free(ctx.node);
+        ctx.node = NULL;
+        return;
+    }
+    if (ctx.conn->type == SOCK_STREAM) {
+        cdk_list_insert_tail(&(ctx.conn->tcp.txlist), &(ctx.node->n));
+    }
+    if (ctx.conn->type == SOCK_DGRAM) {
+        cdk_list_insert_tail(&(ctx.conn->udp.txlist), &(ctx.node->n));
+    }
+    ctx.conn->cmd = PLATFORM_EVENT_W;
+    cdk_connection_modify(ctx.conn);
 }
 
 static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
@@ -252,7 +256,8 @@ void cdk_net_poll(void) {
 }
 
 void cdk_net_postrecv(cdk_net_conn_t* conn) {
-    cdk_connection_postrecv(conn);
+    conn->cmd = PLATFORM_EVENT_R;
+    cdk_connection_modify(conn);
 }
 
 void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
@@ -294,7 +299,8 @@ void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
 	if (conn->type == SOCK_DGRAM) {
 		cdk_list_insert_tail(&(conn->udp.txlist), &(node->n));
 	}
-	cdk_connection_postsend(conn);
+    conn->cmd = PLATFORM_EVENT_W;
+    cdk_connection_modify(conn);
 }
 
 void cdk_net_close(cdk_net_conn_t* conn) {

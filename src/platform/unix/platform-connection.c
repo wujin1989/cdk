@@ -46,9 +46,6 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
             if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
                 conn->h->on_error(conn, platform_utils_getlasterror());
             }
-            if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-                cdk_connection_postrecv(conn);
-            }
             return;
         }
         if (n == 0) {
@@ -66,9 +63,6 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
         if (n == -1) {
             if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
                 conn->h->on_error(conn, platform_utils_getlasterror());
-            }
-            if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-                cdk_connection_postrecv(conn);
             }
             return;
         }
@@ -88,9 +82,6 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 if (n == -1) {
                     if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
                         conn->h->on_error(conn, errno);
-                    }
-                    if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-                        cdk_connection_postsend(conn);
                     }
                     return;
                 }
@@ -115,9 +106,6 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
                     conn->h->on_error(conn, platform_utils_getlasterror());
                 }
-                if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-                    cdk_connection_postsend(conn);
-                }
                 return;
             }
             conn->h->on_write(conn, e->buf, e->len);
@@ -134,9 +122,6 @@ void platform_connection_accept(cdk_net_conn_t* conn) {
     if (cli == -1) {
         if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
             conn->h->on_error(conn, platform_utils_getlasterror());
-        }
-        if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
-            cdk_connection_postaccept(conn);
         }
         return;
     }

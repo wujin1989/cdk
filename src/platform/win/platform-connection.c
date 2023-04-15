@@ -28,7 +28,7 @@
 #include "net/cdk-unpack.h"
 #include "cdk/net/cdk-net.h"
 
-void __wrapper_cb(void* param) {
+void __connect_timeout(void* param) {
     cdk_net_conn_t* conn = param;
 
     if (!conn->tcp.connected) {
@@ -45,9 +45,6 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
         if (n == -1) {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
                 conn->h->on_error(conn, platform_utils_getlasterror());
-            }
-            if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                cdk_connection_postrecv(conn);
             }
             return;
         }
@@ -70,9 +67,6 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
             if (WSAGetLastError() != WSAEWOULDBLOCK && WSAGetLastError() != WSAECONNRESET) {
                 conn->h->on_error(conn, platform_utils_getlasterror());
             }
-            if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                cdk_connection_postrecv(conn);
-            }
             return;
         }
         conn->h->on_read(conn, conn->udp.rxbuf.buf, n);
@@ -91,9 +85,6 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 if (n == -1) {
                     if (WSAGetLastError() != WSAEWOULDBLOCK) {
                         conn->h->on_error(conn, errno);
-                    }
-                    if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                        cdk_connection_postsend(conn);
                     }
                     return;
                 }
@@ -118,9 +109,6 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 if (WSAGetLastError() != WSAEWOULDBLOCK) {
                     conn->h->on_error(conn, platform_utils_getlasterror());
                 }
-                if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                    cdk_connection_postsend(conn);
-                }
                 return;
             }
             conn->h->on_write(conn, e->buf, e->len);
@@ -137,9 +125,6 @@ void platform_connection_accept(cdk_net_conn_t* conn) {
     if (cli == -1) {
         if (WSAGetLastError() != WSAEWOULDBLOCK) {
             conn->h->on_error(conn, platform_utils_getlasterror());
-        }
-        if (WSAGetLastError() == WSAEWOULDBLOCK) {
-            cdk_connection_postaccept(conn);
         }
         return;
     }
@@ -168,7 +153,7 @@ void platform_connection_connect_timeout(void* param) {
 
     cdk_event_t* e = malloc(sizeof(cdk_event_t));
     if (e) {
-        e->cb = __wrapper_cb;
+        e->cb = __connect_timeout;
         e->arg = conn;
 
         cdk_net_postevent(conn->poller, e);
