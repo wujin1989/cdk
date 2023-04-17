@@ -34,10 +34,10 @@ static atomic_flag timer_once_create = ATOMIC_FLAG_INIT;
 static atomic_flag timer_once_destroy = ATOMIC_FLAG_INIT;
 static atomic_flag one_master_poll = ATOMIC_FLAG_INIT;
 
-typedef struct ctx_s {
+typedef struct event_ctx_s {
     cdk_net_conn_t* conn;
     cdk_txlist_node_t* node;
-}ctx_t;
+}event_ctx_t;
 
 static void __timer_create(void) {
     if (atomic_flag_test_and_set(&timer_once_create)) {
@@ -54,8 +54,8 @@ static void __timer_destroy(void) {
 }
 
 static void __postsend(void* param) {
-    ctx_t* pctx = param;
-    ctx_t ctx = *pctx;
+    event_ctx_t* pctx = param;
+    event_ctx_t ctx = *pctx;
 
     free(pctx);
     pctx = NULL;
@@ -297,7 +297,7 @@ void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
 
 	if (conn->poller->tid != cdk_utils_systemtid()) {
 
-		ctx_t* pctx = malloc(sizeof(ctx_t));
+        event_ctx_t* pctx = malloc(sizeof(event_ctx_t));
 		if (pctx) {
 			pctx->conn = conn;
 			pctx->node = node;
@@ -331,7 +331,10 @@ void cdk_net_setup_unpacker(cdk_net_conn_t* conn, cdk_unpack_t* unpacker) {
     memcpy(&conn->tcp.unpacker, unpacker, sizeof(cdk_unpack_t));
 }
 
-void cdk_net_concurrent_slaves(int num) {
+void cdk_net_concurrent(int num) {
+    if (num > 0) {
+
+    }
     platform_poller_concurrent_slaves(num);
 }
 

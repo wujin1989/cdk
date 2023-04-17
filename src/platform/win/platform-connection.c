@@ -41,17 +41,16 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
 
     if (conn->type == SOCK_STREAM) {
         n = platform_socket_recv(conn->fd, (char*)(conn->tcp.rxbuf.buf) + conn->tcp.rxbuf.off, MAX_IOBUF_SIZE);
-
+        /**
+         * windows provides the WSAECONNRESET to detect a peer disconnection,
+         * so it is not necessary to rely on receiving 0 from recv to determine that the connection has been closed.
+         */
         if (n == -1) {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
                 conn->h->on_close(conn, __format_lasterror(WSAGetLastError()));
             }
             return;
         }
-        /**
-         * windows provides the WSAECONNRESET to detect a peer disconnection, 
-         * so it is not necessary to rely on receiving 0 from recv to determine that the connection has been closed. 
-         */
         conn->tcp.rxbuf.off += n;
         cdk_unpack(conn);
     }
