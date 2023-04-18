@@ -35,7 +35,7 @@ static atomic_flag timer_once_destroy = ATOMIC_FLAG_INIT;
 static atomic_flag one_master_poll = ATOMIC_FLAG_INIT;
 
 typedef struct event_ctx_s {
-    cdk_net_conn_t* conn;
+    cdk_channel_t* conn;
     cdk_txlist_node_t* node;
 }event_ctx_t;
 
@@ -88,15 +88,15 @@ static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
 }
 
 static void __connect_timeout(void* param) {
-    cdk_net_conn_t* conn = param;
+    cdk_channel_t* conn = param;
 
     if (!conn->tcp.connected) {
-        conn->h->on_connect_timeout(conn);
+        conn->handler->on_connect_timeout(conn);
     }
 }
 
 static void __handle_connect_timeout(void* param) {
-    cdk_net_conn_t* conn = param;
+    cdk_channel_t* conn = param;
 
     cdk_event_t* e = malloc(sizeof(cdk_event_t));
     if (e) {
@@ -187,10 +187,10 @@ void cdk_net_set_sendbuf(cdk_sock_t sock, int val) {
     platform_socket_set_sendbuf(sock, val);
 }
 
-cdk_net_conn_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_net_handler_t* handler)
+cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler)
 {
     cdk_sock_t sock;
-    cdk_net_conn_t* conn;
+    cdk_channel_t* conn;
 
     platform_socket_startup();
     platform_poller_create();
@@ -209,11 +209,11 @@ cdk_net_conn_t* cdk_net_listen(const char* type, const char* host, const char* p
     return conn;
 }
 
-cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* port, int timeout, cdk_net_handler_t* handler)
+cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port, int timeout, cdk_handler_t* handler)
 {
     bool connected;
     cdk_sock_t sock;
-    cdk_net_conn_t* conn;
+    cdk_channel_t* conn;
     cdk_addrinfo_t ai;
     struct sockaddr_storage ss;
 
@@ -235,7 +235,7 @@ cdk_net_conn_t* cdk_net_dial(const char* type, const char* host, const char* por
                 return NULL;
             }
             conn->tcp.connected = true;
-            conn->h->on_connect(conn);
+            conn->handler->on_connect(conn);
         }
         else {
             conn = cdk_connection_create(platform_poller_retrieve(false), sock, PLATFORM_EVENT_C, handler);
@@ -275,12 +275,12 @@ void cdk_net_poll(void) {
     platform_socket_cleanup();
 }
 
-void cdk_net_postrecv(cdk_net_conn_t* conn) {
+void cdk_net_postrecv(cdk_channel_t* conn) {
     conn->cmd = PLATFORM_EVENT_R;
     cdk_connection_modify(conn);
 }
 
-void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
+void cdk_net_postsend(cdk_channel_t* conn, void* data, size_t size) {
 
     mtx_lock(&conn->mtx);
     if (!conn->active) {
@@ -323,18 +323,15 @@ void cdk_net_postsend(cdk_net_conn_t* conn, void* data, size_t size) {
     cdk_connection_modify(conn);
 }
 
-void cdk_net_close(cdk_net_conn_t* conn) {
+void cdk_net_close(cdk_channel_t* conn) {
     cdk_connection_destroy(conn);
 }
 
-void cdk_net_setup_unpacker(cdk_net_conn_t* conn, cdk_unpack_t* unpacker) {
+void cdk_net_setup_unpacker(cdk_channel_t* conn, cdk_unpack_t* unpacker) {
     memcpy(&conn->tcp.unpacker, unpacker, sizeof(cdk_unpack_t));
 }
 
-void cdk_net_concurrent(int num) {
-    if (num > 0) {
-
-    }
+void cdk_net_concurrent_slaves(int num) {
     platform_poller_concurrent_slaves(num);
 }
 

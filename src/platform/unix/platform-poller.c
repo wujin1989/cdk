@@ -29,7 +29,7 @@
 static atomic_flag once_create = ATOMIC_FLAG_INIT;
 static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
 static cdk_poller_t* pollers;
-static int nslaves;
+static atomic_size_t nslaves;
 static atomic_size_t idx;
 extern cdk_timer_t timer;
 
@@ -40,7 +40,7 @@ static void __poller_init(cdk_poller_t* poller) {
     cdk_list_init(&poller->evlist);
 }
 
-static void __eventfd_read(cdk_net_conn_t* conn, void* buf, size_t len)
+static void __eventfd_read(cdk_channel_t* conn, void* buf, size_t len)
 {
     mtx_lock(&conn->poller->evmtx);
     if (!cdk_list_empty(&conn->poller->evlist))
@@ -55,7 +55,7 @@ static void __eventfd_read(cdk_net_conn_t* conn, void* buf, size_t len)
     mtx_unlock(&conn->poller->evmtx);
 }
 
-static void __eventfd_close(cdk_net_conn_t* conn, char* error) {
+static void __eventfd_close(cdk_channel_t* conn, char* error) {
     cdk_connection_destroy(conn);
 }
 
@@ -76,7 +76,7 @@ int platform_poller_poll(void* arg) {
     cdk_poller_t* poller = arg;
     poller->tid = cdk_utils_systemtid();
 
-    cdk_net_handler_t handler = {
+    cdk_handler_t handler = {
         .on_read = __eventfd_read,
         .on_close = __eventfd_close
     };
@@ -84,7 +84,7 @@ int platform_poller_poll(void* arg) {
         .type = UNPACK_TYPE_FIXEDLEN,
         .fixedlen.len = sizeof(int)
     };
-    cdk_net_conn_t* conn = cdk_connection_create(poller, poller->evfds[1], PLATFORM_EVENT_R, &handler);
+    cdk_channel_t* conn = cdk_connection_create(poller, poller->evfds[1], PLATFORM_EVENT_R, &handler);
     memcpy(&conn->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
 
     while (true)
@@ -92,7 +92,7 @@ int platform_poller_poll(void* arg) {
         int nevents = platform_event_wait(poller->pfd, events);
         for (int i = 0; i < nevents; i++)
         {
-            cdk_net_conn_t* conn = events[i].ptr;
+            cdk_channel_t* conn = events[i].ptr;
             if (conn) {
                 cdk_connection_process(conn);
             }

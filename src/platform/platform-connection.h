@@ -23,7 +23,7 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void platform_connection_recv(cdk_net_conn_t* conn);
-extern void platform_connection_send(cdk_net_conn_t* conn);
-extern void platform_connection_accept(cdk_net_conn_t* conn);
-extern void platform_connection_connect(cdk_net_conn_t* conn);
+extern void platform_connection_recv(cdk_channel_t* conn);
+extern void platform_connection_send(cdk_channel_t* conn);
+extern void platform_connection_accept(cdk_channel_t* conn);
+extern void platform_connection_connect(cdk_channel_t* conn);

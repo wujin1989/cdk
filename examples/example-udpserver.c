@@ -1,7 +1,7 @@
 #include "cdk.h"
 
 typedef struct msg_s {
-	cdk_net_conn_t* conn;
+	cdk_channel_t* conn;
 	cdk_queue_node_t node;
 	size_t len;
 	char   buf[];
@@ -28,10 +28,10 @@ int routine(void* p) {
 	return 0;
 }
 
-static void handle_write(cdk_net_conn_t* conn, void* buf, size_t len) {
+static void handle_write(cdk_channel_t* conn, void* buf, size_t len) {
 	cdk_net_postrecv(conn);
 }
-static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
+static void handle_read(cdk_channel_t* conn, void* buf, size_t len) {
 
 	cdk_addrinfo_t ai;
 	cdk_net_ntop(&conn->udp.peer.ss, &ai);
@@ -45,7 +45,7 @@ static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
 	}
 }
 
-static void handle_close(cdk_net_conn_t* conn, char* error) {
+static void handle_close(cdk_channel_t* conn, char* error) {
 	printf("connection closed, reason: %s\n", error);
 	cdk_net_close(conn);
 }
@@ -57,7 +57,7 @@ int main(void) {
 	thrd_create(&tid, routine, NULL);
 	thrd_detach(tid);
 
-	cdk_net_handler_t handler = {
+	cdk_handler_t handler = {
 		.on_read = handle_read,
 		.on_write = handle_write,
 		.on_close = handle_close

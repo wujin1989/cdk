@@ -12,7 +12,7 @@ typedef struct _net_msg_t {
 	char               p[];
 }net_msg_t;
 
-static void handle_accept(cdk_net_conn_t* conn) {
+static void handle_accept(cdk_channel_t* conn) {
 	printf("tid[%d], [%d]new connection coming...\n", (int)cdk_utils_systemtid(), (int)conn->fd);
 
 	cdk_unpack_t unpacker1 = {
@@ -35,13 +35,13 @@ static void handle_accept(cdk_net_conn_t* conn) {
 	cdk_net_postrecv(conn);
 }
 
-static void handle_write(cdk_net_conn_t* conn, void* buf, size_t len) {
+static void handle_write(cdk_channel_t* conn, void* buf, size_t len) {
 
 	net_msg_t* msg = (net_msg_t*)buf;
 	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
 	cdk_net_postrecv(conn);
 }
-static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
+static void handle_read(cdk_channel_t* conn, void* buf, size_t len) {
 
 	net_msg_t* rmsg = (net_msg_t*)buf;
 	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
@@ -55,7 +55,7 @@ static void handle_read(cdk_net_conn_t* conn, void* buf, size_t len) {
 	cdk_net_postsend(conn, smsg, sizeof(net_msg_t) + strlen("world") + 1);
 }
 
-static void handle_close(cdk_net_conn_t* conn, char* error) {
+static void handle_close(cdk_channel_t* conn, char* error) {
 
 	printf("connection closed, reason: %s\n", error);
 	cdk_net_close(conn);
@@ -63,7 +63,7 @@ static void handle_close(cdk_net_conn_t* conn, char* error) {
 
 int main(void) {
 
-	cdk_net_handler_t handler = {
+	cdk_handler_t handler = {
 		.on_accept  = handle_accept,
 		.on_connect = NULL,
 		.on_connect_timeout = NULL,

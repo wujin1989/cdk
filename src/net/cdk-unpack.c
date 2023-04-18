@@ -23,7 +23,7 @@
 #include "cdk/cdk-utils.h"
 #include "cdk/encoding/cdk-varint.h"
 
-static void __unpack_fixedlen(cdk_net_conn_t* conn) {
+static void __unpack_fixedlen(cdk_channel_t* conn) {
 
 	char* head = conn->tcp.rxbuf.buf;
 	char* tail = (char*)conn->tcp.rxbuf.buf + conn->tcp.rxbuf.off;
@@ -36,7 +36,7 @@ static void __unpack_fixedlen(cdk_net_conn_t* conn) {
 		if (accumulated < conn->tcp.unpacker.fixedlen.len) {
 			break;
 		}
-		conn->h->on_read(conn, tmp, conn->tcp.unpacker.fixedlen.len);
+		conn->handler->on_read(conn, tmp, conn->tcp.unpacker.fixedlen.len);
 
 		tmp += conn->tcp.unpacker.fixedlen.len;
 		accumulated -= conn->tcp.unpacker.fixedlen.len;
@@ -51,7 +51,7 @@ static void __unpack_fixedlen(cdk_net_conn_t* conn) {
 	return;
 }
 
-static void __unpack_delimiter(cdk_net_conn_t* conn) {
+static void __unpack_delimiter(cdk_channel_t* conn) {
 
 	char* head = conn->tcp.rxbuf.buf;
 	char* tail = (char*)conn->tcp.rxbuf.buf + conn->tcp.rxbuf.off;
@@ -91,7 +91,7 @@ static void __unpack_delimiter(cdk_net_conn_t* conn) {
 		}
 		if (j == dlen) {
 
-			conn->h->on_read(conn, tmp, ((i - dlen + 1) + dlen));
+			conn->handler->on_read(conn, tmp, ((i - dlen + 1) + dlen));
 
 			tmp += (i - dlen + 1) + dlen;
 			accumulated -= (uint32_t)((i - dlen + 1) + dlen);
@@ -112,7 +112,7 @@ static void __unpack_delimiter(cdk_net_conn_t* conn) {
 	return;
 }
 
-static void __unpack_lengthfield(cdk_net_conn_t* conn) {
+static void __unpack_lengthfield(cdk_channel_t* conn) {
 
 	uint32_t fs; /* frame size   */
 	uint32_t hs; /* header size  */
@@ -158,7 +158,7 @@ static void __unpack_lengthfield(cdk_net_conn_t* conn) {
 		if (accumulated < fs) {
 			break;
 		}
-		conn->h->on_read(conn, tmp, fs);
+		conn->handler->on_read(conn, tmp, fs);
 		tmp += fs;
 		accumulated -= fs;
 	}
@@ -172,12 +172,12 @@ static void __unpack_lengthfield(cdk_net_conn_t* conn) {
 	return;
 }
 
-static void __unpack_userdefined(cdk_net_conn_t* conn) {
+static void __unpack_userdefined(cdk_channel_t* conn) {
 
 	conn->tcp.unpacker.userdefined.unpack(conn);
 }
 
-void cdk_unpack(cdk_net_conn_t* conn) {
+void cdk_unpack(cdk_channel_t* conn) {
 
 	switch (conn->tcp.unpacker.type)
 	{

@@ -28,7 +28,7 @@
 #include "net/cdk-unpack.h"
 #include "cdk/net/cdk-net.h"
 
-void platform_connection_recv(cdk_net_conn_t* conn) {
+void platform_connection_recv(cdk_channel_t* conn) {
     ssize_t n;
 
     if (conn->type == SOCK_STREAM) {
@@ -36,12 +36,12 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
 
         if (n == -1) {
             if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                conn->h->on_close(conn, strerror(errno));
+                conn->handler->on_close(conn, strerror(errno));
             }
             return;
         }
         if (n == 0) {
-            conn->h->on_close(conn, strerror(ECONNRESET));
+            conn->handler->on_close(conn, strerror(ECONNRESET));
             return;
         }
         conn->tcp.rxbuf.off += n;
@@ -54,16 +54,16 @@ void platform_connection_recv(cdk_net_conn_t* conn) {
 
         if (n == -1) {
             if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                conn->h->on_close(conn, strerror(errno));
+                conn->handler->on_close(conn, strerror(errno));
             }
             return;
         }
-        conn->h->on_read(conn, conn->udp.rxbuf.buf, n);
+        conn->handler->on_read(conn, conn->udp.rxbuf.buf, n);
     }
     return;
 }
 
-void platform_connection_send(cdk_net_conn_t* conn)
+void platform_connection_send(cdk_channel_t* conn)
 {
     if (conn->type == SOCK_STREAM) {
         while (!cdk_list_empty(&(conn->tcp.txlist))) {
@@ -73,13 +73,13 @@ void platform_connection_send(cdk_net_conn_t* conn)
                 ssize_t n = platform_socket_send(conn->fd, e->buf + e->off, (int)(e->len - e->off));
                 if (n == -1) {
                     if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                        conn->h->on_close(conn, strerror(errno));
+                        conn->handler->on_close(conn, strerror(errno));
                     }
                     return;
                 }
                 e->off += n;
             }
-            conn->h->on_write(conn, e->buf, e->len);
+            conn->handler->on_write(conn, e->buf, e->len);
             cdk_list_remove(&(e->n));
             free(e);
             e = NULL;
@@ -92,11 +92,11 @@ void platform_connection_send(cdk_net_conn_t* conn)
             ssize_t n = platform_socket_sendto(conn->fd, e->buf, (int)e->len, &(conn->udp.peer.ss), conn->udp.peer.sslen);
             if (n == -1) {
                 if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                    conn->h->on_close(conn, strerror(errno));
+                    conn->handler->on_close(conn, strerror(errno));
                 }
                 return;
             }
-            conn->h->on_write(conn, e->buf, e->len);
+            conn->handler->on_write(conn, e->buf, e->len);
             cdk_list_remove(&(e->n));
             free(e);
             e = NULL;
@@ -105,30 +105,30 @@ void platform_connection_send(cdk_net_conn_t* conn)
     return;
 }
 
-void platform_connection_accept(cdk_net_conn_t* conn) {
+void platform_connection_accept(cdk_channel_t* conn) {
     cdk_sock_t cli = platform_socket_accept(conn->fd);
     if (cli == -1) {
         if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-            conn->h->on_close(conn, strerror(errno));
+            conn->handler->on_close(conn, strerror(errno));
         }
         return;
     }
-    cdk_net_conn_t* nconn = cdk_connection_create(platform_poller_retrieve(false), cli, PLATFORM_EVENT_R, conn->h);
-    conn->h->on_accept(nconn);
+    cdk_channel_t* nconn = cdk_connection_create(platform_poller_retrieve(false), cli, PLATFORM_EVENT_R, conn->handler);
+    conn->handler->on_accept(nconn);
     return;
 }
 
-void platform_connection_connect(cdk_net_conn_t* conn) {
+void platform_connection_connect(cdk_channel_t* conn) {
     int err;
     socklen_t len;
     len = sizeof(int);
 
     getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, &err, &len);
     if (err) {
-        conn->h->on_close(conn, strerror(err));
+        conn->handler->on_close(conn, strerror(err));
     }
     else {
         conn->tcp.connected = true;
-        conn->h->on_connect(conn);
+        conn->handler->on_connect(conn);
     }
 }

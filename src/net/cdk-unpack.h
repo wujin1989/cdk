@@ -23,4 +23,4 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void cdk_unpack(cdk_net_conn_t* conn);
+extern void cdk_unpack(cdk_channel_t* conn);

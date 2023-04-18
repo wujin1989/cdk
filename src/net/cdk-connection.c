@@ -30,40 +30,40 @@
 
 extern cdk_timer_t timer;
 
-static void __connection_handle_accept(cdk_net_conn_t* conn) {
+static void __connection_handle_accept(cdk_channel_t* conn) {
     platform_connection_accept(conn);
 }
 
-static void __connection_handle_recv(cdk_net_conn_t* conn) {
+static void __connection_handle_recv(cdk_channel_t* conn) {
     platform_connection_recv(conn);
 }
 
-static void __connection_handle_send(cdk_net_conn_t* conn) {
+static void __connection_handle_send(cdk_channel_t* conn) {
     platform_connection_send(conn);
 }
 
-static void __connection_handle_connect(cdk_net_conn_t* conn) {
+static void __connection_handle_connect(cdk_channel_t* conn) {
     platform_connection_connect(conn);
 }
 
 static void __connection_destroy(void* param) {
-    cdk_net_conn_t* conn = param;
+    cdk_channel_t* conn = param;
 
     mtx_destroy(&conn->mtx);
     free(conn);
     conn = NULL;
 }
 
-cdk_net_conn_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler)
+cdk_channel_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_handler_t* handler)
 {
-    cdk_net_conn_t* conn = malloc(sizeof(cdk_net_conn_t));
+    cdk_channel_t* conn = malloc(sizeof(cdk_channel_t));
 
     if (conn) {
-        memset(conn, 0, sizeof(cdk_net_conn_t));
+        memset(conn, 0, sizeof(cdk_channel_t));
         conn->poller = poller;
         conn->cmd = cmd;
         conn->fd = sock;
-        conn->h = handler;
+        conn->handler = handler;
         conn->type = platform_socket_socktype(sock);
         conn->active = true;
         mtx_init(&conn->mtx, mtx_plain);
@@ -93,11 +93,11 @@ cdk_net_conn_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int
     return NULL;
 }
 
-void cdk_connection_modify(cdk_net_conn_t* conn) {
+void cdk_connection_modify(cdk_channel_t* conn) {
     platform_event_mod(conn->poller->pfd, conn->fd, conn->cmd, conn);
 }
 
-void cdk_connection_destroy(cdk_net_conn_t* conn)
+void cdk_connection_destroy(cdk_channel_t* conn)
 {
     mtx_lock(&conn->mtx);
     conn->active = false;
@@ -134,7 +134,7 @@ void cdk_connection_destroy(cdk_net_conn_t* conn)
     cdk_timer_add(&timer, __connection_destroy, conn, 10000, false);
 }
 
-void cdk_connection_process(cdk_net_conn_t* conn)
+void cdk_connection_process(cdk_channel_t* conn)
 {
     switch (conn->cmd)
     {

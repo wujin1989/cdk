@@ -25,7 +25,7 @@ _Pragma("once")
 
 #define MAX_IOBUF_SIZE  16384
 
-extern cdk_net_conn_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_net_handler_t* handler);
-extern void            cdk_connection_modify(cdk_net_conn_t* conn);
-extern void            cdk_connection_destroy(cdk_net_conn_t* conn);
-extern void            cdk_connection_process(cdk_net_conn_t* conn);
+extern cdk_channel_t* cdk_connection_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_handler_t* handler);
+extern void           cdk_connection_modify(cdk_channel_t* conn);
+extern void           cdk_connection_destroy(cdk_channel_t* conn);
+extern void           cdk_connection_process(cdk_channel_t* conn);

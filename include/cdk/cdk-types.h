@@ -82,8 +82,8 @@ enum cdk_rbtree_node_keytype_e {
 	RB_KEYTYPE_STR    ,
 };
 
-typedef struct cdk_net_conn_s            cdk_net_conn_t;
-typedef struct cdk_net_handler_s         cdk_net_handler_t;
+typedef struct cdk_channel_s             cdk_channel_t;
+typedef struct cdk_handler_s             cdk_handler_t;
 typedef union  cdk_rbtree_node_key_u     cdk_rbtree_node_key_t;
 typedef struct cdk_rbtree_node_s         cdk_rbtree_node_t;
 typedef enum   cdk_rbtree_node_keytype_e cdk_rbtree_node_keytype_t;
@@ -232,7 +232,7 @@ struct cdk_unpack_s {
 		}lengthfield;
 
 		struct {
-			void (*unpack)(cdk_net_conn_t* conn);
+			void (*unpack)(cdk_channel_t* conn);
 		}userdefined;
 	};
 };
@@ -270,11 +270,11 @@ struct cdk_event_s {
 	cdk_list_node_t node;
 };
 
-struct cdk_net_conn_s {
+struct cdk_channel_s {
 	cdk_poller_t*      poller;
 	cdk_sock_t         fd;
 	int                cmd;
-	cdk_net_handler_t* h;
+	cdk_handler_t*     handler;
 	int                type;
 	bool               active;
 	mtx_t              mtx;
@@ -296,16 +296,16 @@ struct cdk_net_conn_s {
 	};
 };
 
-struct cdk_net_handler_s {
-	void (*on_read)   (cdk_net_conn_t*, void* buf, size_t len);
-	void (*on_write)  (cdk_net_conn_t*, void* buf, size_t len);
-	void (*on_close)  (cdk_net_conn_t*, char* error);
+struct cdk_handler_s {
+	void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
+	void (*on_write)  (cdk_channel_t*, void* buf, size_t len);
+	void (*on_close)  (cdk_channel_t*, char* error);
 	/**
 	 * the following callback function is only used by tcp.
 	 */
-	void (*on_accept) (cdk_net_conn_t*);
-	void (*on_connect)(cdk_net_conn_t*);
-	void (*on_connect_timeout)(cdk_net_conn_t*);
+	void (*on_accept) (cdk_channel_t*);
+	void (*on_connect)(cdk_channel_t*);
+	void (*on_connect_timeout)(cdk_channel_t*);
 };
 
 struct cdk_sha256_s {
