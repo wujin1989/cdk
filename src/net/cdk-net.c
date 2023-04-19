@@ -30,10 +30,10 @@
 #include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
-cdk_list_t pollerlst;
-cdk_poller_t* mainpoller;
-cdk_poller_t* currpoller;
-mtx_t pollermtx;
+static cdk_list_t pollerlst;
+static cdk_poller_t* mainpoller;
+static cdk_poller_t* currpoller;
+static mtx_t pollermtx;
 
 typedef struct event_ctx_s {
     cdk_channel_t* channel;
