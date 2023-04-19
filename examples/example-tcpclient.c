@@ -32,7 +32,7 @@ static void handle_connect(cdk_channel_t* conn) {
 		.lengthfield.payload = 8,
 		.lengthfield.size = 4
 	};
-	cdk_net_setup_unpacker(conn, &unpacker3);
+	cdk_net_unpacker_init(conn, &unpacker3);
 
 	net_msg_t* smsg = malloc(sizeof(net_msg_t) + strlen("hello") + 1);
 	if (!smsg) {
@@ -42,19 +42,19 @@ static void handle_connect(cdk_channel_t* conn) {
 	smsg->h.p_t = htonl(1);
 	memcpy(smsg->p, "hello", strlen("hello") + 1);
 
-	cdk_net_postsend(conn, smsg, sizeof(net_msg_t) + strlen("hello") + 1);
+	cdk_net_channelsend(conn, smsg, sizeof(net_msg_t) + strlen("hello") + 1);
 }
 
 static void handle_connect_timeout(cdk_channel_t* conn) {
 	printf("connect timeout\n");
-	cdk_net_close(conn);
+	cdk_net_channelclose(conn);
 }
 
 static void handle_write(cdk_channel_t* conn, void* buf, size_t len) {
 
 	net_msg_t* msg = (net_msg_t*)buf;
 	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
-	cdk_net_postrecv(conn);
+	cdk_net_channelrecv(conn);
 }
 
 static void handle_read(cdk_channel_t* conn, void* buf, size_t len) {
@@ -65,22 +65,23 @@ static void handle_read(cdk_channel_t* conn, void* buf, size_t len) {
 static void handle_close(cdk_channel_t* conn, char* error) {
 
 	printf("connection closed, reason: %s\n", error);
-	cdk_net_close(conn);
+	cdk_net_channelclose(conn);
 }
 
 int main(void) {
 
+	cdk_net_startup(1, 4);
+
 	cdk_handler_t handler = {
-		.on_accept  = NULL,
 		.on_connect = handle_connect,
 		.on_connect_timeout = handle_connect_timeout,
 		.on_read    = handle_read,
 		.on_write   = handle_write,
 		.on_close   = handle_close
 	};
-	cdk_net_concurrent_slaves(4);
 	cdk_net_dial("tcp", "127.0.0.1", "9999", 5000, &handler);
 
 	cdk_net_poll();
+	cdk_net_cleanup();
 	return 0;
 }

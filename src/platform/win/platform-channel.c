@@ -24,9 +24,11 @@
 #include "platform/platform-poller.h"
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
-#include "net/cdk-connection.h"
+#include "net/cdk-channel.h"
 #include "net/cdk-unpack.h"
 #include "cdk/net/cdk-net.h"
+
+extern cdk_poller_t* _poller_roundrobin(void);
 
 static char* __format_lasterror(DWORD error) {
     char* buffer = NULL;
@@ -36,77 +38,77 @@ static char* __format_lasterror(DWORD error) {
     return buffer;
 }
 
-void platform_connection_recv(cdk_channel_t* conn) {
+void platform_channel_recv(cdk_channel_t* channel) {
     ssize_t n;
 
-    if (conn->type == SOCK_STREAM) {
-        n = platform_socket_recv(conn->fd, (char*)(conn->tcp.rxbuf.buf) + conn->tcp.rxbuf.off, MAX_IOBUF_SIZE);
+    if (channel->type == SOCK_STREAM) {
+        n = platform_socket_recv(channel->fd, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE);
         /**
          * windows provides the WSAECONNRESET to detect a peer disconnection,
          * so it is not necessary to rely on receiving 0 from recv to determine that the connection has been closed.
          */
         if (n == -1) {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                conn->handler->on_close(conn, __format_lasterror(WSAGetLastError()));
+                channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
             }
             return;
         }
-        conn->tcp.rxbuf.off += n;
-        cdk_unpack(conn);
+        channel->tcp.rxbuf.off += n;
+        cdk_unpack(channel);
     }
-    if (conn->type == SOCK_DGRAM) {
+    if (channel->type == SOCK_DGRAM) {
 
-        conn->udp.peer.sslen = sizeof(struct sockaddr_storage);
-        n = platform_socket_recvfrom(conn->fd, conn->udp.rxbuf.buf, MAX_IOBUF_SIZE, &conn->udp.peer.ss, &conn->udp.peer.sslen);
+        channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
+        n = platform_socket_recvfrom(channel->fd, channel->udp.rxbuf.buf, MAX_IOBUF_SIZE, &channel->udp.peer.ss, &channel->udp.peer.sslen);
 
         if (n == -1) {
             /**
              * to be compatible with the semantics of linux, WSAECONNRESET is filtered out. 
              */
             if (WSAGetLastError() != WSAEWOULDBLOCK && WSAGetLastError() != WSAECONNRESET) {
-                conn->handler->on_close(conn, __format_lasterror(WSAGetLastError()));
+                channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
             }
             return;
         }
-        conn->handler->on_read(conn, conn->udp.rxbuf.buf, n);
+        channel->handler->on_read(channel, channel->udp.rxbuf.buf, n);
     }
     return;
 }
 
-void platform_connection_send(cdk_channel_t* conn)
+void platform_channel_send(cdk_channel_t* channel)
 {
-    if (conn->type == SOCK_STREAM) {
-        while (!cdk_list_empty(&(conn->tcp.txlist))) {
-            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(conn->tcp.txlist)), cdk_txlist_node_t, n);
+    if (channel->type == SOCK_STREAM) {
+        while (!cdk_list_empty(&(channel->tcp.txlist))) {
+            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->tcp.txlist)), cdk_txlist_node_t, n);
             
             while (e->off < e->len) {
-                ssize_t n = platform_socket_send(conn->fd, e->buf + e->off, (int)(e->len - e->off));
+                ssize_t n = platform_socket_send(channel->fd, e->buf + e->off, (int)(e->len - e->off));
                 if (n == -1) {
                     if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                        conn->handler->on_close(conn, __format_lasterror(WSAGetLastError()));
+                        channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
                     }
                     return;
                 }
                 e->off += n;
             }
-            conn->handler->on_write(conn, e->buf, e->len);
+            channel->handler->on_write(channel, e->buf, e->len);
             cdk_list_remove(&(e->n));
             free(e);
             e = NULL;
         }
     }
-    if (conn->type == SOCK_DGRAM) {
-        while (!cdk_list_empty(&(conn->udp.txlist))) {
-            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(conn->udp.txlist)), cdk_txlist_node_t, n);
+    if (channel->type == SOCK_DGRAM) {
+        while (!cdk_list_empty(&(channel->udp.txlist))) {
+            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->udp.txlist)), cdk_txlist_node_t, n);
 
-            ssize_t n = platform_socket_sendto(conn->fd, e->buf, (int)e->len, &(conn->udp.peer.ss), conn->udp.peer.sslen);
+            ssize_t n = platform_socket_sendto(channel->fd, e->buf, (int)e->len, &(channel->udp.peer.ss), channel->udp.peer.sslen);
             if (n == -1) {
                 if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                    conn->handler->on_close(conn, __format_lasterror(WSAGetLastError()));
+                    channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
                 }
                 return;
             }
-            conn->handler->on_write(conn, e->buf, e->len);
+            channel->handler->on_write(channel, e->buf, e->len);
             cdk_list_remove(&(e->n));
             free(e);
             e = NULL;
@@ -115,30 +117,30 @@ void platform_connection_send(cdk_channel_t* conn)
     return;
 }
 
-void platform_connection_accept(cdk_channel_t* conn) {
-    cdk_sock_t cli = platform_socket_accept(conn->fd);
+void platform_channel_accept(cdk_channel_t* channel) {
+    cdk_sock_t cli = platform_socket_accept(channel->fd);
     if (cli == -1) {
         if (WSAGetLastError() != WSAEWOULDBLOCK) {
-            conn->handler->on_close(conn, __format_lasterror(WSAGetLastError()));
+            channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
         }
         return;
     }
-    cdk_channel_t* nconn = cdk_connection_create(platform_poller_retrieve(false), cli, PLATFORM_EVENT_R, conn->handler);
-    conn->handler->on_accept(nconn);
+    cdk_channel_t* newchannel = cdk_channel_create(_poller_roundrobin(), cli, PLATFORM_EVENT_R, channel->handler);
+    channel->handler->on_accept(newchannel);
     return;
 }
 
-void platform_connection_connect(cdk_channel_t* conn) {
+void platform_channel_connect(cdk_channel_t* channel) {
     int err;
     socklen_t len;
     len = sizeof(int);
   
-    getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
+    getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
-        conn->handler->on_close(conn, __format_lasterror(err));
+        channel->handler->on_close(channel, __format_lasterror(err));
     }
     else {
-        conn->tcp.connected = true;
-        conn->handler->on_connect(conn);
+        channel->tcp.connected = true;
+        channel->handler->on_connect(channel);
     }
 }

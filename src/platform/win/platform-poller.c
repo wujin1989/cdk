@@ -22,124 +22,73 @@
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
-#include "net/cdk-connection.h"
-#include "cdk/cdk-timer.h"
-#include "cdk/cdk-utils.h"
-#include "cdk/container/cdk-rbtree.h"
+#include "net/cdk-channel.h"
 #include "wepoll/wepoll.h"
 
-static atomic_flag once_create = ATOMIC_FLAG_INIT;
-static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
-static cdk_poller_t* pollers;
-static atomic_size_t nslaves;
-static atomic_size_t idx;
-extern cdk_timer_t timer;
+extern void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len);
+extern void _eventfd_close(cdk_channel_t* channel, char* error);
 
-static void __poller_init(cdk_poller_t* poller) {
-    poller->pfd = epoll_create1(0);
-    platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
-    mtx_init(&poller->evmtx, mtx_plain);
-    cdk_list_init(&poller->evlist);
-}
-
-static void __eventfd_read(cdk_channel_t* conn, void* buf, size_t len)
-{
-    mtx_lock(&conn->poller->evmtx);
-    if (!cdk_list_empty(&conn->poller->evlist))
-    {
-        cdk_event_t* e = cdk_list_data(cdk_list_head(&conn->poller->evlist), cdk_event_t, node);
-        cdk_list_remove(&e->node);
-        e->cb(e->arg);
-
-        free(e);
-        e = NULL;
-    }
-    mtx_unlock(&conn->poller->evmtx);
-}
-
-static void __eventfd_close(cdk_channel_t* conn, char* error) {
-    cdk_connection_destroy(conn);
-}
-
-cdk_poller_t* platform_poller_retrieve(bool master)
-{
-    if (master) {
-        return &(pollers[0]);
-    }
-    if (atomic_load(&idx) == atomic_load(&nslaves)) {
-        atomic_store(&idx, 0);
-    }
-    return (pollers + 1 + (atomic_fetch_add(&idx, 1) % atomic_load(&nslaves)));
-}
-
-int platform_poller_poll(void* arg) {
+void platform_poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS];
 
-    cdk_poller_t* poller = arg;
-    poller->tid = cdk_utils_systemtid();
-
     cdk_handler_t handler = {
-        .on_read = __eventfd_read,
-        .on_close = __eventfd_close
+        .on_read = _eventfd_read,
+        .on_close = _eventfd_close
     };
     cdk_unpack_t unpacker = {
         .type = UNPACK_TYPE_FIXEDLEN,
         .fixedlen.len = sizeof(int)
     };
-    cdk_channel_t* conn = cdk_connection_create(poller, poller->evfds[1], PLATFORM_EVENT_R, &handler);
-    memcpy(&conn->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
+    cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], PLATFORM_EVENT_R, &handler);
+    memcpy(&channel->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
 
-    while (true)
+    while (poller->active)
     {
         int nevents = platform_event_wait(poller->pfd, events);
         for (int i = 0; i < nevents; i++)
         {
-            cdk_channel_t* conn = events[i].ptr;
-            if (conn) {
-                cdk_connection_process(conn);
+            cdk_channel_t* channel = events[i].ptr;
+            if (channel) {
+                cdk_channel_process(channel);
             }
         }
     }
-    return 0;
 }
 
-void platform_poller_create(void)
+cdk_poller_t* platform_poller_create(void)
 {
-    if (atomic_flag_test_and_set(&once_create)) {
-        return;
-    }
-    atomic_init(&idx, 0);
+    cdk_poller_t* poller = malloc(sizeof(cdk_poller_t));
 
-    pollers = malloc(sizeof(cdk_poller_t) * (atomic_load(&nslaves) + 1));
-    if (pollers) {
-        memset(pollers, 0, sizeof(cdk_poller_t) * (atomic_load(&nslaves) + 1));
-        __poller_init(&pollers[0]);
+    if (poller) {
+        poller->pfd = epoll_create1(0);
+        poller->tid = thrd_current();
+        poller->active = true;
 
-        for (int i = 1; i < (atomic_load(&nslaves) + 1); i++)
-        {
-            __poller_init(&pollers[i]);
-            thrd_t tid;
-            thrd_create(&tid, platform_poller_poll, &(pollers[i]));
-            thrd_detach(tid);
-        }
+        cdk_list_init(&poller->evlist);
+        mtx_init(&poller->evmtx, mtx_plain);
+        platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
     }
+    return poller;
 }
 
-void platform_poller_destroy(void)
+void platform_poller_destroy(cdk_poller_t* poller)
 {
-    if (atomic_flag_test_and_set(&once_destroy)) {
-        return;
-    }
-    for (int i = 0; i < (atomic_load(&nslaves) + 1); i++) {
-        epoll_close(pollers[i].pfd);
-        platform_socket_close(pollers[i].evfds[0]);
-        platform_socket_close(pollers[i].evfds[1]);
-        mtx_destroy(&pollers[i].evmtx);
-    }
-    free(pollers);
-    pollers = NULL;
-}
+    poller->active = false;
+    epoll_close(poller->pfd);
 
-void platform_poller_concurrent_slaves(int num) {
-    atomic_init(&nslaves, num);
+    platform_socket_close(poller->evfds[0]);
+    platform_socket_close(poller->evfds[1]);
+
+    while (!cdk_list_empty(&poller->evlist))
+    {
+        cdk_event_t* e = cdk_list_data(cdk_list_head(&poller->evlist), cdk_event_t, node);
+        cdk_list_remove(&e->node);
+
+        free(e);
+        e = NULL;
+    }
+    mtx_destroy(&poller->evmtx);
+
+    free(poller);
+    poller = NULL;
 }

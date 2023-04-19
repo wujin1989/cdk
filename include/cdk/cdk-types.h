@@ -258,10 +258,12 @@ struct cdk_addrinfo_s {
 
 struct cdk_poller_s {
 	cdk_pollfd_t pfd;
-	cdk_tid_t tid;
+	thrd_t tid;
 	cdk_sock_t evfds[2];
 	cdk_list_t evlist;
+	bool active;
 	mtx_t evmtx;
+	cdk_list_node_t node;
 };
 
 struct cdk_event_s {
