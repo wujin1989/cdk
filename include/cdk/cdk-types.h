@@ -60,6 +60,7 @@ _Pragma("once")
 #endif
 
 #if defined(__APPLE__)
+#include <sys/event.h>
 #endif
 #endif
 

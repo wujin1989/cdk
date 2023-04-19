@@ -54,23 +54,6 @@ void platform_poller_poll(cdk_poller_t* poller) {
     }
 }
 
-#if defined(__linux__)
-cdk_poller_t* platform_poller_create(void)
-{
-    cdk_poller_t* poller = malloc(sizeof(cdk_poller_t));
-
-    if (poller) {
-        poller->pfd = epoll_create1(0);
-        poller->tid = thrd_current();
-        poller->active = true;
-
-        cdk_list_init(&poller->evlist);
-        mtx_init(&poller->evmtx, mtx_plain);
-        platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
-    }
-    return poller;
-}
-
 void platform_poller_destroy(cdk_poller_t* poller)
 {
     poller->active = false;
@@ -92,16 +75,39 @@ void platform_poller_destroy(cdk_poller_t* poller)
     free(poller);
     poller = NULL;
 }
+
+#if defined(__linux__)
+cdk_poller_t* platform_poller_create(void)
+{
+    cdk_poller_t* poller = malloc(sizeof(cdk_poller_t));
+
+    if (poller) {
+        poller->pfd = epoll_create1(0);
+        poller->tid = thrd_current();
+        poller->active = true;
+
+        cdk_list_init(&poller->evlist);
+        mtx_init(&poller->evmtx, mtx_plain);
+        platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
+    }
+    return poller;
+}
 #endif
 
 #if defined(__APPLE__)
-void platform_poller_create(void)
+cdk_poller_t* platform_poller_create(void)
 {
-    
-}
+    cdk_poller_t* poller = malloc(sizeof(cdk_poller_t));
 
-void platform_poller_destroy(void)
-{
-    
+    if (poller) {
+        poller->pfd = kqueue();
+        poller->tid = thrd_current();
+        poller->active = true;
+
+        cdk_list_init(&poller->evlist);
+        mtx_init(&poller->evmtx, mtx_plain);
+        platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
+    }
+    return poller;
 }
 #endif

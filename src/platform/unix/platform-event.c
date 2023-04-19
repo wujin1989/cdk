@@ -85,3 +85,61 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
 	return n;
 }
 #endif
+
+#if defined(__APPLE__)
+void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
+	struct kevent ke;
+	
+	switch (type)
+	{
+	case PLATFORM_EVENT_A:
+	case PLATFORM_EVENT_R:
+		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD, 0, 0, ud);
+		break;
+	case PLATFORM_EVENT_C:
+	case PLATFORM_EVENT_W:
+		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD, 0, 0, ud);
+		break;
+	default:
+		break;
+	}
+	kevent(pfd, &ke, 1, NULL, 0, NULL);
+}
+
+void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
+	struct kevent ke;
+
+	switch (type)
+	{
+	case PLATFORM_EVENT_A:
+	case PLATFORM_EVENT_R:
+		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD, 0, 0, ud);
+		break;
+	case PLATFORM_EVENT_C:
+	case PLATFORM_EVENT_W:
+		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD, 0, 0, ud);
+		break;
+	default:
+		break;
+	}
+	kevent(pfd, &ke, 1, NULL, 0, NULL);
+}
+
+void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
+	struct kevent ke;
+	EV_SET(&ke, sfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	kevent(pfd, &ke, 1, NULL, 0, NULL);
+	EV_SET(&ke, sfd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+	kevent(pfd, &ke, 1, NULL, 0, NULL);
+}
+
+int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
+	struct kevent __events[MAX_PROCESS_EVENTS];
+	int n = kevent(pfd, NULL, 0, __events, MAX_PROCESS_EVENTS, NULL);
+
+	for (int i = 0; i < n; i++) {
+		events[i].ptr = __events[i].udata;
+	}
+	return n;
+}
+#endif
