@@ -23,41 +23,41 @@
 #include "cdk/cdk-utils.h"
 #include "cdk/encoding/cdk-varint.h"
 
-static void __unpack_fixedlen(cdk_channel_t* conn) {
+static void __unpack_fixedlen(cdk_channel_t* channel) {
 
-	char* head = conn->tcp.rxbuf.buf;
-	char* tail = (char*)conn->tcp.rxbuf.buf + conn->tcp.rxbuf.off;
+	char* head = channel->tcp.rxbuf.buf;
+	char* tail = (char*)channel->tcp.rxbuf.buf + channel->tcp.rxbuf.off;
 	char* tmp = head;
 
 	uint32_t accumulated = (uint32_t)(tail - head);
 
 	while (true) {
 
-		if (accumulated < conn->tcp.unpacker.fixedlen.len) {
+		if (accumulated < channel->tcp.unpacker.fixedlen.len) {
 			break;
 		}
-		conn->handler->on_read(conn, tmp, conn->tcp.unpacker.fixedlen.len);
+		channel->handler->on_read(channel, tmp, channel->tcp.unpacker.fixedlen.len);
 
-		tmp += conn->tcp.unpacker.fixedlen.len;
-		accumulated -= conn->tcp.unpacker.fixedlen.len;
+		tmp += channel->tcp.unpacker.fixedlen.len;
+		accumulated -= channel->tcp.unpacker.fixedlen.len;
 	}
 	if (tmp == head) {
 		return;
 	}
-	conn->tcp.rxbuf.off = accumulated;
+	channel->tcp.rxbuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->tcp.rxbuf.buf, tmp, accumulated);
+		memmove(channel->tcp.rxbuf.buf, tmp, accumulated);
 	}
 	return;
 }
 
-static void __unpack_delimiter(cdk_channel_t* conn) {
+static void __unpack_delimiter(cdk_channel_t* channel) {
 
-	char* head = conn->tcp.rxbuf.buf;
-	char* tail = (char*)conn->tcp.rxbuf.buf + conn->tcp.rxbuf.off;
+	char* head = channel->tcp.rxbuf.buf;
+	char* tail = (char*)channel->tcp.rxbuf.buf + channel->tcp.rxbuf.off;
 	char* tmp = head;
 
-	size_t dlen = strlen(conn->tcp.unpacker.delimiter.delimiter);
+	size_t dlen = strlen(channel->tcp.unpacker.delimiter.delimiter);
 
 	uint32_t accumulated = (uint32_t)(tail - head);
 	if (accumulated < dlen) {
@@ -72,10 +72,10 @@ static void __unpack_delimiter(cdk_channel_t* conn) {
 
 	for (int i = 1; i < dlen; i++) {
 
-		while (j > 0 && conn->tcp.unpacker.delimiter.delimiter[i] != conn->tcp.unpacker.delimiter.delimiter[j]) {
+		while (j > 0 && channel->tcp.unpacker.delimiter.delimiter[i] != channel->tcp.unpacker.delimiter.delimiter[j]) {
 			j = next[j - 1];
 		}
-		if (conn->tcp.unpacker.delimiter.delimiter[i] == conn->tcp.unpacker.delimiter.delimiter[j]) {
+		if (channel->tcp.unpacker.delimiter.delimiter[i] == channel->tcp.unpacker.delimiter.delimiter[j]) {
 			j++;
 		}
 		next[i] = j;
@@ -83,15 +83,15 @@ static void __unpack_delimiter(cdk_channel_t* conn) {
 	j = 0;
 	for (uint32_t i = 0; i < accumulated; i++) {
 
-		while (j > 0 && tmp[i] != conn->tcp.unpacker.delimiter.delimiter[j]) {
+		while (j > 0 && tmp[i] != channel->tcp.unpacker.delimiter.delimiter[j]) {
 			j = next[j - 1];
 		}
-		if (tmp[i] == conn->tcp.unpacker.delimiter.delimiter[j]) {
+		if (tmp[i] == channel->tcp.unpacker.delimiter.delimiter[j]) {
 			j++;
 		}
 		if (j == dlen) {
 
-			conn->handler->on_read(conn, tmp, ((i - dlen + 1) + dlen));
+			channel->handler->on_read(channel, tmp, ((i - dlen + 1) + dlen));
 
 			tmp += (i - dlen + 1) + dlen;
 			accumulated -= (uint32_t)((i - dlen + 1) + dlen);
@@ -105,96 +105,96 @@ static void __unpack_delimiter(cdk_channel_t* conn) {
 	if (tmp == head) {
 		return;
 	}
-	conn->tcp.rxbuf.off = accumulated;
+	channel->tcp.rxbuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->tcp.rxbuf.buf, tmp, accumulated);
+		memmove(channel->tcp.rxbuf.buf, tmp, accumulated);
 	}
 	return;
 }
 
-static void __unpack_lengthfield(cdk_channel_t* conn) {
+static void __unpack_lengthfield(cdk_channel_t* channel) {
 
 	uint32_t fs; /* frame size   */
 	uint32_t hs; /* header size  */
 	uint32_t ps; /* payload size */
 
-	char* head = conn->tcp.rxbuf.buf;
-	char* tail = (char*)conn->tcp.rxbuf.buf + conn->tcp.rxbuf.off;
+	char* head = channel->tcp.rxbuf.buf;
+	char* tail = (char*)channel->tcp.rxbuf.buf + channel->tcp.rxbuf.off;
 	char* tmp = head;
 
 	uint32_t accumulated = (uint32_t)(tail - head);
 
 	while (true) {
-		if (accumulated < conn->tcp.unpacker.lengthfield.payload) {
+		if (accumulated < channel->tcp.unpacker.lengthfield.payload) {
 			break;
 		}
-		hs = conn->tcp.unpacker.lengthfield.payload;
+		hs = channel->tcp.unpacker.lengthfield.payload;
 		ps = 0;
 
-		if (conn->tcp.unpacker.lengthfield.coding == LEN_FIELD_FIXEDINT) {
+		if (channel->tcp.unpacker.lengthfield.coding == LEN_FIELD_FIXEDINT) {
 
-			ps = *((uint32_t*)(tmp + conn->tcp.unpacker.lengthfield.offset));
+			ps = *((uint32_t*)(tmp + channel->tcp.unpacker.lengthfield.offset));
 			//0 means little-endian, 1 means big-endian.
 			if (!cdk_utils_byteorder()) {
 				ps = ntohl(ps);
 			}
 		}
-		if (conn->tcp.unpacker.lengthfield.coding == LEN_FIELD_VARINT) {
+		if (channel->tcp.unpacker.lengthfield.coding == LEN_FIELD_VARINT) {
 
-			int flexible = (int)(tail - (tmp + conn->tcp.unpacker.lengthfield.offset));
+			int flexible = (int)(tail - (tmp + channel->tcp.unpacker.lengthfield.offset));
 
-			ps = (uint32_t)cdk_varint_decode(tmp + conn->tcp.unpacker.lengthfield.offset, &flexible);
+			ps = (uint32_t)cdk_varint_decode(tmp + channel->tcp.unpacker.lengthfield.offset, &flexible);
 
 			if (!cdk_utils_byteorder()) {
 				ps = ntohl(ps);
 			}
-			hs = conn->tcp.unpacker.lengthfield.payload + flexible - conn->tcp.unpacker.lengthfield.size;
+			hs = channel->tcp.unpacker.lengthfield.payload + flexible - channel->tcp.unpacker.lengthfield.size;
 		}
-		fs = hs + ps + conn->tcp.unpacker.lengthfield.adj;
+		fs = hs + ps + channel->tcp.unpacker.lengthfield.adj;
 
-		if (fs > conn->tcp.rxbuf.len) {
+		if (fs > channel->tcp.rxbuf.len) {
 			abort();
 		}
 		if (accumulated < fs) {
 			break;
 		}
-		conn->handler->on_read(conn, tmp, fs);
+		channel->handler->on_read(channel, tmp, fs);
 		tmp += fs;
 		accumulated -= fs;
 	}
 	if (tmp == head) {
 		return;
 	}
-	conn->tcp.rxbuf.off = accumulated;
+	channel->tcp.rxbuf.off = accumulated;
 	if (accumulated) {
-		memmove(conn->tcp.rxbuf.buf, tmp, accumulated);
+		memmove(channel->tcp.rxbuf.buf, tmp, accumulated);
 	}
 	return;
 }
 
-static void __unpack_userdefined(cdk_channel_t* conn) {
+static void __unpack_userdefined(cdk_channel_t* channel) {
 
-	conn->tcp.unpacker.userdefined.unpack(conn);
+	channel->tcp.unpacker.userdefined.unpack(channel);
 }
 
-void cdk_unpack(cdk_channel_t* conn) {
+void cdk_unpack(cdk_channel_t* channel) {
 
-	switch (conn->tcp.unpacker.type)
+	switch (channel->tcp.unpacker.type)
 	{
 	case UNPACK_TYPE_FIXEDLEN: {
-		__unpack_fixedlen(conn);
+		__unpack_fixedlen(channel);
 		break;
 	}
 	case UNPACK_TYPE_DELIMITER: {
-		__unpack_delimiter(conn);
+		__unpack_delimiter(channel);
 		break;
 	}
 	case UNPACK_TYPE_LENGTHFIELD: {
-		__unpack_lengthfield(conn);
+		__unpack_lengthfield(channel);
 		break;
 	}
 	case UNPACK_TYPE_USERDEFINED: {
-		__unpack_userdefined(conn);
+		__unpack_userdefined(channel);
 		break;
 	}
 	default:

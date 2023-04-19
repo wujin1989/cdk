@@ -232,7 +232,7 @@ struct cdk_unpack_s {
 		}lengthfield;
 
 		struct {
-			void (*unpack)(cdk_channel_t* conn);
+			void (*unpack)(cdk_channel_t* channel);
 		}userdefined;
 	};
 };

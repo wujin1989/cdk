@@ -347,8 +347,8 @@ void cdk_net_channelclose(cdk_channel_t* channel) {
     cdk_channel_destroy(channel);
 }
 
-void cdk_net_unpacker_init(cdk_channel_t* conn, cdk_unpack_t* unpacker) {
-    memcpy(&conn->tcp.unpacker, unpacker, sizeof(cdk_unpack_t));
+void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker) {
+    memcpy(&channel->tcp.unpacker, unpacker, sizeof(cdk_unpack_t));
 }
 
 void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event) {
