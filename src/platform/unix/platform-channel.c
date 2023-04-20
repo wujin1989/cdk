@@ -38,12 +38,12 @@ void platform_channel_recv(cdk_channel_t* channel) {
 
         if (n == -1) {
             if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                channel->handler->on_close(channel, strerror(errno));
+                channel->handler->on_close(channel, platform_socket_error2string(errno));
             }
             return;
         }
         if (n == 0) {
-            channel->handler->on_close(channel, strerror(ECONNRESET));
+            channel->handler->on_close(channel, platform_socket_error2string(ECONNRESET));
             return;
         }
         channel->tcp.rxbuf.off += n;
@@ -75,7 +75,7 @@ void platform_channel_send(cdk_channel_t* channel)
                 ssize_t n = platform_socket_send(channel->fd, e->buf + e->off, (int)(e->len - e->off));
                 if (n == -1) {
                     if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                        channel->handler->on_close(channel, strerror(errno));
+                        channel->handler->on_close(channel, platform_socket_error2string(errno));
                     }
                     return;
                 }
@@ -94,7 +94,7 @@ void platform_channel_send(cdk_channel_t* channel)
             ssize_t n = platform_socket_sendto(channel->fd, e->buf, (int)e->len, &(channel->udp.peer.ss), channel->udp.peer.sslen);
             if (n == -1) {
                 if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                    channel->handler->on_close(channel, strerror(errno));
+                    channel->handler->on_close(channel, platform_socket_error2string(errno));
                 }
                 return;
             }
@@ -111,7 +111,7 @@ void platform_channel_accept(cdk_channel_t* channel) {
     cdk_sock_t cli = platform_socket_accept(channel->fd);
     if (cli == -1) {
         if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-            channel->handler->on_close(channel, strerror(errno));
+            channel->handler->on_close(channel, platform_socket_error2string(errno));
         }
         return;
     }
@@ -127,7 +127,7 @@ void platform_channel_connect(cdk_channel_t* channel) {
 
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, &err, &len);
     if (err) {
-        channel->handler->on_close(channel, strerror(err));
+        channel->handler->on_close(channel, platform_socket_error2string(err));
     }
     else {
         channel->tcp.connected = true;

@@ -344,3 +344,11 @@ int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t so
     socks[1] = cli;
     return 0;
 }
+
+char* platform_socket_error2string(int error) {
+    static char buffer[512];
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        buffer, sizeof(buffer), NULL);
+    return buffer;
+}

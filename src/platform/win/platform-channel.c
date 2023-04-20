@@ -30,14 +30,6 @@
 
 extern cdk_poller_t* _poller_roundrobin(void);
 
-static char* __format_lasterror(DWORD error) {
-    char* buffer = NULL;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR)&buffer, 0, NULL);
-    return buffer;
-}
-
 void platform_channel_recv(cdk_channel_t* channel) {
     ssize_t n;
 
@@ -49,7 +41,7 @@ void platform_channel_recv(cdk_channel_t* channel) {
          */
         if (n == -1) {
             if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
+                channel->handler->on_close(channel, platform_socket_error2string(WSAGetLastError()));
             }
             return;
         }
@@ -66,7 +58,7 @@ void platform_channel_recv(cdk_channel_t* channel) {
              * to be compatible with the semantics of linux, WSAECONNRESET is filtered out. 
              */
             if (WSAGetLastError() != WSAEWOULDBLOCK && WSAGetLastError() != WSAECONNRESET) {
-                channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
+                channel->handler->on_close(channel, platform_socket_error2string(WSAGetLastError()));
             }
             return;
         }
@@ -85,7 +77,7 @@ void platform_channel_send(cdk_channel_t* channel)
                 ssize_t n = platform_socket_send(channel->fd, e->buf + e->off, (int)(e->len - e->off));
                 if (n == -1) {
                     if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                        channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
+                        channel->handler->on_close(channel, platform_socket_error2string(WSAGetLastError()));
                     }
                     return;
                 }
@@ -104,7 +96,7 @@ void platform_channel_send(cdk_channel_t* channel)
             ssize_t n = platform_socket_sendto(channel->fd, e->buf, (int)e->len, &(channel->udp.peer.ss), channel->udp.peer.sslen);
             if (n == -1) {
                 if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                    channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
+                    channel->handler->on_close(channel, platform_socket_error2string(WSAGetLastError()));
                 }
                 return;
             }
@@ -121,7 +113,7 @@ void platform_channel_accept(cdk_channel_t* channel) {
     cdk_sock_t cli = platform_socket_accept(channel->fd);
     if (cli == -1) {
         if (WSAGetLastError() != WSAEWOULDBLOCK) {
-            channel->handler->on_close(channel, __format_lasterror(WSAGetLastError()));
+            channel->handler->on_close(channel, platform_socket_error2string(WSAGetLastError()));
         }
         return;
     }
@@ -137,7 +129,7 @@ void platform_channel_connect(cdk_channel_t* channel) {
   
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
-        channel->handler->on_close(channel, __format_lasterror(err));
+        channel->handler->on_close(channel, platform_socket_error2string(err));
     }
     else {
         channel->tcp.connected = true;

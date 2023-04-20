@@ -379,3 +379,7 @@ ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sock
 int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]) {
     return socketpair(AF_LOCAL, type, protocol, socks);
 }
+
+char* platform_socket_error2string(int error) {
+    return strerror(error);
+}
