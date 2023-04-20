@@ -1,17 +1,10 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.25)
 
 project(cdk VERSION 1.0.0 LANGUAGES C)
 
-message(STATUS "[cdk compile]: operation system is ${CMAKE_SYSTEM}")
-
-#only support windows, linux, darwin(mac os)
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    message(STATUS "[cdk compile]: operation system type is ${CMAKE_SYSTEM_NAME}")
-elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    message(STATUS "[cdk compile]: operation system type is ${CMAKE_SYSTEM_NAME}")
-elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    message(STATUS "[cdk compile]: operation system type is ${CMAKE_SYSTEM_NAME}")
-else ()
+if(WIN32 OR LINUX OR (APPLE AND NOT IOS) OR IOS OR ANDROID)
+    message(STATUS "[cdk compile]: operation system is ${CMAKE_SYSTEM}")
+else()
     message(FATAL_ERROR "[cdk compile]: operation system type is ${CMAKE_SYSTEM_NAME}, now not support")
 endif()
 
@@ -41,7 +34,20 @@ message(STATUS "[cdk compile]: using iso c${CMAKE_C_STANDARD} standard.")
 
 include_directories(include)
 include_directories(src)
+include_directories(third-party/openssl/include)
 	
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
+	if(WIN32)
+		link_directories(third-party/openssl/lib/amd64/windows)
+	endif()
+	if(LINUX)
+		link_directories(third-party/openssl/lib/amd64/linux)
+	endif()
+endif()
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+endif()
+
 set(SRCS
 	src/crypto/cdk-sha1.c
 	src/crypto/cdk-sha256.c
@@ -95,7 +101,7 @@ if(UNIX)
 endif()
 
 add_library(cdk STATIC ${SRCS})
-target_link_libraries(cdk PUBLIC Threads::Threads)
+target_link_libraries(cdk PUBLIC Threads::Threads ssl crypto)
 
 if(WIN32)
 	target_link_libraries(cdk PUBLIC winmm ws2_32)
