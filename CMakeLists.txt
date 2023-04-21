@@ -34,20 +34,7 @@ message(STATUS "[cdk compile]: using iso c${CMAKE_C_STANDARD} standard.")
 
 include_directories(include)
 include_directories(src)
-include_directories(third-party/openssl/include)
 	
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
-	if(WIN32)
-		link_directories(third-party/openssl/lib/amd64/windows)
-	endif()
-	if(LINUX)
-		link_directories(third-party/openssl/lib/amd64/linux)
-	endif()
-endif()
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-endif()
-
 set(SRCS
 	src/crypto/cdk-sha1.c
 	src/crypto/cdk-sha256.c
@@ -98,7 +85,7 @@ if(UNIX)
 endif()
 
 add_library(cdk STATIC ${SRCS})
-target_link_libraries(cdk PUBLIC Threads::Threads ssl crypto)
+target_link_libraries(cdk PUBLIC Threads::Threads)
 
 if(WIN32)
 	target_link_libraries(cdk PUBLIC winmm ws2_32)
