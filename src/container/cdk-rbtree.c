@@ -26,139 +26,100 @@
 #define	RB_RED		0
 #define	RB_BLACK	1
 
-static inline int cdk_rbtree_builtin_cmp_i8(int8_t k1, int8_t k2) {
+int default_keycmp_i8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	
-	if (k1 < k2) {
+	if (k1->i8 < k2->i8) {
 		return -1;
 	}
-	if (k1 > k2) {
+	if (k1->i8 > k2->i8) {
 		return 1;
 	}
 	return 0;
 }
 
-static inline int cdk_rbtree_builtin_cmp_i16(int16_t k1, int16_t k2) {
+int default_keycmp_i16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	
-	if (k1 < k2) {
+	if (k1->i16 < k2->i16) {
 		return -1;
 	}
-	if (k1 > k2) {
+	if (k1->i16 > k2->i16) {
 		return 1;
 	}
 	return 0;
 }
 
-static inline int cdk_rbtree_builtin_cmp_i32(int32_t k1, int32_t k2) {
+int default_keycmp_i32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	
-	if (k1 < k2) {
+	if (k1->i32 < k2->i32) {
 		return -1;
 	}
-	if (k1 > k2) {
+	if (k1->i32 > k2->i32) {
 		return 1;
 	}
 	return 0;
 }
 
-static inline int cdk_rbtree_builtin_cmp_i64(int64_t k1, int64_t k2) {
+int default_keycmp_i64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	
-	if (k1 < k2) {
+	if (k1->i64 < k2->i64) {
 		return -1;
 	}
-	if (k1 > k2) {
+	if (k1->i64 > k2->i64) {
 		return 1;
 	}
 	return 0;
 }
 
-static inline int cdk_rbtree_builtin_cmp_u8(uint8_t k1, uint8_t k2) {
+int default_keycmp_u8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	
-	if (k1 < k2) {
+	if (k1->u8 < k2->u8) {
 		return -1;
 	}
-	if (k1 > k2) {
+	if (k1->u8 > k2->u8) {
 		return 1;
 	}
 	return 0;
 }
 
-static inline int cdk_rbtree_builtin_cmp_u16(uint16_t k1, uint16_t k2) {
+int default_keycmp_u16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	
-	if (k1 < k2) {
+	if (k1->u16 < k2->u16) {
 		return -1;
 	}
-	if (k1 > k2) {
+	if (k1->u16 > k2->u16) {
 		return 1;
 	}
 	return 0;
 }
 
-static inline int cdk_rbtree_builtin_cmp_u32(uint32_t k1, uint32_t k2) {
+int default_keycmp_u32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	
-	if (k1 < k2) {
+	if (k1->u32 < k2->u32) {
 		return -1;
 	}
-	if (k1 > k2) {
+	if (k1->u32 > k2->u32) {
 		return 1;
 	}
 	return 0;
 }
 
-static inline int cdk_rbtree_builtin_cmp_u64(uint64_t k1, uint64_t k2) {
+int default_keycmp_u64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 
-	if (k1 < k2) {
+	if (k1->u64 < k2->u64) {
 		return -1;
 	}
-	if (k1 > k2) {
+	if (k1->u64 > k2->u64) {
 		return 1;
 	}
 	return 0;
 }
 
-static inline int cdk_rbtree_builtin_cmp_str(char* k1, char* k2) {
+int default_keycmp_str(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 
-	return strcmp(k1, k2);
+	return strcmp(k1->str, k2->str);
 }
 
-static inline int cdk_rbtree_builtin_cmp(cdk_rbtree_node_key_t k1, cdk_rbtree_node_key_t k2, cdk_rbtree_node_keytype_t type) {
-
-	int r;
-	switch (type)
-	{
-	case RB_KEYTYPE_INT8:
-		r = cdk_rbtree_builtin_cmp_i8(k1.i8, k2.i8);
-		break;
-	case RB_KEYTYPE_INT16:
-		r = cdk_rbtree_builtin_cmp_i16(k1.i16, k2.i16);
-		break;
-	case RB_KEYTYPE_INT32:
-		r = cdk_rbtree_builtin_cmp_i32(k1.i32, k2.i32);
-		break;
-	case RB_KEYTYPE_INT64:
-		r = cdk_rbtree_builtin_cmp_i64(k1.i64, k2.i64);
-		break;
-	case RB_KEYTYPE_UINT8:
-		r = cdk_rbtree_builtin_cmp_u8(k1.u8, k2.u8);
-		break;
-	case RB_KEYTYPE_UINT16:
-		r = cdk_rbtree_builtin_cmp_u16(k1.u16, k2.u16);
-		break;
-	case RB_KEYTYPE_UINT32:
-		r = cdk_rbtree_builtin_cmp_u32(k1.u32, k2.u32);
-		break;
-	case RB_KEYTYPE_UINT64:
-		r = cdk_rbtree_builtin_cmp_u64(k1.u64, k2.u64);
-		break;
-	case RB_KEYTYPE_STR:
-		r = cdk_rbtree_builtin_cmp_str(k1.str, k2.str);
-		break;
-	default:
-		abort();
-		break;
-	}
-	return r;
-}
-
-static inline void cdk_rbtree_rotate_left(cdk_rbtree_node_t* node, cdk_rbtree_t* tree)
+static inline void __rbtree_rotate_left(cdk_rbtree_node_t* node, cdk_rbtree_t* tree)
 {
 	cdk_rbtree_node_t* right = node->rb_right;
 
@@ -184,7 +145,7 @@ static inline void cdk_rbtree_rotate_left(cdk_rbtree_node_t* node, cdk_rbtree_t*
 	node->rb_parent = right;
 }
 
-static inline void cdk_rbtree_rotate_right(cdk_rbtree_node_t* node, cdk_rbtree_t* tree)
+static inline void __rbtree_rotate_right(cdk_rbtree_node_t* node, cdk_rbtree_t* tree)
 {
 	cdk_rbtree_node_t* left = node->rb_left;
 
@@ -210,13 +171,13 @@ static inline void cdk_rbtree_rotate_right(cdk_rbtree_node_t* node, cdk_rbtree_t
 	node->rb_parent = left;
 }
 
-void cdk_rbtree_init(cdk_rbtree_t* tree, cdk_rbtree_node_keytype_t type) {
+void cdk_rbtree_init(cdk_rbtree_t* tree, int(*keycmp)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*)) {
 
 	tree->rb_root = NULL;
-	tree->rb_keytype = type;
+	tree->rb_keycmp = keycmp;
 }
 
-static inline void cdk_rbtree_link_node(cdk_rbtree_node_t* node, cdk_rbtree_node_t* parent, cdk_rbtree_node_t** rb_link)
+static inline void __rbtree_link_node(cdk_rbtree_node_t* node, cdk_rbtree_node_t* parent, cdk_rbtree_node_t** rb_link)
 {
 	node->rb_parent = parent;
 	node->rb_color = RB_RED;
@@ -224,7 +185,7 @@ static inline void cdk_rbtree_link_node(cdk_rbtree_node_t* node, cdk_rbtree_node
 	*rb_link = node;
 }
 
-static inline void cdk_rbtree_insert_color(cdk_rbtree_t* tree, cdk_rbtree_node_t* node)
+static inline void __rbtree_insert_color(cdk_rbtree_t* tree, cdk_rbtree_node_t* node)
 {
 	cdk_rbtree_node_t* parent, * gparent;
 
@@ -248,14 +209,14 @@ static inline void cdk_rbtree_insert_color(cdk_rbtree_t* tree, cdk_rbtree_node_t
 			if (parent->rb_right == node)
 			{
 				register cdk_rbtree_node_t* tmp;
-				cdk_rbtree_rotate_left(parent, tree);
+				__rbtree_rotate_left(parent, tree);
 				tmp    = parent;
 				parent = node;
 				node   = tmp;
 			}
 			parent->rb_color  = RB_BLACK;
 			gparent->rb_color = RB_RED;
-			cdk_rbtree_rotate_right(gparent, tree);
+			__rbtree_rotate_right(gparent, tree);
 		}
 		else {
 			{
@@ -272,20 +233,20 @@ static inline void cdk_rbtree_insert_color(cdk_rbtree_t* tree, cdk_rbtree_node_t
 			if (parent->rb_left == node)
 			{
 				register cdk_rbtree_node_t* tmp;
-				cdk_rbtree_rotate_right(parent, tree);
+				__rbtree_rotate_right(parent, tree);
 				tmp    = parent;
 				parent = node;
 				node   = tmp;
 			}
 			parent->rb_color  = RB_BLACK;
 			gparent->rb_color = RB_RED;
-			cdk_rbtree_rotate_left(gparent, tree);
+			__rbtree_rotate_left(gparent, tree);
 		}
 	}
 	tree->rb_root->rb_color = RB_BLACK;
 }
 
-static inline void cdk_rbtree_erase_color(cdk_rbtree_node_t* node, cdk_rbtree_node_t* parent, cdk_rbtree_t* tree)
+static inline void __rbtree_erase_color(cdk_rbtree_node_t* node, cdk_rbtree_node_t* parent, cdk_rbtree_t* tree)
 {
 	cdk_rbtree_node_t* other;
 
@@ -298,7 +259,7 @@ static inline void cdk_rbtree_erase_color(cdk_rbtree_node_t* node, cdk_rbtree_no
 			{
 				other->rb_color  = RB_BLACK;
 				parent->rb_color = RB_RED;
-				cdk_rbtree_rotate_left(parent, tree);
+				__rbtree_rotate_left(parent, tree);
 				other = parent->rb_right;
 			}
 			if ((!other->rb_left || other->rb_left->rb_color == RB_BLACK)
@@ -316,7 +277,7 @@ static inline void cdk_rbtree_erase_color(cdk_rbtree_node_t* node, cdk_rbtree_no
 						other->rb_left->rb_color = RB_BLACK;
 					}
 					other->rb_color = RB_RED;
-					cdk_rbtree_rotate_right(other, tree);
+					__rbtree_rotate_right(other, tree);
 					other = parent->rb_right;
 				}
 				other->rb_color  = parent->rb_color;
@@ -325,7 +286,7 @@ static inline void cdk_rbtree_erase_color(cdk_rbtree_node_t* node, cdk_rbtree_no
 				if (other->rb_right) {
 					other->rb_right->rb_color = RB_BLACK;
 				}
-				cdk_rbtree_rotate_left(parent, tree);
+				__rbtree_rotate_left(parent, tree);
 				node = tree->rb_root;
 				break;
 			}
@@ -339,7 +300,7 @@ static inline void cdk_rbtree_erase_color(cdk_rbtree_node_t* node, cdk_rbtree_no
 				{
 					other->rb_color  = RB_BLACK;
 					parent->rb_color = RB_RED;
-					cdk_rbtree_rotate_right(parent, tree);
+					__rbtree_rotate_right(parent, tree);
 					other = parent->rb_left;
 				}
 				if ((!other->rb_left || other->rb_left->rb_color == RB_BLACK)
@@ -357,7 +318,7 @@ static inline void cdk_rbtree_erase_color(cdk_rbtree_node_t* node, cdk_rbtree_no
 							other->rb_right->rb_color = RB_BLACK;
 						}
 						other->rb_color = RB_RED;
-						cdk_rbtree_rotate_left(other, tree);
+						__rbtree_rotate_left(other, tree);
 						other = parent->rb_left;
 					}
 					other->rb_color  = parent->rb_color;
@@ -366,7 +327,7 @@ static inline void cdk_rbtree_erase_color(cdk_rbtree_node_t* node, cdk_rbtree_no
 					if (other->rb_left) {
 						other->rb_left->rb_color = RB_BLACK;
 					}
-					cdk_rbtree_rotate_right(parent, tree);
+					__rbtree_rotate_right(parent, tree);
 					node = tree->rb_root;
 					break;
 				}
@@ -453,7 +414,7 @@ void cdk_rbtree_erase(cdk_rbtree_t* tree, cdk_rbtree_node_t* node)
 	}
 color:
 	if (color == RB_BLACK) {
-		cdk_rbtree_erase_color(child, parent, tree);
+		__rbtree_erase_color(child, parent, tree);
 	}
 }
 
@@ -466,7 +427,7 @@ void cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node) {
 
 		parent = *p;
 
-		int r = cdk_rbtree_builtin_cmp(node->rb_key, parent->rb_key, tree->rb_keytype);
+		int r = tree->rb_keycmp(&node->rb_key, &parent->rb_key);
 		if (r < 0) {
 			p = &(*p)->rb_left;
 		}
@@ -477,8 +438,8 @@ void cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node) {
 			return;
 		}
 	}
-	cdk_rbtree_link_node(node, parent, p);
-	cdk_rbtree_insert_color(tree, node);
+	__rbtree_link_node(node, parent, p);
+	__rbtree_insert_color(tree, node);
 }
 
 cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_node_key_t key) {
@@ -486,7 +447,7 @@ cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_node_key_t key
 	cdk_rbtree_node_t* n = tree->rb_root;
 
 	while (n) {
-		int r = cdk_rbtree_builtin_cmp(key, n->rb_key, tree->rb_keytype);
+		int r = tree->rb_keycmp(&key, &n->rb_key);
 		if (r < 0) {
 			n = n->rb_left;
 		}

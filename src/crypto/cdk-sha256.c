@@ -57,7 +57,7 @@ static const uint32_t k[64] = {
 	0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 };
 
-static void cdk_sha256_transform(cdk_sha256_t* ctx, const uint8_t data[])
+static void __sha256_transform(cdk_sha256_t* ctx, const uint8_t data[])
 {
 	uint32_t a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
 
@@ -125,7 +125,7 @@ void cdk_sha256_update(cdk_sha256_t* ctx, const uint8_t data[], size_t len)
 		ctx->data[ctx->datalen] = data[i];
 		ctx->datalen++;
 		if (ctx->datalen == 64) {
-			cdk_sha256_transform(ctx, ctx->data);
+			__sha256_transform(ctx, ctx->data);
 			ctx->bitlen += 512;
 			ctx->datalen = 0;
 		}
@@ -147,7 +147,7 @@ void cdk_sha256_final(cdk_sha256_t* ctx, uint8_t hash[])
 		ctx->data[i++] = 0x80;
 		while (i < 64)
 			ctx->data[i++] = 0x00;
-		cdk_sha256_transform(ctx, ctx->data);
+		__sha256_transform(ctx, ctx->data);
 		memset(ctx->data, 0, 56);
 	}
 	ctx->bitlen += ctx->datalen * 8;
@@ -159,7 +159,7 @@ void cdk_sha256_final(cdk_sha256_t* ctx, uint8_t hash[])
 	ctx->data[58] = (uint8_t)(ctx->bitlen >> 40);
 	ctx->data[57] = (uint8_t)(ctx->bitlen >> 48);
 	ctx->data[56] = (uint8_t)(ctx->bitlen >> 56);
-	cdk_sha256_transform(ctx, ctx->data);
+	__sha256_transform(ctx, ctx->data);
 
 	for (i = 0; i < 4; ++i) {
 		hash[i] = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;

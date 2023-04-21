@@ -25,6 +25,7 @@
 #include "cdk/net/cdk-net.h"
 #include "cdk-channel.h"
 #include "cdk-poller.h"
+#include "cdk/cdk-time.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
 
@@ -269,7 +270,16 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
         else {
             channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_C, handler);
             if (channel) {
-                cdk_timer_add(&timer, __connect_timeout_callback, channel, timeout, false);
+                cdk_timer_job_t* job = malloc(sizeof(cdk_timer_job_t));
+                if (job) {
+                    job->routine = __connect_timeout_callback;
+                    job->arg = channel;
+                    job->birthtime = cdk_time_now();
+                    job->expire = timeout;
+                    job->repeat = false;
+
+                    cdk_timer_add(&timer, job);
+                }
             }
         }
     }

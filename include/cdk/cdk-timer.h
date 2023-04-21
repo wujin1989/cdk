@@ -25,4 +25,5 @@ _Pragma("once")
 
 extern void cdk_timer_create(cdk_timer_t* timer, int nthrds);
 extern void cdk_timer_destroy(cdk_timer_t* timer);
-extern void cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat);
+extern void cdk_timer_add(cdk_timer_t* timer, cdk_timer_job_t* job);
+extern void cdk_timer_del(cdk_timer_t* timer, cdk_timer_job_t* job);

@@ -71,23 +71,10 @@ enum cdk_unpack_type_e {
 	UNPACK_TYPE_USERDEFINED ,
 };
 
-enum cdk_rbtree_node_keytype_e {
-	RB_KEYTYPE_INT8   ,
-	RB_KEYTYPE_UINT8  ,
-	RB_KEYTYPE_INT16  ,
-	RB_KEYTYPE_UINT16 ,
-	RB_KEYTYPE_INT32  ,
-	RB_KEYTYPE_UINT32 ,
-	RB_KEYTYPE_INT64  ,
-	RB_KEYTYPE_UINT64 ,
-	RB_KEYTYPE_STR    ,
-};
-
 typedef struct cdk_channel_s             cdk_channel_t;
 typedef struct cdk_handler_s             cdk_handler_t;
 typedef union  cdk_rbtree_node_key_u     cdk_rbtree_node_key_t;
 typedef struct cdk_rbtree_node_s         cdk_rbtree_node_t;
-typedef enum   cdk_rbtree_node_keytype_e cdk_rbtree_node_keytype_t;
 typedef struct cdk_rbtree_s              cdk_rbtree_t;
 typedef struct cdk_list_node_s           cdk_list_node_t;
 typedef struct cdk_list_node_s           cdk_list_t;
@@ -97,6 +84,7 @@ typedef struct cdk_list_node_s           cdk_stack_t;
 typedef struct cdk_list_node_s           cdk_stack_node_t;
 typedef struct cdk_thrdpool_job_s        cdk_thrdpool_job_t;
 typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
+typedef struct cdk_timer_job_s           cdk_timer_job_t;
 typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
@@ -145,6 +133,7 @@ union cdk_rbtree_node_key_u {
 	uint16_t u16;
 	uint32_t u32;
 	uint64_t u64;
+	void*    ptr;
 };
 
 struct cdk_rbtree_node_s
@@ -168,7 +157,7 @@ struct cdk_spinlock_s {
 struct cdk_rbtree_s
 {
 	cdk_rbtree_node_t* rb_root;
-	cdk_rbtree_node_keytype_t rb_keytype;
+	int(*rb_keycmp)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*);
 };
 
 struct cdk_list_node_s {
@@ -190,6 +179,15 @@ struct cdk_thrdpool_s {
 	mtx_t       qmtx;
 	cnd_t       qcnd;
 	bool        status;
+};
+
+struct cdk_timer_job_s {
+	void  (*routine)(void*);
+	void*    arg;
+	uint64_t birthtime;
+	uint32_t expire;
+	bool     repeat;
+	cdk_list_node_t n;
 };
 
 struct cdk_timer_s {

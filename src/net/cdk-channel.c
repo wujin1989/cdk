@@ -25,6 +25,7 @@
 #include "cdk-channel.h"
 #include "cdk-unpack.h"
 #include "cdk/cdk-timer.h"
+#include "cdk/cdk-time.h"
 #include "cdk/net/cdk-net.h"
 #include "cdk/container/cdk-rbtree.h"
 
@@ -116,7 +117,16 @@ void cdk_channel_destroy(cdk_channel_t* channel)
     }
     mtx_unlock(&channel->mtx);
 
-    cdk_timer_add(&timer, __channel_destroy_callback, channel, 10000, false);
+    cdk_timer_job_t* job = malloc(sizeof(cdk_timer_job_t));
+    if (job) {
+        job->routine = __channel_destroy_callback;
+        job->arg = channel;
+        job->birthtime = cdk_time_now();
+        job->expire = 10000;
+        job->repeat = false;
+
+        cdk_timer_add(&timer, job);
+    }
 }
 
 void cdk_channel_recv(cdk_channel_t* channel) {
@@ -219,6 +229,7 @@ void cdk_channel_connect(cdk_channel_t* channel) {
     socklen_t len;
     len = sizeof(int);
 
+    cdk_timer_del(&timer, );
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
         channel->handler->on_close(channel, platform_socket_error2string(err));

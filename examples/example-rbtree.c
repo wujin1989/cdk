@@ -8,7 +8,7 @@ typedef struct userdata_s {
 int main(void) {
 
 	cdk_rbtree_t tree;
-	cdk_rbtree_init(&tree, RB_KEYTYPE_INT32);
+	cdk_rbtree_init(&tree, default_keycmp_i32);
 
 	for (int i = 0; i < 10; i++) {
 		userdata_t* ud = malloc(sizeof(userdata_t));

@@ -49,7 +49,7 @@
 
 static const unsigned short endian = 0x1;
 
-static void cdk_sha1_transform(uint32_t state[5], const uint8_t buffer[64])
+static void __sha1_transform(uint32_t state[5], const uint8_t buffer[64])
 {
     uint32_t a, b, c, d, e;
     uint32_t block[16];
@@ -116,9 +116,9 @@ void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, uint32_t len)
     j = (j >> 3) & 63;
     if ((j + len) > 63) {
         memcpy(&ctx->buffer[j], data, (i = 64 - j));
-        cdk_sha1_transform(ctx->state, ctx->buffer);
+        __sha1_transform(ctx->state, ctx->buffer);
         for (; i + 63 < len; i += 64) {
-            cdk_sha1_transform(ctx->state, &data[i]);
+            __sha1_transform(ctx->state, &data[i]);
         }
         j = 0;
     }

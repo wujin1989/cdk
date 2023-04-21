@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include "cdk/cdk-types.h"
 
-static uint32_t cdk_ringbuf_rounddown_pow_of_two(uint32_t n) {
+static uint32_t __ringbuf_rounddown_pow_of_two(uint32_t n) {
 
     n |= n >> 1;
     n |= n >> 2;
@@ -33,7 +33,7 @@ static uint32_t cdk_ringbuf_rounddown_pow_of_two(uint32_t n) {
     return (n + 1) >> 1;
 }
 
-static void cdk_ringbuf_internal_write(cdk_ringbuf_t* ring, const void* src, uint32_t len, uint32_t off) {
+static void __ringbuf_internal_write(cdk_ringbuf_t* ring, const void* src, uint32_t len, uint32_t off) {
 
     uint32_t size  = ring->m + 1;
     uint32_t esize = ring->esz;
@@ -51,7 +51,7 @@ static void cdk_ringbuf_internal_write(cdk_ringbuf_t* ring, const void* src, uin
     memcpy(ring->b, (uint8_t*)src + l, len - l);
 }
 
-static void cdk_ringbuf_internal_read(cdk_ringbuf_t* ring, void* dst, uint32_t len, uint32_t off) {
+static void __ringbuf_internal_read(cdk_ringbuf_t* ring, void* dst, uint32_t len, uint32_t off) {
 
     uint32_t size  = ring->m + 1;
     uint32_t esize = ring->m;
@@ -69,7 +69,7 @@ static void cdk_ringbuf_internal_read(cdk_ringbuf_t* ring, void* dst, uint32_t l
     memcpy((uint8_t*)dst + l, ring->b, len - l);
 }
 
-static uint32_t cdk_ringbuf_internal_read_peek(cdk_ringbuf_t* ring, void* buf, uint32_t len) {
+static uint32_t __ringbuf_internal_read_peek(cdk_ringbuf_t* ring, void* buf, uint32_t len) {
 
     uint32_t l;
     l = ring->w - ring->r;
@@ -84,7 +84,7 @@ void cdk_ringbuf_init(cdk_ringbuf_t* ring, uint32_t esize, void* buf, uint32_t b
 
     ring->b    = buf;
     ring->esz  = esize;
-    ring->m    = cdk_ringbuf_rounddown_pow_of_two(bsize / esize) - 1;
+    ring->m    = __ringbuf_rounddown_pow_of_two(bsize / esize) - 1;
     ring->w    = 0;
     ring->r    = 0;
 }
@@ -120,7 +120,7 @@ uint32_t cdk_ringbuf_write(cdk_ringbuf_t* ring, const void* buf, uint32_t entry_
     if (entry_count > avail) {
         entry_count = avail;
     }
-    cdk_ringbuf_internal_write(ring, buf, entry_count, ring->w);
+    __ringbuf_internal_write(ring, buf, entry_count, ring->w);
 
     ring->w += entry_count;
     return entry_count;
@@ -128,7 +128,7 @@ uint32_t cdk_ringbuf_write(cdk_ringbuf_t* ring, const void* buf, uint32_t entry_
 
 uint32_t cdk_ringbuf_read(cdk_ringbuf_t* ring, void* buf, uint32_t entry_count) {
 
-    entry_count = cdk_ringbuf_internal_read_peek(ring, buf, entry_count);
+    entry_count = __ringbuf_internal_read_peek(ring, buf, entry_count);
     ring->r += entry_count;
 
     return entry_count;
