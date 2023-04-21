@@ -48,11 +48,13 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 
 
 	net_msg_t* smsg = malloc(sizeof(net_msg_t) + strlen("world") + 1);
-	smsg->h.p_s = htonl((unsigned long)(strlen("world") + 1));
-	smsg->h.p_t = htonl(2);
-	memcpy(smsg->p, "world", strlen("world") + 1);
+	if (smsg) {
+		smsg->h.p_s = htonl((unsigned long)(strlen("world") + 1));
+		smsg->h.p_t = htonl(2);
+		memcpy(smsg->p, "world", strlen("world") + 1);
 
-	cdk_net_channelsend(channel, smsg, sizeof(net_msg_t) + strlen("world") + 1);
+		cdk_net_channelsend(channel, smsg, sizeof(net_msg_t) + strlen("world") + 1);
+	}
 }
 
 static void handle_close(cdk_channel_t* channel, char* error) {

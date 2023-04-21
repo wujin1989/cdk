@@ -20,6 +20,7 @@
  */
 
 #include "cdk/cdk-types.h"
+#include "wepoll/wepoll.h"
 
 static atomic_flag initialized = ATOMIC_FLAG_INIT;
 
@@ -351,4 +352,16 @@ char* platform_socket_error2string(int error) {
         NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         buffer, sizeof(buffer), NULL);
     return buffer;
+}
+
+int platform_socket_lasterror(void) {
+    return WSAGetLastError();
+}
+
+cdk_pollfd_t platform_socket_pollfd_create(void) {
+    return epoll_create1(0);
+}
+
+void platform_socket_pollfd_destroy(cdk_pollfd_t pfd) {
+    epoll_close(pfd);
 }

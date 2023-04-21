@@ -23,7 +23,6 @@
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
 #include "net/cdk-channel.h"
-#include "wepoll/wepoll.h"
 
 extern void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len);
 extern void _eventfd_close(cdk_channel_t* channel, char* error);
@@ -49,7 +48,23 @@ void platform_poller_poll(cdk_poller_t* poller) {
         {
             cdk_channel_t* channel = events[i].ptr;
             if (channel) {
-                cdk_channel_process(channel);
+                switch (channel->cmd)
+                {
+                case PLATFORM_EVENT_A:
+                    cdk_channel_accept(channel);
+                    break;
+                case PLATFORM_EVENT_R:
+                    cdk_channel_recv(channel);
+                    break;
+                case PLATFORM_EVENT_C:
+                    cdk_channel_connect(channel);
+                    break;
+                case PLATFORM_EVENT_W:
+                    cdk_channel_send(channel);
+                    break;
+                default:
+                    break;
+                }
             }
         }
     }
@@ -60,7 +75,7 @@ cdk_poller_t* platform_poller_create(void)
     cdk_poller_t* poller = malloc(sizeof(cdk_poller_t));
 
     if (poller) {
-        poller->pfd = epoll_create1(0);
+        poller->pfd = platform_socket_pollfd_create();
         poller->tid = thrd_current();
         poller->active = true;
 
@@ -74,7 +89,7 @@ cdk_poller_t* platform_poller_create(void)
 void platform_poller_destroy(cdk_poller_t* poller)
 {
     poller->active = false;
-    epoll_close(poller->pfd);
+    platform_socket_pollfd_destroy(poller->pfd);
 
     platform_socket_close(poller->evfds[0]);
     platform_socket_close(poller->evfds[1]);

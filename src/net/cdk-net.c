@@ -21,18 +21,16 @@
 
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
-#include "platform/platform-poller.h"
-#include "platform/platform-channel.h"
 #include "cdk/container/cdk-list.h"
 #include "cdk/net/cdk-net.h"
 #include "cdk-channel.h"
+#include "cdk-poller.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
 static cdk_list_t pollerlst;
 static cdk_poller_t* mainpoller;
-static cdk_poller_t* currpoller;
 static mtx_t pollermtx;
 
 typedef struct event_ctx_s {
@@ -100,6 +98,7 @@ cdk_poller_t* _poller_roundrobin(void)
     if (cdk_list_empty(&pollerlst)) {
         return mainpoller;
     }
+    static cdk_poller_t* currpoller;
     if (currpoller == NULL) {
         currpoller = cdk_list_data(cdk_list_head(&pollerlst), cdk_poller_t, node);
     }
@@ -139,7 +138,9 @@ static int __workerthread(void* param) {
     mtx_unlock(&pollermtx);
 
     platform_poller_poll(poller);
+    mtx_lock(&pollermtx);
     cdk_list_remove(&poller->node);
+    mtx_unlock(&pollermtx);
     platform_poller_destroy(poller);
     return 0;
 }

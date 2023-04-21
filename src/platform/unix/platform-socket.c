@@ -150,6 +150,10 @@ void platform_socket_maxseg(cdk_sock_t sock) {
         abort();
     }
 }
+
+cdk_pollfd_t platform_socket_pollfd_create(void) {
+    return epoll_create1(0);
+}
 #endif
 
 #if defined(__APPLE__)
@@ -187,7 +191,15 @@ void platform_socket_maxseg(cdk_sock_t sock) {
         abort();
     }
 }
+
+cdk_pollfd_t platform_socket_pollfd_create(void) {
+    return kqueue();
+}
 #endif
+
+void platform_socket_pollfd_destroy(cdk_pollfd_t pfd) {
+    close(pfd);
+}
 
 void platform_socket_reuse_port(cdk_sock_t sock) {
 
@@ -382,4 +394,8 @@ int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t so
 
 char* platform_socket_error2string(int error) {
     return strerror(error);
+}
+
+int platform_socket_lasterror(void) {
+    return errno;
 }
