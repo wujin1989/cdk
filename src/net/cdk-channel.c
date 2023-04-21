@@ -23,6 +23,7 @@
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
 #include "cdk-channel.h"
+#include "cdk-unpack.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/net/cdk-net.h"
 #include "cdk/container/cdk-rbtree.h"
