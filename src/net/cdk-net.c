@@ -75,10 +75,7 @@ static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
 
 static void __connect_timeout(void* param) {
     cdk_channel_t* channel = param;
-
-    if (!channel->tcp.connected) {
-        channel->handler->on_connect_timeout(channel);
-    }
+    channel->handler->on_connect_timeout(channel);
 }
 
 static void __connect_timeout_callback(void* param) {
@@ -263,22 +260,20 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
         if (connected) {
             channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_W, handler);
             if (channel) {
-                channel->tcp.connected = true;
                 channel->handler->on_connect(channel);
             }
         }
         else {
             channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_C, handler);
             if (channel) {
-                cdk_timer_job_t* job = malloc(sizeof(cdk_timer_job_t));
-                if (job) {
-                    job->routine = __connect_timeout_callback;
-                    job->arg = channel;
-                    job->birthtime = cdk_time_now();
-                    job->expire = timeout;
-                    job->repeat = false;
+                if (channel->tcp.ctimer) {
+                    channel->tcp.ctimer->routine = __connect_timeout_callback;
+                    channel->tcp.ctimer->arg = channel;
+                    channel->tcp.ctimer->birthtime = cdk_time_now();
+                    channel->tcp.ctimer->expire = timeout;
+                    channel->tcp.ctimer->repeat = false;
 
-                    cdk_timer_add(&timer, job);
+                    cdk_timer_add(&timer, channel->tcp.ctimer);
                 }
             }
         }

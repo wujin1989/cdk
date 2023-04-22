@@ -55,7 +55,6 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
         mtx_init(&channel->mtx, mtx_plain);
 
         if (channel->type == SOCK_STREAM) {
-            channel->tcp.connected = false;
             channel->tcp.rxbuf.len = MAX_IOBUF_SIZE;
             channel->tcp.rxbuf.off = 0;
             channel->tcp.rxbuf.buf = malloc(MAX_IOBUF_SIZE);
@@ -63,6 +62,9 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
                 memset(channel->tcp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
             }
             cdk_list_init(&(channel->tcp.txlist));
+            if (cmd == PLATFORM_EVENT_C) {
+                channel->tcp.ctimer = malloc(sizeof(cdk_timer_job_t));
+            }
         }
         if (channel->type == SOCK_DGRAM) {
             channel->udp.rxbuf.len = MAX_IOBUF_SIZE;
@@ -92,8 +94,6 @@ void cdk_channel_destroy(cdk_channel_t* channel)
     platform_socket_close(channel->fd);
 
     if (channel->type == SOCK_STREAM) {
-        channel->tcp.connected = false;
-
         free(channel->tcp.rxbuf.buf);
         channel->tcp.rxbuf.buf = NULL;
 
@@ -229,13 +229,13 @@ void cdk_channel_connect(cdk_channel_t* channel) {
     socklen_t len;
     len = sizeof(int);
 
-    cdk_timer_del(&timer, );
+    cdk_timer_del(&timer, channel->tcp.ctimer);
+
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
         channel->handler->on_close(channel, platform_socket_error2string(err));
     }
     else {
-        channel->tcp.connected = true;
         channel->handler->on_connect(channel);
     }
 }

@@ -281,10 +281,10 @@ struct cdk_channel_s {
 	mtx_t              mtx;
 	union {
 		struct {
-			bool             connected;
 			cdk_offset_buf_t rxbuf;
 			cdk_list_t       txlist;
 			cdk_unpack_t     unpacker;
+			cdk_timer_job_t* ctimer;
 		}tcp;
 		struct {
 			cdk_offset_buf_t rxbuf;
