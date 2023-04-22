@@ -26,7 +26,7 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(include)
 include_directories(src)
-	
+
 set(SRCS
 	src/crypto/cdk-sha1.c
 	src/crypto/cdk-sha256.c
@@ -44,6 +44,7 @@ set(SRCS
 	src/net/cdk-poller.c
 	src/net/cdk-channel.c
 	src/net/cdk-unpack.c
+	src/net/cdk-secure.c
 	src/cdk-threadpool.c
 	src/cdk-loader.c
 	src/cdk-logger.c
@@ -78,6 +79,10 @@ endif()
 
 add_library(cdk STATIC ${SRCS})
 target_link_libraries(cdk PUBLIC Threads::Threads ${OPENSSL_LIBRARIES})
+
+message(STATUS ${OPENSSL_ROOT_DIR} )
+message(STATUS ${OPENSSL_LIBRARIES} )
+message(STATUS ${OPENSSL_INCLUDE_DIR} )
 
 if(WIN32)
 	target_link_libraries(cdk PUBLIC winmm ws2_32)
