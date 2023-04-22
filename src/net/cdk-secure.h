@@ -22,6 +22,5 @@
 _Pragma("once")
 
 #include "cdk/cdk-types.h"
-#include <openssl/ssl.h>
 
 extern void cdk_secure_init();

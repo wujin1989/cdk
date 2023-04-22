@@ -80,10 +80,6 @@ endif()
 add_library(cdk STATIC ${SRCS})
 target_link_libraries(cdk PUBLIC Threads::Threads ${OPENSSL_LIBRARIES})
 
-message(STATUS ${OPENSSL_ROOT_DIR} )
-message(STATUS ${OPENSSL_LIBRARIES} )
-message(STATUS ${OPENSSL_INCLUDE_DIR} )
-
 if(WIN32)
 	target_link_libraries(cdk PUBLIC winmm ws2_32)
 endif()

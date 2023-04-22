@@ -19,6 +19,9 @@
  *  IN THE SOFTWARE.
  */
 
+#include <openssl/ssl.h>
+
 void cdk_secure_init() {
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
+	SSL_CTX* ctx = SSL_CTX_new(TLS_method());
 }
