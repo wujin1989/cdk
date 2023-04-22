@@ -51,7 +51,7 @@ static void handle_close(cdk_channel_t* conn, char* error) {
 }
 int main(void) {
 
-	cdk_net_startup(1, 4);
+	cdk_net_startup(1, 4, false);
 	cdk_queue_init(&mq);
 
 	thrd_t tid;

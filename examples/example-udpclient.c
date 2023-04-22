@@ -24,7 +24,7 @@ static int routine(void* p) {
 }
 int main(void) {
 
-	cdk_net_startup(1, 4);
+	cdk_net_startup(1, 4, false);
 	thrd_t tid;
 	cdk_channel_t* channel;
 	cdk_handler_t handler = {

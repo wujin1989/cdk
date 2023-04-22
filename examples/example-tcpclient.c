@@ -70,7 +70,7 @@ static void handle_close(cdk_channel_t* channel, char* error) {
 
 int main(void) {
 
-	cdk_net_startup(1, 4);
+	cdk_net_startup(1, 4, false);
 
 	cdk_handler_t handler = {
 		.on_connect = handle_connect,
