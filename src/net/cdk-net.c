@@ -371,6 +371,7 @@ void cdk_net_startup(int ntimerthrd, int nworkerthrd, bool secure)
     platform_socket_startup();
 
     secure = secure;
+
     cdk_timer_create(&timer, ntimerthrd);
     cdk_list_init(&pollerlst);
     mtx_init(&pollermtx, mtx_plain);
@@ -383,6 +384,9 @@ void cdk_net_startup(int ntimerthrd, int nworkerthrd, bool secure)
         thrd_t tid;
         thrd_create(&tid, __workerthread, NULL);
         thrd_detach(tid);
+    }
+    if (secure) {
+        
     }
 }
 
