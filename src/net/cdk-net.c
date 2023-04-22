@@ -30,6 +30,7 @@
 #include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
+bool secure;
 static cdk_list_t pollerlst;
 static cdk_poller_t* mainpoller;
 static mtx_t pollermtx;
@@ -365,10 +366,11 @@ void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event) {
 	mtx_unlock(&poller->evmtx);
 }
 
-void cdk_net_startup(int ntimerthrd, int nworkerthrd) 
+void cdk_net_startup(int ntimerthrd, int nworkerthrd, bool secure)
 {
     platform_socket_startup();
 
+    secure = secure;
     cdk_timer_create(&timer, ntimerthrd);
     cdk_list_init(&pollerlst);
     mtx_init(&pollermtx, mtx_plain);

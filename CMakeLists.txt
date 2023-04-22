@@ -1,22 +1,16 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.0)
 
 project(cdk VERSION 1.0.0 LANGUAGES C)
 
-if(WIN32 OR LINUX OR (APPLE AND NOT IOS) OR IOS OR ANDROID)
-    message(STATUS "[cdk compile]: operation system is ${CMAKE_SYSTEM}")
-else()
-    message(FATAL_ERROR "[cdk compile]: operation system type is ${CMAKE_SYSTEM_NAME}, now not support")
+if (CMAKE_SIZEOF_VOID_P LESS 8)
+	message(FATAL_ERROR "only 64bit supported")
 endif()
 
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-	message(STATUS "[cdk compile]: current os is 64bit")
-else()
-	message(FATAL_ERROR "[cdk compile]: 32bit not supported")
-endif()
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if(WIN32)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
+endif()
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 11)
@@ -26,11 +20,10 @@ add_compile_options("/experimental:c11atomics")
 add_compile_options("/D_CRT_SECURE_NO_WARNINGS")
 endif()
 
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
 
-message(STATUS "[cdk compile]: using iso c${CMAKE_C_STANDARD} standard.")
-
+include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(include)
 include_directories(src)
 	
@@ -84,7 +77,7 @@ if(UNIX)
 endif()
 
 add_library(cdk STATIC ${SRCS})
-target_link_libraries(cdk PUBLIC Threads::Threads)
+target_link_libraries(cdk PUBLIC Threads::Threads ${OPENSSL_LIBRARIES})
 
 if(WIN32)
 	target_link_libraries(cdk PUBLIC winmm ws2_32)
