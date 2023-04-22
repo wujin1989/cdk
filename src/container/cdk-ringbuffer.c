@@ -76,7 +76,7 @@ static uint32_t __ringbuf_internal_read_peek(cdk_ringbuf_t* ring, void* buf, uin
     if (len > l) {
         len = l;
     }
-    cdk_ringbuf_internal_read(ring, buf, len, ring->r);
+    __ringbuf_internal_read(ring, buf, len, ring->r);
     return len;
 }
 
