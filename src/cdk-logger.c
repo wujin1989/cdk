@@ -39,7 +39,6 @@
 
 typedef struct logger_s {
 	FILE* file;
-	mtx_t mtx;
 	_Bool async;
 	cdk_thrdpool_t pool;
 }logger_t;
@@ -109,13 +108,10 @@ static inline void __logger_asyncbase(int level, const char* restrict file, int 
 	ret += vsprintf(buf + ret, fmt, v);
 	ret++;
 
-	cdk_thrdpool_job_t* job = malloc(sizeof(cdk_thrdpool_job_t));
-	if (job) {
-		job->routine = __logger_printer;
-		job->arg = malloc(ret);
-		memcpy(job->arg, buf, ret);
-
-		cdk_thrdpool_post(&logger.pool, job);
+	char* arg = malloc(ret);
+	if (arg) {
+		memcpy(arg, buf, ret);
+		cdk_thrdpool_post(&logger.pool, __logger_printer, arg);
 	}
 }
 
@@ -124,8 +120,6 @@ void cdk_logger_create(const char* restrict out, int nthrds) {
 	if (atomic_flag_test_and_set(&once_create)) {
 		return;
 	}
-	mtx_init(&logger.mtx, mtx_plain);
-
 	if (nthrds > 0) {
 		logger.async = true;
 		cdk_thrdpool_create(&logger.pool, nthrds);
@@ -148,14 +142,11 @@ void cdk_logger_destroy(void) {
 	if (logger.file) {
 		fclose(logger.file);
 	}
-	mtx_destroy(&logger.mtx);
 }
 
 void cdk_logger_log(int level, const char* restrict file, int line, const char* restrict fmt, ...) {
 	
 	char* p = strrchr(file, S);
-
-	mtx_lock(&logger.mtx);
 
 	if (!logger.async) {
 		
@@ -172,8 +163,6 @@ void cdk_logger_log(int level, const char* restrict file, int line, const char* 
 
 		fflush(logger.file);
 	}
-	mtx_unlock(&logger.mtx);
-
 	if (logger.async) {
 
 		va_list v;

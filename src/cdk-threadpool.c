@@ -24,6 +24,12 @@
 #include "cdk/cdk-types.h"
 #include <stdlib.h>
 
+typedef struct thrdpool_job_s {
+	void (*routine)(void*);
+	void* arg;
+	cdk_queue_node_t n;
+}thrdpool_job_t;
+
 static int __thrdpool_thrdfunc(void* arg) {
 	
 	cdk_thrdpool_t* pool = arg;
@@ -31,12 +37,12 @@ static int __thrdpool_thrdfunc(void* arg) {
 	while (pool->status) {
 
 		mtx_lock(&pool->qmtx);
-		cdk_thrdpool_job_t* job;
+		thrdpool_job_t* job;
 
 		while (pool->status && cdk_queue_empty(&pool->queue)) {
 			cnd_wait(&pool->qcnd, &pool->qmtx);
 		}
-		job = cdk_queue_data(cdk_queue_dequeue(&pool->queue), cdk_thrdpool_job_t, n);
+		job = cdk_queue_data(cdk_queue_dequeue(&pool->queue), thrdpool_job_t, n);
 
 		if (pool->status) {
 			job->routine(job->arg);
@@ -103,14 +109,17 @@ void cdk_thrdpool_destroy(cdk_thrdpool_t* pool) {
 	pool->thrds = NULL;
 }
 
-void cdk_thrdpool_post(cdk_thrdpool_t* pool, cdk_thrdpool_job_t* job) {
+void cdk_thrdpool_post(cdk_thrdpool_t* pool, void (*routine)(void*), void* arg) {
 
-	if (!job) {
-		return;
+	thrdpool_job_t* job = malloc(sizeof(thrdpool_job_t));
+	if (job) {
+		job->routine = routine;
+		job->arg = arg;
+
+		mtx_lock(&pool->qmtx);
+		cdk_queue_enqueue(&pool->queue, &job->n);
+		cnd_signal(&pool->qcnd);
+		mtx_unlock(&pool->qmtx);
 	}
-	mtx_lock(&pool->qmtx);
-	cdk_queue_enqueue(&pool->queue, &job->n);
-	cnd_signal(&pool->qcnd);
-	mtx_unlock(&pool->qmtx);
 }
 
