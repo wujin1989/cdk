@@ -43,29 +43,42 @@ static void __timer_add(cdk_timer_t* timer, timer_entry_t* entry) {
 	cnd_signal(&timer->rbcnd);
 }
 
-void cdk_timer_add(cdk_timer_t* timer, cdk_timer_job_t* job) {
+cdk_timer_job_t* cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat) {
 
 	timer_entry_t* entry;
 	cdk_rbtree_node_key_t key;
 	cdk_rbtree_node_t* node;
+	cdk_timer_job_t* job;
 
-	mtx_lock(&timer->rbmtx);
-	key.u64 = job->birthtime + job->expire;
+	job = malloc(sizeof(cdk_timer_job_t));
+	if (job) {
+		job->routine = routine;
+		job->arg = arg;
+		job->expire = expire;
+		job->repeat = repeat;
+		job->birthtime = cdk_time_now();
 
-	node = cdk_rbtree_find(&timer->rbtree, key);
-	if (node) {
-		entry = cdk_rbtree_data(node, timer_entry_t, n);
-		cdk_list_insert_tail(&entry->joblst, &job->n);
-	}else {
-		entry = malloc(sizeof(timer_entry_t));
-		if (entry) {
-			entry->n.rb_key = key;
-			cdk_list_init(&entry->joblst);
+		mtx_lock(&timer->rbmtx);
+
+		key.u64 = job->birthtime + job->expire;
+
+		node = cdk_rbtree_find(&timer->rbtree, key);
+		if (node) {
+			entry = cdk_rbtree_data(node, timer_entry_t, n);
 			cdk_list_insert_tail(&entry->joblst, &job->n);
-			__timer_add(timer, entry);
 		}
+		else {
+			entry = malloc(sizeof(timer_entry_t));
+			if (entry) {
+				entry->n.rb_key = key;
+				cdk_list_init(&entry->joblst);
+				cdk_list_insert_tail(&entry->joblst, &job->n);
+				__timer_add(timer, entry);
+			}
+		}
+		mtx_unlock(&timer->rbmtx);
 	}
-	mtx_unlock(&timer->rbmtx);
+	return job;
 }
 
 void cdk_timer_del(cdk_timer_t* timer, cdk_timer_job_t* job) {
@@ -122,8 +135,7 @@ static int __timer_thrdfunc(void* arg) {
 				job->routine(job->arg);
 
 				if (job->repeat) {
-					job->birthtime = cdk_time_now();
-					cdk_timer_add(timer, job);
+					cdk_timer_add(timer, job->routine, job->arg, job->expire, job->repeat);
 					continue;
 				}
 			}

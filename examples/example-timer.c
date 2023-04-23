@@ -17,16 +17,7 @@ int main(void)
 	cdk_logger_create(NULL, 0);
 	mtx_init(&mtx, mtx_plain);
 	for (int i = 0; i < 10; i++) {
-		cdk_timer_job_t* job = malloc(sizeof(cdk_timer_job_t));
-		if (job) {
-			job->routine = callback;
-			job->arg = NULL;
-			job->birthtime = cdk_time_now();
-			job->expire = 1000;
-			job->repeat = true;
-
-			cdk_timer_add(&timer, job);
-		}
+		cdk_timer_add(&timer, callback, NULL, 1000, true);
 	}
 	while (1) {
 		cdk_time_sleep(1000);

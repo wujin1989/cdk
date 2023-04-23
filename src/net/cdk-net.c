@@ -267,15 +267,7 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
         else {
             channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_C, handler);
             if (channel) {
-                if (channel->tcp.ctimer) {
-                    channel->tcp.ctimer->routine = __connect_timeout_callback;
-                    channel->tcp.ctimer->arg = channel;
-                    channel->tcp.ctimer->birthtime = cdk_time_now();
-                    channel->tcp.ctimer->expire = timeout;
-                    channel->tcp.ctimer->repeat = false;
-
-                    cdk_timer_add(&timer, channel->tcp.ctimer);
-                }
+                channel->tcp.ctimer = cdk_timer_add(&timer, __connect_timeout_callback, channel, timeout, false);
             }
         }
     }

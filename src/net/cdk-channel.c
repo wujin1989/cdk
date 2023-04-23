@@ -156,9 +156,6 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
                 memset(channel->tcp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
             }
             cdk_list_init(&(channel->tcp.txlist));
-            if (cmd == PLATFORM_EVENT_C) {
-                channel->tcp.ctimer = malloc(sizeof(cdk_timer_job_t));
-            }
         }
         if (channel->type == SOCK_DGRAM) {
             channel->udp.rxbuf.len = MAX_IOBUF_SIZE;
@@ -211,16 +208,7 @@ void cdk_channel_destroy(cdk_channel_t* channel)
     }
     mtx_unlock(&channel->mtx);
 
-    cdk_timer_job_t* job = malloc(sizeof(cdk_timer_job_t));
-    if (job) {
-        job->routine = __channel_destroy_callback;
-        job->arg = channel;
-        job->birthtime = cdk_time_now();
-        job->expire = 10000;
-        job->repeat = false;
-
-        cdk_timer_add(&timer, job);
-    }
+    cdk_timer_add(&timer, __channel_destroy_callback, channel, 10000, false);
 }
 
 void cdk_channel_recv(cdk_channel_t* channel) {

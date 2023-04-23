@@ -32,6 +32,7 @@ void cdk_secure_init() {
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
 	SSL_CTX_free(ctx);
+
 	SSL* ssl = SSL_new(ctx);
 	SSL_set_fd(ssl, 1);
 	SSL_free(ssl);
