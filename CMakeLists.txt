@@ -78,6 +78,7 @@ if(UNIX)
 endif()
 
 add_library(cdk STATIC ${SRCS})
+
 target_link_libraries(cdk PUBLIC Threads::Threads ${OPENSSL_LIBRARIES})
 
 if(WIN32)

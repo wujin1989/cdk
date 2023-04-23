@@ -21,7 +21,7 @@
 
 #include "cdk/cdk-types.h"
 
-cdk_pid_t platform_proc_getpid(void) {
+cdk_pid_t platform_process_getpid(void) {
 
 	return GetCurrentProcessId();
 }
