@@ -25,12 +25,14 @@
 #include "cdk/net/cdk-net.h"
 #include "cdk-channel.h"
 #include "cdk-poller.h"
+#include "cdk-secure.h"
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
-bool secure;
+cdk_ssl_ctx_t* ctx;
+
 static cdk_list_t pollerlst;
 static cdk_poller_t* mainpoller;
 static mtx_t pollermtx;
@@ -358,13 +360,11 @@ void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event) {
 	mtx_unlock(&poller->evmtx);
 }
 
-void cdk_net_startup(int ntimerthrd, int nworkerthrd, bool secure)
+void cdk_net_startup(cdk_netconf_t* conf)
 {
     platform_socket_startup();
 
-    secure = secure;
-
-    cdk_timer_create(&timer, ntimerthrd);
+    cdk_timer_create(&timer, conf->ntimerthrd);
     cdk_list_init(&pollerlst);
     mtx_init(&pollermtx, mtx_plain);
 
@@ -372,18 +372,17 @@ void cdk_net_startup(int ntimerthrd, int nworkerthrd, bool secure)
     if (mainpoller == NULL) {
         abort();
     }
-    for (int i = 0; i < nworkerthrd; i++) {
+    for (int i = 0; i < conf->nworkerthrd; i++) {
         thrd_t tid;
         thrd_create(&tid, __workerthread, NULL);
         thrd_detach(tid);
     }
-    if (secure) {
-        
-    }
+    ctx = cdk_secure_ctxcreate(conf->cafile, conf->capath, conf->crtfile, conf->keyfile);
 }
 
 void cdk_net_cleanup(void) {
     platform_socket_cleanup();
     cdk_timer_destroy(&timer);
     mtx_destroy(&pollermtx);
+    cdk_secure_ctxdestroy(ctx);
 }

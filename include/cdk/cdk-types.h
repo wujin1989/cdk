@@ -71,6 +71,9 @@ enum cdk_unpack_type_e {
 	UNPACK_TYPE_USERDEFINED ,
 };
 
+#define cdk_ssl_ctx_t void
+#define cdk_ssl_t     void
+
 typedef struct cdk_channel_s             cdk_channel_t;
 typedef struct cdk_handler_s             cdk_handler_t;
 typedef union  cdk_rbtree_node_key_u     cdk_rbtree_node_key_t;
@@ -93,6 +96,7 @@ typedef struct cdk_txlist_node_s         cdk_txlist_node_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_event_s               cdk_event_t;
+typedef struct cdk_netconf_s             cdk_netconf_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
@@ -262,6 +266,16 @@ struct cdk_event_s {
 	void (*cb)(void* arg);
 	void* arg;
 	cdk_list_node_t node;
+};
+
+struct cdk_netconf_s {
+	int ntimerthrd;
+	int nworkerthrd;
+
+	const char* cafile;
+	const char* capath;
+	const char* crtfile;
+	const char* keyfile;
 };
 
 struct cdk_channel_s {

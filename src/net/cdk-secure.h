@@ -23,4 +23,5 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void cdk_secure_init();
+extern cdk_ssl_ctx_t* cdk_secure_ctxcreate(const char* cafile, const char* capath, const char* crtfile, const char* keyfile);
+extern void           cdk_secure_ctxdestroy(cdk_ssl_ctx_t* ctx);

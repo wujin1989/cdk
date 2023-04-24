@@ -51,7 +51,15 @@ static void handle_close(cdk_channel_t* conn, char* error) {
 }
 int main(void) {
 
-	cdk_net_startup(1, 4, false);
+	cdk_netconf_t conf = {
+		.ntimerthrd = 1,
+		.nworkerthrd = 4,
+		.cafile = "",
+		.capath = "",
+		.crtfile = "",
+		.keyfile = ""
+	};
+	cdk_net_startup(&conf);
 	cdk_queue_init(&mq);
 
 	thrd_t tid;
