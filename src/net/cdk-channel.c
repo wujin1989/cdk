@@ -24,12 +24,14 @@
 #include "cdk/container/cdk-list.h"
 #include "cdk-channel.h"
 #include "cdk-unpack.h"
+#include "cdk-secure.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-time.h"
 #include "cdk/net/cdk-net.h"
 #include "cdk/container/cdk-rbtree.h"
 
-extern bool secure;
+extern cdk_tls_ctx_t* tlsctx;
+extern cdk_dtls_ctx_t* dtlsctx;
 extern cdk_timer_t timer;
 extern cdk_poller_t* _poller_roundrobin(void);
 
@@ -156,6 +158,7 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
                 memset(channel->tcp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
             }
             cdk_list_init(&(channel->tcp.txlist));
+            channel->tcp.tls = cdk_secure_tls_create(tlsctx);
         }
         if (channel->type == SOCK_DGRAM) {
             channel->udp.rxbuf.len = MAX_IOBUF_SIZE;
@@ -165,6 +168,7 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
                 memset(channel->udp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
             }
             cdk_list_init(&(channel->udp.txlist));
+            channel->udp.dtls = cdk_secure_dtls_create(dtlsctx);
         }
         platform_event_add(poller->pfd, channel->fd, cmd, channel);
         return channel;
@@ -194,6 +198,7 @@ void cdk_channel_destroy(cdk_channel_t* channel)
             free(e);
             e = NULL;
         }
+        cdk_secure_tls_destroy(channel->tcp.tls);
     }
     if (channel->type == SOCK_DGRAM) {
         free(channel->udp.rxbuf.buf);
@@ -205,6 +210,7 @@ void cdk_channel_destroy(cdk_channel_t* channel)
             free(e);
             e = NULL;
         }
+        cdk_secure_dtls_destroy(channel->udp.dtls);
     }
     mtx_unlock(&channel->mtx);
 
@@ -245,6 +251,11 @@ void cdk_channel_connect(cdk_channel_t* channel) {
         channel->handler->on_close(channel, platform_socket_error2string(err));
     }
     else {
-        channel->handler->on_connect(channel);
+        if (tlsctx) {
+            cdk_secure_tls_connect(channel);
+        }
+        else {
+            channel->handler->on_connect(channel);
+        }
     }
 }

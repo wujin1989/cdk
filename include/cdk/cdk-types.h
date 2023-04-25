@@ -71,8 +71,10 @@ enum cdk_unpack_type_e {
 	UNPACK_TYPE_USERDEFINED ,
 };
 
-#define cdk_ssl_ctx_t void
-#define cdk_ssl_t     void
+#define cdk_tls_ctx_t void
+#define cdk_tls_t     void
+#define cdk_dtls_ctx_t void
+#define cdk_dtls_t     void
 
 typedef struct cdk_channel_s             cdk_channel_t;
 typedef struct cdk_handler_s             cdk_handler_t;
@@ -96,7 +98,8 @@ typedef struct cdk_txlist_node_s         cdk_txlist_node_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_event_s               cdk_event_t;
-typedef struct cdk_netconf_s             cdk_netconf_t;
+typedef struct cdk_tlsconf_s             cdk_tlsconf_t;
+typedef struct cdk_dtlsconf_s            cdk_dtlsconf_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
@@ -268,10 +271,14 @@ struct cdk_event_s {
 	cdk_list_node_t node;
 };
 
-struct cdk_netconf_s {
-	int ntimerthrd;
-	int nworkerthrd;
+struct cdk_tlsconf_s {
+	const char* cafile;
+	const char* capath;
+	const char* crtfile;
+	const char* keyfile;
+};
 
+struct cdk_dtlsconf_s {
 	const char* cafile;
 	const char* capath;
 	const char* crtfile;
@@ -292,10 +299,12 @@ struct cdk_channel_s {
 			cdk_list_t       txlist;
 			cdk_unpack_t     unpacker;
 			cdk_timer_job_t* ctimer;
+			cdk_tls_t*       tls;
 		}tcp;
 		struct {
 			cdk_offset_buf_t rxbuf;
 			cdk_list_t       txlist;
+			cdk_dtls_t*      dtls;
 			struct {
 				struct sockaddr_storage ss;
 				socklen_t sslen;

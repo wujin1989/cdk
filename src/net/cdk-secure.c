@@ -33,7 +33,7 @@
 //int err = SSL_get_error(ssl, ret);
 //if (err == SSL_ERROR_WANT_READ) {}
 
-cdk_ssl_ctx_t* cdk_secure_ctxcreate(const char* cafile, const char* capath, const char* crtfile, const char* keyfile) {
+cdk_tls_ctx_t* cdk_secure_tlsctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile) {
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
 	SSL_CTX* ctx = SSL_CTX_new(TLS_method());
 	if (!ctx) {
@@ -68,13 +68,16 @@ cdk_ssl_ctx_t* cdk_secure_ctxcreate(const char* cafile, const char* capath, cons
 	return ctx;
 }
 
-void cdk_secure_ctxdestroy(cdk_ssl_ctx_t* ctx) {
+void cdk_secure_tlsctx_destroy(cdk_tls_ctx_t* ctx) {
 	if (ctx) {
 		SSL_CTX_free((SSL_CTX*)ctx);
 	}
 }
 
-cdk_ssl_t* cdk_secure_sslcreate(cdk_ssl_ctx_t* ctx) {
+cdk_tls_t* cdk_secure_tls_create(cdk_tls_ctx_t* ctx) {
+	if (!ctx) {
+		return NULL;
+	}
 	SSL* ssl = SSL_new(ctx);
 	if (!ssl) {
 		return NULL;
@@ -82,8 +85,36 @@ cdk_ssl_t* cdk_secure_sslcreate(cdk_ssl_ctx_t* ctx) {
 	return ssl;
 }
 
-void cdk_secure_ssldestroy(cdk_ssl_t* ssl) {
-	if (ssl) {
-		SSL_free(ssl);
+void cdk_secure_tls_destroy(cdk_tls_t* tls) {
+	if (tls) {
+		SSL_free(tls);
 	}
+}
+
+void cdk_secure_tls_connect(cdk_channel_t* channel) {
+
+}
+
+
+
+
+
+
+
+cdk_dtls_ctx_t* cdk_secure_dtlsctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile) {
+
+	return NULL;
+}
+
+void cdk_secure_dtlsctx_destroy(cdk_dtls_ctx_t* ctx) {
+
+}
+
+cdk_dtls_t* cdk_secure_dtls_create(cdk_dtls_ctx_t* ctx) {
+
+	return NULL;
+}
+
+void cdk_secure_dtls_destroy(cdk_dtls_t* dtls) {
+
 }

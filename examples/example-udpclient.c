@@ -24,15 +24,13 @@ static int routine(void* p) {
 }
 int main(void) {
 
-	cdk_netconf_t conf = {
-		.ntimerthrd = 1,
-		.nworkerthrd = 4,
+	cdk_tlsconf_t conf = {
 		.cafile = "",
 		.capath = "",
 		.crtfile = "",
 		.keyfile = ""
 	};
-	cdk_net_startup(&conf);
+	cdk_net_startup(4, &conf, NULL);
 	thrd_t tid;
 	cdk_channel_t* channel;
 	cdk_handler_t handler = {

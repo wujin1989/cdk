@@ -31,7 +31,8 @@
 #include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
-cdk_ssl_ctx_t* ctx;
+cdk_tls_ctx_t* tlsctx;
+cdk_dtls_ctx_t* dtlsctx;
 
 static cdk_list_t pollerlst;
 static cdk_poller_t* mainpoller;
@@ -263,7 +264,12 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
         if (connected) {
             channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_W, handler);
             if (channel) {
-                channel->handler->on_connect(channel);
+                if (tlsctx) {
+                    cdk_secure_tls_connect(channel);
+                }
+                else {
+                    channel->handler->on_connect(channel);
+                }
             }
         }
         else {
@@ -360,11 +366,11 @@ void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event) {
 	mtx_unlock(&poller->evmtx);
 }
 
-void cdk_net_startup(cdk_netconf_t* conf)
+void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf, cdk_dtlsconf_t* dtlsconf)
 {
     platform_socket_startup();
 
-    cdk_timer_create(&timer, conf->ntimerthrd);
+    cdk_timer_create(&timer, 1);
     cdk_list_init(&pollerlst);
     mtx_init(&pollermtx, mtx_plain);
 
@@ -372,17 +378,23 @@ void cdk_net_startup(cdk_netconf_t* conf)
     if (mainpoller == NULL) {
         abort();
     }
-    for (int i = 0; i < conf->nworkerthrd; i++) {
+    for (int i = 0; i < nworkers; i++) {
         thrd_t tid;
         thrd_create(&tid, __workerthread, NULL);
         thrd_detach(tid);
     }
-    ctx = cdk_secure_ctxcreate(conf->cafile, conf->capath, conf->crtfile, conf->keyfile);
+    if (tlsconf) {
+        tlsctx = cdk_secure_tlsctx_create(tlsconf->cafile, tlsconf->capath, tlsconf->crtfile, tlsconf->keyfile);
+    }
+    if (dtlsconf) {
+        dtlsctx = cdk_secure_dtlsctx_create(dtlsconf->cafile, dtlsconf->capath, dtlsconf->crtfile, dtlsconf->keyfile);
+    }
 }
 
 void cdk_net_cleanup(void) {
     platform_socket_cleanup();
     cdk_timer_destroy(&timer);
     mtx_destroy(&pollermtx);
-    cdk_secure_ctxdestroy(ctx);
+    cdk_secure_tlsctx_destroy(tlsctx);
+    cdk_secure_dtlsctx_destroy(dtlsctx);
 }

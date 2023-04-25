@@ -23,5 +23,13 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_ssl_ctx_t* cdk_secure_ctxcreate(const char* cafile, const char* capath, const char* crtfile, const char* keyfile);
-extern void           cdk_secure_ctxdestroy(cdk_ssl_ctx_t* ctx);
+extern cdk_tls_ctx_t*  cdk_secure_tlsctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile);
+extern void            cdk_secure_tlsctx_destroy(cdk_tls_ctx_t* ctx);
+extern cdk_tls_t*      cdk_secure_tls_create(cdk_tls_ctx_t* ctx);
+extern void            cdk_secure_tls_destroy(cdk_tls_t* tls);
+extern void            cdk_secure_tls_connect(cdk_channel_t* channel);
+
+extern cdk_dtls_ctx_t* cdk_secure_dtlsctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile);
+extern void            cdk_secure_dtlsctx_destroy(cdk_dtls_ctx_t* ctx);
+extern cdk_dtls_t*     cdk_secure_dtls_create(cdk_dtls_ctx_t* ctx);
+extern void            cdk_secure_dtls_destroy(cdk_dtls_t* dtls);
