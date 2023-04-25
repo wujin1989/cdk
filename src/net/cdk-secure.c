@@ -20,8 +20,9 @@
  */
 
 #include "cdk-secure.h"
+#include "cdk/net/cdk-net.h"
 #include <openssl/ssl.h>
-
+#include <openssl/err.h>
 //
 //SSL_set_fd(ssl, 1);
 //
@@ -91,8 +92,32 @@ void cdk_secure_tls_destroy(cdk_tls_t* tls) {
 	}
 }
 
-void cdk_secure_tls_connect(cdk_channel_t* channel) {
+static char* __secure_error2string(int err) {
+	static char buffer[512];
+	ERR_error_string(err, buffer);
+	return buffer;
+}
 
+void cdk_secure_tls_connect(cdk_channel_t* channel) {
+	SSL_set_fd(channel->tcp.tls, channel->fd);
+
+	int ret = SSL_connect((SSL*)channel->tcp.tls);
+	if (ret == 1) {
+		channel->handler->on_connect(channel);
+		return;
+	}
+	int err = SSL_get_error((SSL*)channel->tcp.tls, ret);
+	if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
+		cdk_event_t* ev = malloc(sizeof(cdk_event_t));
+		if (ev) {
+			ev->cb = cdk_secure_tls_connect;
+			ev->arg = channel;
+			cdk_net_postevent(channel->poller, ev);
+		}
+	}
+	else {
+		channel->handler->on_close(channel, __secure_error2string(err));
+	}
 }
 
 
