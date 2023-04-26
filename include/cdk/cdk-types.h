@@ -71,10 +71,8 @@ enum cdk_unpack_type_e {
 	UNPACK_TYPE_USERDEFINED ,
 };
 
-#define cdk_tls_ctx_t void
-#define cdk_tls_t     void
-#define cdk_dtls_ctx_t void
-#define cdk_dtls_t     void
+#define cdk_secure_ctx_t void
+#define cdk_secure_t     void
 
 typedef struct cdk_channel_s             cdk_channel_t;
 typedef struct cdk_handler_s             cdk_handler_t;
@@ -293,18 +291,17 @@ struct cdk_channel_s {
 	int                type;
 	bool               active;
 	mtx_t              mtx;
+	cdk_secure_t*      secure;
 	union {
 		struct {
 			cdk_offset_buf_t rxbuf;
 			cdk_list_t       txlist;
 			cdk_unpack_t     unpacker;
 			cdk_timer_job_t* ctimer;
-			cdk_tls_t*       tls;
 		}tcp;
 		struct {
 			cdk_offset_buf_t rxbuf;
 			cdk_list_t       txlist;
-			cdk_dtls_t*      dtls;
 			struct {
 				struct sockaddr_storage ss;
 				socklen_t sslen;

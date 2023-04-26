@@ -31,25 +31,23 @@
 #define __tls_connect_callback	__tls_connect
 #define __tls_accept_callback	__tls_accept
 
-//SSL_set_fd(ssl, 1);
-//
-//SSL_accept(ssl);
-//SSL_connect(ssl);
-//SSL_read(ssl, NULL, 0);
-//int ret = SSL_write(ssl, NULL, 0);
-//SSL_shutdown(ssl);
-//int err = SSL_get_error(ssl, ret);
-//if (err == SSL_ERROR_WANT_READ) {}
-
 static char* __secure_error2string(int err) {
 	static char buffer[512];
 	ERR_error_string(err, buffer);
 	return buffer;
 }
 
-cdk_tls_ctx_t* cdk_secure_tlsctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile) {
+cdk_secure_ctx_t* cdk_secure_ctx_create(const char* protocol, const char* cafile, const char* capath, const char* crtfile, const char* keyfile) {
+	SSL_CTX* ctx = NULL;
+
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
-	SSL_CTX* ctx = SSL_CTX_new(TLS_method());
+
+	if (!strncmp(protocol, "tls", strlen("tls"))) {
+		ctx = SSL_CTX_new(TLS_method());
+	}
+	if (!strncmp(protocol, "dtls", strlen("dtls"))) {
+		ctx = SSL_CTX_new(DTLS_method());
+	}
 	if (!ctx) {
 		return NULL;
 	}
@@ -82,13 +80,13 @@ cdk_tls_ctx_t* cdk_secure_tlsctx_create(const char* cafile, const char* capath, 
 	return ctx;
 }
 
-void cdk_secure_tlsctx_destroy(cdk_tls_ctx_t* ctx) {
+void cdk_secure_ctx_destroy(cdk_secure_ctx_t* ctx) {
 	if (ctx) {
 		SSL_CTX_free((SSL_CTX*)ctx);
 	}
 }
 
-cdk_tls_t* cdk_secure_tls_create(cdk_tls_ctx_t* ctx) {
+cdk_secure_t* cdk_secure_create(cdk_secure_ctx_t* ctx) {
 	if (!ctx) {
 		return NULL;
 	}
@@ -99,21 +97,27 @@ cdk_tls_t* cdk_secure_tls_create(cdk_tls_ctx_t* ctx) {
 	return ssl;
 }
 
-void cdk_secure_tls_destroy(cdk_tls_t* tls) {
-	if (tls) {
-		SSL_free(tls);
+void cdk_secure_close(cdk_secure_t* secure) {
+	if (secure) {
+		SSL_shutdown((SSL*)secure);
+	}
+}
+
+void cdk_secure_destroy(cdk_secure_t* secure) {
+	if (secure) {
+		SSL_free((SSL*)secure);
 	}
 }
 
 static void __tls_connect(void* param) {
 	cdk_channel_t* channel = param;
 
-	int ret = SSL_connect((SSL*)channel->tcp.tls);
+	int ret = SSL_connect((SSL*)channel->secure);
 	if (ret == 1) {
 		channel->handler->on_connect(channel);
 		return;
 	}
-	int err = SSL_get_error((SSL*)channel->tcp.tls, ret);
+	int err = SSL_get_error((SSL*)channel->secure, ret);
 	if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE))
 	{
 		if (err == SSL_ERROR_WANT_READ) {
@@ -139,12 +143,12 @@ static void __tls_connect(void* param) {
 static void __tls_accept(void* param) {
 	cdk_channel_t* channel = param;
 
-	int ret = SSL_accept((SSL*)channel->tcp.tls);
+	int ret = SSL_accept((SSL*)channel->secure);
 	if (ret == 1) {
 		channel->handler->on_accept(channel);
 		return;
 	}
-	int err = SSL_get_error((SSL*)channel->tcp.tls, ret);
+	int err = SSL_get_error((SSL*)channel->secure, ret);
 	if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE))
 	{
 		if (err == SSL_ERROR_WANT_READ) {
@@ -168,19 +172,19 @@ static void __tls_accept(void* param) {
 }
 
 void cdk_secure_tls_connect(cdk_channel_t* channel) {
-	SSL_set_fd((SSL*)channel->tcp.tls, (int)channel->fd);
+	SSL_set_fd((SSL*)channel->secure, (int)channel->fd);
 	__tls_connect(channel);
 }
 
 void cdk_secure_tls_accept(cdk_channel_t* channel) {
-	SSL_set_fd((SSL*)channel->tcp.tls, (int)channel->fd);
+	SSL_set_fd((SSL*)channel->secure, (int)channel->fd);
 	__tls_accept(channel);
 }
 
 void cdk_secure_tls_read(cdk_channel_t* channel) {
-	int n = SSL_read((SSL*)channel->tcp.tls, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE);
+	int n = SSL_read((SSL*)channel->secure, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE);
 	if (n <= 0) {
-		int err = SSL_get_error((SSL*)channel->tcp.tls, n);
+		int err = SSL_get_error((SSL*)channel->secure, n);
 		if (err == SSL_ERROR_WANT_READ) {
 			channel->cmd = PLATFORM_EVENT_R;
 			cdk_channel_modify(channel);
@@ -203,9 +207,9 @@ void cdk_secure_tls_write(cdk_channel_t* channel) {
 		cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->tcp.txlist)), cdk_txlist_node_t, n);
 
 		while (e->off < e->len) {
-			int n = SSL_write((SSL*)channel->tcp.tls, e->buf + e->off, (int)(e->len - e->off));
+			int n = SSL_write((SSL*)channel->secure, e->buf + e->off, (int)(e->len - e->off));
 			if (n <= 0) {
-				int err = SSL_get_error((SSL*)channel->tcp.tls, n);
+				int err = SSL_get_error((SSL*)channel->secure, n);
 				if (err == SSL_ERROR_WANT_READ) {
 					channel->cmd = PLATFORM_EVENT_R;
 					cdk_channel_modify(channel);
@@ -228,21 +232,10 @@ void cdk_secure_tls_write(cdk_channel_t* channel) {
 	}
 }
 
-
-cdk_dtls_ctx_t* cdk_secure_dtlsctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile) {
-
-	return NULL;
-}
-
-void cdk_secure_dtlsctx_destroy(cdk_dtls_ctx_t* ctx) {
+void cdk_secure_dtls_read(cdk_channel_t* channel) {
 
 }
 
-cdk_dtls_t* cdk_secure_dtls_create(cdk_dtls_ctx_t* ctx) {
-
-	return NULL;
-}
-
-void cdk_secure_dtls_destroy(cdk_dtls_t* dtls) {
+void cdk_secure_dtls_write(cdk_channel_t* channel) {
 
 }

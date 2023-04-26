@@ -31,8 +31,8 @@
 #include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
-cdk_tls_ctx_t* tlsctx;
-cdk_dtls_ctx_t* dtlsctx;
+cdk_secure_ctx_t* tlsctx;
+cdk_secure_ctx_t* dtlsctx;
 
 static cdk_list_t pollerlst;
 static cdk_poller_t* mainpoller;
@@ -384,10 +384,10 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf, cdk_dtlsconf_t* dtlsc
         thrd_detach(tid);
     }
     if (tlsconf) {
-        tlsctx = cdk_secure_tlsctx_create(tlsconf->cafile, tlsconf->capath, tlsconf->crtfile, tlsconf->keyfile);
+        tlsctx = cdk_secure_ctx_create("tls", tlsconf->cafile, tlsconf->capath, tlsconf->crtfile, tlsconf->keyfile);
     }
     if (dtlsconf) {
-        dtlsctx = cdk_secure_dtlsctx_create(dtlsconf->cafile, dtlsconf->capath, dtlsconf->crtfile, dtlsconf->keyfile);
+        dtlsctx = cdk_secure_ctx_create("dtls", dtlsconf->cafile, dtlsconf->capath, dtlsconf->crtfile, dtlsconf->keyfile);
     }
 }
 
@@ -395,6 +395,6 @@ void cdk_net_cleanup(void) {
     platform_socket_cleanup();
     cdk_timer_destroy(&timer);
     mtx_destroy(&pollermtx);
-    cdk_secure_tlsctx_destroy(tlsctx);
-    cdk_secure_dtlsctx_destroy(dtlsctx);
+    cdk_secure_ctx_destroy(tlsctx);
+    cdk_secure_ctx_destroy(dtlsctx);
 }
