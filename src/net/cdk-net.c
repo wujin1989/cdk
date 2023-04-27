@@ -25,14 +25,13 @@
 #include "cdk/net/cdk-net.h"
 #include "cdk-channel.h"
 #include "cdk-poller.h"
-#include "cdk-secure.h"
+#include "cdk-tls.h"
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
-cdk_secure_ctx_t* tlsctx;
-cdk_secure_ctx_t* dtlsctx;
+cdk_tls_ctx_t* tlsctx;
 
 static cdk_list_t pollerlst;
 static cdk_poller_t* mainpoller;
@@ -265,7 +264,7 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
             channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_W, handler);
             if (channel) {
                 if (tlsctx) {
-                    cdk_secure_tls_connect(channel);
+                    cdk_tls_connect(channel);
                 }
                 else {
                     channel->handler->on_connect(channel);
@@ -366,7 +365,7 @@ void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event) {
 	mtx_unlock(&poller->evmtx);
 }
 
-void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf, cdk_dtlsconf_t* dtlsconf)
+void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
 {
     platform_socket_startup();
 
@@ -384,10 +383,7 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf, cdk_dtlsconf_t* dtlsc
         thrd_detach(tid);
     }
     if (tlsconf) {
-        tlsctx = cdk_secure_ctx_create("tls", tlsconf->cafile, tlsconf->capath, tlsconf->crtfile, tlsconf->keyfile);
-    }
-    if (dtlsconf) {
-        dtlsctx = cdk_secure_ctx_create("dtls", dtlsconf->cafile, dtlsconf->capath, dtlsconf->crtfile, dtlsconf->keyfile);
+        tlsctx = cdk_tls_ctx_create(tlsconf->cafile, tlsconf->capath, tlsconf->crtfile, tlsconf->keyfile);
     }
 }
 
@@ -395,6 +391,5 @@ void cdk_net_cleanup(void) {
     platform_socket_cleanup();
     cdk_timer_destroy(&timer);
     mtx_destroy(&pollermtx);
-    cdk_secure_ctx_destroy(tlsctx);
-    cdk_secure_ctx_destroy(dtlsctx);
+    cdk_tls_ctx_destroy(tlsctx);
 }

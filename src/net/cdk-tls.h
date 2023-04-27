@@ -23,16 +23,12 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_secure_ctx_t* cdk_secure_ctx_create(const char* protocol, const char* cafile, const char* capath, const char* crtfile, const char* keyfile);
-extern void              cdk_secure_ctx_destroy(cdk_secure_ctx_t* ctx);
-extern cdk_secure_t*     cdk_secure_create(cdk_secure_ctx_t* ctx);
-extern void              cdk_secure_close(cdk_secure_t* secure);
-extern void              cdk_secure_destroy(cdk_secure_t* secure);
-
-extern void              cdk_secure_tls_connect(cdk_channel_t* channel);
-extern void              cdk_secure_tls_accept(cdk_channel_t* channel);
-extern void              cdk_secure_tls_read(cdk_channel_t* channel);
-extern void              cdk_secure_tls_write(cdk_channel_t* channel);
-
-extern void              cdk_secure_dtls_read(cdk_channel_t* channel);
-extern void              cdk_secure_dtls_write(cdk_channel_t* channel);
+extern cdk_tls_ctx_t* cdk_tls_ctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile);
+extern void           cdk_tls_ctx_destroy(cdk_tls_ctx_t* ctx);
+extern cdk_tls_t*     cdk_tls_create(cdk_tls_ctx_t* ctx);
+extern void           cdk_tls_close(cdk_tls_t* secure);
+extern void           cdk_tls_destroy(cdk_tls_t* secure);
+extern void           cdk_tls_connect(cdk_channel_t* channel);
+extern void           cdk_tls_accept(cdk_channel_t* channel);
+extern void           cdk_tls_read(cdk_channel_t* channel);
+extern void           cdk_tls_write(cdk_channel_t* channel);

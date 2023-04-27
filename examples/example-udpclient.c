@@ -24,13 +24,7 @@ static int routine(void* p) {
 }
 int main(void) {
 
-	cdk_tlsconf_t conf = {
-		.cafile = "",
-		.capath = "",
-		.crtfile = "",
-		.keyfile = ""
-	};
-	cdk_net_startup(4, &conf, NULL);
+	cdk_net_startup(4, NULL);
 	thrd_t tid;
 	cdk_channel_t* channel;
 	cdk_handler_t handler = {

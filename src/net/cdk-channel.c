@@ -24,14 +24,13 @@
 #include "cdk/container/cdk-list.h"
 #include "cdk-channel.h"
 #include "cdk-unpack.h"
-#include "cdk-secure.h"
+#include "cdk-tls.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-time.h"
 #include "cdk/net/cdk-net.h"
 #include "cdk/container/cdk-rbtree.h"
 
-extern cdk_secure_ctx_t* tlsctx;
-extern cdk_secure_ctx_t* dtlsctx;
+extern cdk_tls_ctx_t* tlsctx;
 extern cdk_timer_t timer;
 extern cdk_poller_t* _poller_roundrobin(void);
 
@@ -45,7 +44,7 @@ static void __channel_destroy_callback(void* param) {
 
 static void __channel_tcprecv(cdk_channel_t* channel) {
     if (tlsctx) {
-        cdk_secure_tls_read(channel);
+        cdk_tls_read(channel);
     }
     else {
         ssize_t n = platform_socket_recv(channel->fd, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE);
@@ -71,30 +70,25 @@ static void __channel_tcprecv(cdk_channel_t* channel) {
 }
 
 static void __channel_udprecv(cdk_channel_t* channel) {
-    if (dtlsctx) {
-        cdk_secure_dtls_read(channel);
-    }
-    else {
-        channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
-        ssize_t n = platform_socket_recvfrom(channel->fd, channel->udp.rxbuf.buf, MAX_IOBUF_SIZE, &channel->udp.peer.ss, &channel->udp.peer.sslen);
-        if (n == -1) {
-            /**
-             * to be compatible with the semantics of unix, windows's WSAECONNRESET is filtered out.
-             */
-            if (((platform_socket_lasterror() != PLATFORM_SO_ERROR_EAGAIN)
-                || (platform_socket_lasterror() != PLATFORM_SO_ERROR_WSAEWOULDBLOCK))
-                && (platform_socket_lasterror() != PLATFORM_SO_ERROR_WSAECONNRESET)) {
-                channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
-            }
-            return;
+    channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
+    ssize_t n = platform_socket_recvfrom(channel->fd, channel->udp.rxbuf.buf, MAX_IOBUF_SIZE, &channel->udp.peer.ss, &channel->udp.peer.sslen);
+    if (n == -1) {
+        /**
+         * to be compatible with the semantics of unix, windows's WSAECONNRESET is filtered out.
+         */
+        if (((platform_socket_lasterror() != PLATFORM_SO_ERROR_EAGAIN)
+            || (platform_socket_lasterror() != PLATFORM_SO_ERROR_WSAEWOULDBLOCK))
+            && (platform_socket_lasterror() != PLATFORM_SO_ERROR_WSAECONNRESET)) {
+            channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
         }
-        channel->handler->on_read(channel, channel->udp.rxbuf.buf, n);
+        return;
     }
+    channel->handler->on_read(channel, channel->udp.rxbuf.buf, n);
 }
 
 static void __channel_tcpsend(cdk_channel_t* channel) {
     if (tlsctx) {
-        cdk_secure_tls_write(channel);
+        cdk_tls_write(channel);
     }
     else {
         while (!cdk_list_empty(&(channel->tcp.txlist))) {
@@ -120,26 +114,21 @@ static void __channel_tcpsend(cdk_channel_t* channel) {
 }
 
 static void __channel_udpsend(cdk_channel_t* channel) {
-    if (dtlsctx) {
-        cdk_secure_dtls_write(channel);
-    }
-    else {
-        while (!cdk_list_empty(&(channel->udp.txlist))) {
-            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->udp.txlist)), cdk_txlist_node_t, n);
+    while (!cdk_list_empty(&(channel->udp.txlist))) {
+        cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->udp.txlist)), cdk_txlist_node_t, n);
 
-            ssize_t n = platform_socket_sendto(channel->fd, e->buf, (int)e->len, &(channel->udp.peer.ss), channel->udp.peer.sslen);
-            if (n == -1) {
-                if ((platform_socket_lasterror() != PLATFORM_SO_ERROR_EAGAIN)
-                    || (platform_socket_lasterror() != PLATFORM_SO_ERROR_WSAEWOULDBLOCK)) {
-                    channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
-                }
-                return;
+        ssize_t n = platform_socket_sendto(channel->fd, e->buf, (int)e->len, &(channel->udp.peer.ss), channel->udp.peer.sslen);
+        if (n == -1) {
+            if ((platform_socket_lasterror() != PLATFORM_SO_ERROR_EAGAIN)
+                || (platform_socket_lasterror() != PLATFORM_SO_ERROR_WSAEWOULDBLOCK)) {
+                channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
             }
-            channel->handler->on_write(channel, e->buf, e->len);
-            cdk_list_remove(&(e->n));
-            free(e);
-            e = NULL;
+            return;
         }
+        channel->handler->on_write(channel, e->buf, e->len);
+        cdk_list_remove(&(e->n));
+        free(e);
+        e = NULL;
     }
 }
 
@@ -154,7 +143,7 @@ static void __channel_tcpaccept(cdk_channel_t* channel) {
     }
     cdk_channel_t* newchannel = cdk_channel_create(_poller_roundrobin(), cli, PLATFORM_EVENT_R, channel->handler);
     if (tlsctx) {
-        cdk_secure_tls_accept(newchannel);
+        cdk_tls_accept(newchannel);
     }
     else {
         channel->handler->on_accept(newchannel);
@@ -183,7 +172,7 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
                 memset(channel->tcp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
             }
             cdk_list_init(&(channel->tcp.txlist));
-            channel->secure = cdk_secure_create(tlsctx);
+            channel->tcp.tls = cdk_tls_create(tlsctx);
         }
         if (channel->type == SOCK_DGRAM) {
             channel->udp.rxbuf.len = MAX_IOBUF_SIZE;
@@ -193,7 +182,6 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
                 memset(channel->udp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
             }
             cdk_list_init(&(channel->udp.txlist));
-            channel->secure = cdk_secure_create(dtlsctx);
         }
         platform_event_add(poller->pfd, channel->fd, cmd, channel);
         return channel;
@@ -213,9 +201,6 @@ void cdk_channel_destroy(cdk_channel_t* channel)
     platform_event_del(channel->poller->pfd, channel->fd);
     platform_socket_close(channel->fd);
 
-    cdk_secure_close(channel->secure);
-    cdk_secure_destroy(channel->secure);
-
     if (channel->type == SOCK_STREAM) {
         free(channel->tcp.rxbuf.buf);
         channel->tcp.rxbuf.buf = NULL;
@@ -226,6 +211,8 @@ void cdk_channel_destroy(cdk_channel_t* channel)
             free(e);
             e = NULL;
         }
+        cdk_tls_close(channel->tcp.tls);
+        cdk_tls_destroy(channel->tcp.tls);
     }
     if (channel->type == SOCK_DGRAM) {
         free(channel->udp.rxbuf.buf);
@@ -278,7 +265,7 @@ void cdk_channel_connect(cdk_channel_t* channel) {
     }
     else {
         if (tlsctx) {
-            cdk_secure_tls_connect(channel);
+            cdk_tls_connect(channel);
         }
         else {
             channel->handler->on_connect(channel);

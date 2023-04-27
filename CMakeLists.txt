@@ -44,7 +44,7 @@ set(SRCS
 	src/net/cdk-poller.c
 	src/net/cdk-channel.c
 	src/net/cdk-unpack.c
-	src/net/cdk-secure.c
+	src/net/cdk-tls.c
 	src/cdk-threadpool.c
 	src/cdk-loader.c
 	src/cdk-logger.c

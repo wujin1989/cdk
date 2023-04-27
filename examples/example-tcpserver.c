@@ -71,7 +71,7 @@ int main(void) {
 		.crtfile = "",
 		.keyfile = ""
 	};
-	cdk_net_startup(4, &conf, NULL);
+	cdk_net_startup(4, &conf);
 
 	cdk_handler_t handler = {
 		.on_accept  = handle_accept,

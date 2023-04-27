@@ -38,5 +38,5 @@ extern void           cdk_net_channelsend(cdk_channel_t* channel, void* data, si
 extern void           cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event);
 extern void           cdk_net_channelclose(cdk_channel_t* channel);
 extern void           cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker);
-extern void           cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf, cdk_dtlsconf_t* dtlsconf);
+extern void           cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf);
 extern void           cdk_net_cleanup(void);
