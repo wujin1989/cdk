@@ -97,7 +97,6 @@ typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_event_s               cdk_event_t;
 typedef struct cdk_tlsconf_s             cdk_tlsconf_t;
-typedef struct cdk_dtlsconf_s            cdk_dtlsconf_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
@@ -274,13 +273,7 @@ struct cdk_tlsconf_s {
 	const char* capath;
 	const char* crtfile;
 	const char* keyfile;
-};
-
-struct cdk_dtlsconf_s {
-	const char* cafile;
-	const char* capath;
-	const char* crtfile;
-	const char* keyfile;
+	bool verifypeer;
 };
 
 struct cdk_channel_s {

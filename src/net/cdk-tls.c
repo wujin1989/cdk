@@ -37,28 +37,28 @@ static char* __tls_error2string(int err) {
 	return buffer;
 }
 
-cdk_tls_ctx_t* cdk_tls_ctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile) {
+cdk_tls_ctx_t* cdk_tls_ctx_create(cdk_tlsconf_t* tlsconf) {
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
 
 	SSL_CTX* ctx = SSL_CTX_new(TLS_method());
 	if (!ctx) {
 		return NULL;
 	}
-	if (cafile && capath) {
-		if (!SSL_CTX_load_verify_locations(ctx, cafile, capath)) {
+	if (tlsconf->cafile && tlsconf->capath) {
+		if (!SSL_CTX_load_verify_locations(ctx, tlsconf->cafile, tlsconf->capath)) {
 			SSL_CTX_free(ctx);
 			return NULL;
 		}
 	}
-	if (!crtfile || !keyfile) {
+	if (!tlsconf->crtfile || !tlsconf->keyfile) {
 		SSL_CTX_free(ctx);
 		return NULL;
 	}
-	if (!SSL_CTX_use_certificate_file(ctx, crtfile, SSL_FILETYPE_PEM)) {
+	if (!SSL_CTX_use_certificate_file(ctx, tlsconf->crtfile, SSL_FILETYPE_PEM)) {
 		SSL_CTX_free(ctx);
 		return NULL;
 	}
-	if (!SSL_CTX_use_PrivateKey_file(ctx, keyfile, SSL_FILETYPE_PEM)) {
+	if (!SSL_CTX_use_PrivateKey_file(ctx, tlsconf->keyfile, SSL_FILETYPE_PEM)) {
 		SSL_CTX_free(ctx);
 		return NULL;
 	}
@@ -66,10 +66,12 @@ cdk_tls_ctx_t* cdk_tls_ctx_create(const char* cafile, const char* capath, const 
 		SSL_CTX_free(ctx);
 		return NULL;
 	}
-	SSL_CTX_set_default_verify_paths(ctx);
+	if (tlsconf->verifypeer && !tlsconf->cafile && !tlsconf->capath) {
+		SSL_CTX_set_default_verify_paths(ctx);
+	}
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
-	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
-
+	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, NULL);
+	
 	return ctx;
 }
 

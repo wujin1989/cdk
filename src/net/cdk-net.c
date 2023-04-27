@@ -383,7 +383,7 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
         thrd_detach(tid);
     }
     if (tlsconf) {
-        tlsctx = cdk_tls_ctx_create(tlsconf->cafile, tlsconf->capath, tlsconf->crtfile, tlsconf->keyfile);
+        tlsctx = cdk_tls_ctx_create(tlsconf);
     }
 }
 

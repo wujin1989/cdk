@@ -257,6 +257,7 @@ void cdk_channel_connect(cdk_channel_t* channel) {
     socklen_t len;
     len = sizeof(int);
 
+    if()
     cdk_timer_del(&timer, channel->tcp.ctimer);
 
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);

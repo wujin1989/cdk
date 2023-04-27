@@ -23,7 +23,7 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_tls_ctx_t* cdk_tls_ctx_create(const char* cafile, const char* capath, const char* crtfile, const char* keyfile);
+extern cdk_tls_ctx_t* cdk_tls_ctx_create(cdk_tlsconf_t* tlsconf);
 extern void           cdk_tls_ctx_destroy(cdk_tls_ctx_t* ctx);
 extern cdk_tls_t*     cdk_tls_create(cdk_tls_ctx_t* ctx);
 extern void           cdk_tls_close(cdk_tls_t* secure);
