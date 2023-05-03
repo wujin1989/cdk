@@ -76,23 +76,6 @@ static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
     }
 }
 
-static void __connect_timeout(void* param) {
-    cdk_channel_t* channel = param;
-    channel->handler->on_connect_timeout(channel);
-}
-
-static void __connect_timeout_callback(void* param) {
-    cdk_channel_t* channel = param;
-
-    cdk_event_t* e = malloc(sizeof(cdk_event_t));
-    if (e) {
-        e->cb = __connect_timeout;
-        e->arg = channel;
-
-        cdk_net_postevent(channel->poller, e);
-    }
-}
-
 cdk_poller_t* _poller_roundrobin(void)
 {
     mtx_lock(&pollermtx);
@@ -234,12 +217,12 @@ cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* po
     if (!strncmp(type, "tcp", strlen("tcp")))
     {
         sock = platform_socket_listen(host, port, SOCK_STREAM);
-        channel = cdk_channel_create(mainpoller, sock, PLATFORM_EVENT_A, handler);
+        channel = cdk_channel_create(mainpoller, sock, PLATFORM_EVENT_A, handler, 0);
     }
     if (!strncmp(type, "udp", strlen("udp")))
     {
         sock = platform_socket_listen(host, port, SOCK_DGRAM);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_R, handler);
+        channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_R, handler, 0);
     }
     return channel;
 }
@@ -261,7 +244,7 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
 
         sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
         if (connected) {
-            channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_W, handler);
+            channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_W, handler, 0);
             if (channel) {
                 if (tlsctx) {
                     cdk_tls_connect(channel);
@@ -272,16 +255,13 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
             }
         }
         else {
-            channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_C, handler);
-            if (channel) {
-                channel->tcp.ctimer = cdk_timer_add(&timer, __connect_timeout_callback, channel, timeout, false);
-            }
+            channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_C, handler, timeout);
         }
     }
     if (!strncmp(type, "udp", strlen("udp"))) {
 
         sock = platform_socket_dial(host, port, SOCK_DGRAM, NULL);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_W, handler);
+        channel = cdk_channel_create(_poller_roundrobin(), sock, PLATFORM_EVENT_W, handler, 0);
         if (channel) {
             memcpy(ai.a, host, strlen(host));
             ai.p = (uint16_t)strtoul(port, NULL, 10);

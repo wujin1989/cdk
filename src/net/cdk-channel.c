@@ -34,6 +34,23 @@ extern cdk_tls_ctx_t* tlsctx;
 extern cdk_timer_t timer;
 extern cdk_poller_t* _poller_roundrobin(void);
 
+static void __connect_timeout(void* param) {
+    cdk_channel_t* channel = param;
+    channel->handler->on_connect_timeout(channel);
+}
+
+static void __connect_timeout_callback(void* param) {
+    cdk_channel_t* channel = param;
+
+    cdk_event_t* e = malloc(sizeof(cdk_event_t));
+    if (e) {
+        e->cb = __connect_timeout;
+        e->arg = channel;
+
+        cdk_net_postevent(channel->poller, e);
+    }
+}
+
 static void __channel_destroy_callback(void* param) {
     cdk_channel_t* channel = param;
 
@@ -141,7 +158,7 @@ static void __channel_tcpaccept(cdk_channel_t* channel) {
         }
         return;
     }
-    cdk_channel_t* newchannel = cdk_channel_create(_poller_roundrobin(), cli, PLATFORM_EVENT_R, channel->handler);
+    cdk_channel_t* newchannel = cdk_channel_create(_poller_roundrobin(), cli, PLATFORM_EVENT_R, channel->handler, 0);
     if (tlsctx) {
         cdk_tls_accept(newchannel);
     }
@@ -150,7 +167,7 @@ static void __channel_tcpaccept(cdk_channel_t* channel) {
     }
 }
 
-cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_handler_t* handler)
+cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_handler_t* handler, int timeout)
 {
     cdk_channel_t* channel = malloc(sizeof(cdk_channel_t));
 
@@ -173,6 +190,9 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
             }
             cdk_list_init(&(channel->tcp.txlist));
             channel->tcp.tls = cdk_tls_create(tlsctx);
+            if (timeout) {
+                channel->tcp.ctimer = cdk_timer_add(&timer, __connect_timeout_callback, channel, timeout, false);
+            }
         }
         if (channel->type == SOCK_DGRAM) {
             channel->udp.rxbuf.len = MAX_IOBUF_SIZE;
@@ -257,7 +277,6 @@ void cdk_channel_connect(cdk_channel_t* channel) {
     socklen_t len;
     len = sizeof(int);
 
-    if()
     cdk_timer_del(&timer, channel->tcp.ctimer);
 
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);

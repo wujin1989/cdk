@@ -50,21 +50,19 @@ cdk_tls_ctx_t* cdk_tls_ctx_create(cdk_tlsconf_t* tlsconf) {
 			return NULL;
 		}
 	}
-	if (!tlsconf->crtfile || !tlsconf->keyfile) {
-		SSL_CTX_free(ctx);
-		return NULL;
-	}
-	if (!SSL_CTX_use_certificate_file(ctx, tlsconf->crtfile, SSL_FILETYPE_PEM)) {
-		SSL_CTX_free(ctx);
-		return NULL;
-	}
-	if (!SSL_CTX_use_PrivateKey_file(ctx, tlsconf->keyfile, SSL_FILETYPE_PEM)) {
-		SSL_CTX_free(ctx);
-		return NULL;
-	}
-	if (!SSL_CTX_check_private_key(ctx)) {
-		SSL_CTX_free(ctx);
-		return NULL;
+	if (tlsconf->crtfile && tlsconf->keyfile) {
+		if (!SSL_CTX_use_certificate_file(ctx, tlsconf->crtfile, SSL_FILETYPE_PEM)) {
+			SSL_CTX_free(ctx);
+			return NULL;
+		}
+		if (!SSL_CTX_use_PrivateKey_file(ctx, tlsconf->keyfile, SSL_FILETYPE_PEM)) {
+			SSL_CTX_free(ctx);
+			return NULL;
+		}
+		if (!SSL_CTX_check_private_key(ctx)) {
+			SSL_CTX_free(ctx);
+			return NULL;
+		}
 	}
 	if (tlsconf->verifypeer && !tlsconf->cafile && !tlsconf->capath) {
 		SSL_CTX_set_default_verify_paths(ctx);

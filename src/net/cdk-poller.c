@@ -38,7 +38,7 @@ void platform_poller_poll(cdk_poller_t* poller) {
         .type = UNPACK_TYPE_FIXEDLEN,
         .fixedlen.len = sizeof(int)
     };
-    cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], PLATFORM_EVENT_R, &handler);
+    cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], PLATFORM_EVENT_R, &handler, 0);
     memcpy(&channel->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
 
     while (poller->active)
