@@ -92,12 +92,12 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
 	
 	switch (type)
 	{
-	case PLATFORM_EVENT_A:
-	case PLATFORM_EVENT_R:
+	case EVENT_TYPE_A:
+	case EVENT_TYPE_R:
 		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD, 0, 0, ud);
 		break;
-	case PLATFORM_EVENT_C:
-	case PLATFORM_EVENT_W:
+	case EVENT_TYPE_C:
+	case EVENT_TYPE_W:
 		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD, 0, 0, ud);
 		break;
 	default:
@@ -111,12 +111,12 @@ void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
 
 	switch (type)
 	{
-	case PLATFORM_EVENT_A:
-	case PLATFORM_EVENT_R:
+	case EVENT_TYPE_A:
+	case EVENT_TYPE_R:
 		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD, 0, 0, ud);
 		break;
-	case PLATFORM_EVENT_C:
-	case PLATFORM_EVENT_W:
+	case EVENT_TYPE_C:
+	case EVENT_TYPE_W:
 		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD, 0, 0, ud);
 		break;
 	default:
