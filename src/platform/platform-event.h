@@ -25,14 +25,6 @@ _Pragma("once")
 
 #define MAX_PROCESS_EVENTS 1024
 
-enum {
-
-	PLATFORM_EVENT_R,
-	PLATFORM_EVENT_W,
-	PLATFORM_EVENT_A,
-	PLATFORM_EVENT_C,
-};
-
 typedef struct cdk_pollevent_s {
 	void* ptr;
 }cdk_pollevent_t;

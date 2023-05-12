@@ -38,9 +38,11 @@ void platform_poller_poll(cdk_poller_t* poller) {
         .type = UNPACK_TYPE_FIXEDLEN,
         .fixedlen.len = sizeof(int)
     };
-    cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], PLATFORM_EVENT_R, &handler, 0);
-    memcpy(&channel->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
-
+    cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], EVENT_TYPE_R, &handler);
+    if (channel) {
+        memcpy(&channel->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
+        platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
+    }
     while (poller->active)
     {
         int nevents = platform_event_wait(poller->pfd, events);
@@ -50,16 +52,16 @@ void platform_poller_poll(cdk_poller_t* poller) {
             if (channel) {
                 switch (channel->cmd)
                 {
-                case PLATFORM_EVENT_A:
+                case EVENT_TYPE_A:
                     cdk_channel_accept(channel);
                     break;
-                case PLATFORM_EVENT_R:
+                case EVENT_TYPE_R:
                     cdk_channel_recv(channel);
                     break;
-                case PLATFORM_EVENT_C:
+                case EVENT_TYPE_C:
                     cdk_channel_connect(channel);
                     break;
-                case PLATFORM_EVENT_W:
+                case EVENT_TYPE_W:
                     cdk_channel_send(channel);
                     break;
                 default:

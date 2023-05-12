@@ -42,19 +42,19 @@ static void handle_connect(cdk_channel_t* channel) {
 	smsg->h.p_t = htonl(1);
 	memcpy(smsg->p, "hello", strlen("hello") + 1);
 
-	cdk_net_channelsend(channel, smsg, sizeof(net_msg_t) + strlen("hello") + 1);
+	cdk_net_postsend(channel, smsg, sizeof(net_msg_t) + strlen("hello") + 1);
 }
 
 static void handle_connect_timeout(cdk_channel_t* channel) {
 	printf("connect timeout\n");
-	cdk_net_channelclose(channel);
+	cdk_net_close(channel);
 }
 
 static void handle_write(cdk_channel_t* channel, void* buf, size_t len) {
 
 	net_msg_t* msg = (net_msg_t*)buf;
 	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
-	cdk_net_channelrecv(channel);
+	cdk_net_postrecv(channel);
 }
 
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
@@ -65,7 +65,7 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 static void handle_close(cdk_channel_t* channel, char* error) {
 
 	printf("connection closed, reason: %s\n", error);
-	cdk_net_channelclose(channel);
+	cdk_net_close(channel);
 }
 
 int main(void) {
@@ -84,9 +84,10 @@ int main(void) {
 		.on_connect_timeout = handle_connect_timeout,
 		.on_read    = handle_read,
 		.on_write   = handle_write,
-		.on_close   = handle_close
+		.on_close   = handle_close,
+		.connect_timeout = 5000
 	};
-	cdk_net_dial("tcp", "127.0.0.1", "9999", 5000, &handler);
+	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 
 	cdk_net_poll();
 	cdk_net_cleanup();

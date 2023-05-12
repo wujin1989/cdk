@@ -158,7 +158,7 @@ static void __channel_tcpaccept(cdk_channel_t* channel) {
         }
         return;
     }
-    cdk_channel_t* newchannel = cdk_channel_create(_poller_roundrobin(), cli, PLATFORM_EVENT_R, channel->handler, 0);
+    cdk_channel_t* newchannel = cdk_channel_create(_poller_roundrobin(), cli, EVENT_TYPE_R, channel->handler);
     if (tlsctx) {
         cdk_tls_accept(newchannel);
     }
@@ -167,7 +167,7 @@ static void __channel_tcpaccept(cdk_channel_t* channel) {
     }
 }
 
-cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_handler_t* handler, int timeout)
+cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd, cdk_handler_t* handler)
 {
     cdk_channel_t* channel = malloc(sizeof(cdk_channel_t));
 
@@ -175,6 +175,7 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
         memset(channel, 0, sizeof(cdk_channel_t));
         channel->poller = poller;
         channel->cmd = cmd;
+        channel->flag = false;
         channel->fd = sock;
         channel->handler = handler;
         channel->type = platform_socket_socktype(sock);
@@ -190,8 +191,8 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
             }
             cdk_list_init(&(channel->tcp.txlist));
             channel->tcp.tls = cdk_tls_create(tlsctx);
-            if (timeout) {
-                channel->tcp.ctimer = cdk_timer_add(&timer, __connect_timeout_callback, channel, timeout, false);
+            if (handler->connect_timeout) {
+                channel->tcp.ctimer = cdk_timer_add(&timer, __connect_timeout_callback, channel, handler->connect_timeout, false);
             }
         }
         if (channel->type == SOCK_DGRAM) {
@@ -203,14 +204,9 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
             }
             cdk_list_init(&(channel->udp.txlist));
         }
-        platform_event_add(poller->pfd, channel->fd, cmd, channel);
         return channel;
     }
     return NULL;
-}
-
-void cdk_channel_modify(cdk_channel_t* channel) {
-    platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
 }
 
 void cdk_channel_destroy(cdk_channel_t* channel)

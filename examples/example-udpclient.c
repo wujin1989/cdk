@@ -1,7 +1,7 @@
 #include "cdk.h"
 
 static void handle_write(cdk_channel_t* channel, void* buf, size_t len) {
-	cdk_net_channelrecv(channel);
+	cdk_net_postrecv(channel);
 }
 
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
@@ -12,12 +12,12 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 
 static void handle_close(cdk_channel_t* channel, char* error) {
 	printf("channel closed, reason: %s\n", error);
-	cdk_net_channelclose(channel);
+	cdk_net_close(channel);
 }
 static int routine(void* p) {
 	cdk_channel_t* channel = p;
 	while (true) {
-		cdk_net_channelsend(channel, "helloworld", strlen("helloworld") + 1);
+		cdk_net_postsend(channel, "helloworld", strlen("helloworld") + 1);
 		cdk_time_sleep(1000);
 	}
 	return 0;
@@ -32,7 +32,7 @@ int main(void) {
 		.on_write = handle_write,
 		.on_close = handle_close
 	};
-	channel = cdk_net_dial("udp", "127.0.0.1", "9999", 0, &handler);
+	channel = cdk_net_dial("udp", "127.0.0.1", "9999", &handler);
 	
 	thrd_create(&tid, routine, channel);
 	thrd_detach(tid);

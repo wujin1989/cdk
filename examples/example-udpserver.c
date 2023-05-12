@@ -16,7 +16,7 @@ int routine(void* p) {
 			msg_t* msg = cdk_queue_data(cdk_queue_dequeue(&mq), msg_t, node);
 			printf("received buf: %s, len: %zu\n", msg->buf, msg->len);
 
-			cdk_net_channelsend(msg->conn, "recvive complete.", strlen("recvive complete.") + 1);
+			cdk_net_postsend(msg->conn, "recvive complete.", strlen("recvive complete.") + 1);
 
 			free(msg);
 			msg = NULL;
@@ -29,7 +29,7 @@ int routine(void* p) {
 }
 
 static void handle_write(cdk_channel_t* conn, void* buf, size_t len) {
-	cdk_net_channelrecv(conn);
+	cdk_net_postrecv(conn);
 }
 static void handle_read(cdk_channel_t* conn, void* buf, size_t len) {
 
@@ -47,7 +47,7 @@ static void handle_read(cdk_channel_t* conn, void* buf, size_t len) {
 
 static void handle_close(cdk_channel_t* conn, char* error) {
 	printf("connection closed, reason: %s\n", error);
-	cdk_net_channelclose(conn);
+	cdk_net_close(conn);
 }
 int main(void) {
 

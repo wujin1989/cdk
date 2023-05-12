@@ -64,12 +64,19 @@ _Pragma("once")
 #endif
 #endif
 
-enum cdk_unpack_type_e {
+typedef enum cdk_unpack_type_e {
 	UNPACK_TYPE_FIXEDLEN    ,
 	UNPACK_TYPE_DELIMITER   ,
 	UNPACK_TYPE_LENGTHFIELD ,
 	UNPACK_TYPE_USERDEFINED ,
-};
+}cdk_unpack_type_t;
+
+typedef enum cdk_event_type_e{
+	EVENT_TYPE_R,
+	EVENT_TYPE_W,
+	EVENT_TYPE_A,
+	EVENT_TYPE_C,
+}cdk_event_type_t;
 
 #define cdk_tls_ctx_t void
 #define cdk_tls_t     void
@@ -280,6 +287,7 @@ struct cdk_channel_s {
 	cdk_poller_t*      poller;
 	cdk_sock_t         fd;
 	int                cmd;
+	bool               flag;
 	cdk_handler_t*     handler;
 	int                type;
 	bool               active;
@@ -307,12 +315,12 @@ struct cdk_handler_s {
 	void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_channel_t*, void* buf, size_t len);
 	void (*on_close)  (cdk_channel_t*, char* error);
-	/**
-	 * the following callback function is only used by tcp.
-	 */
+	/** the following callback function is only used by tcp. */
 	void (*on_accept) (cdk_channel_t*);
 	void (*on_connect)(cdk_channel_t*);
 	void (*on_connect_timeout)(cdk_channel_t*);
+	/** the following fields is only used by dial. */
+	int connect_timeout;
 };
 
 struct cdk_sha256_s {
