@@ -38,7 +38,7 @@ void cdk_list_insert_head(cdk_list_t* l, cdk_list_node_t* x) {
 	 * insert node;
 	 */
 	(x)->n     = (l)->n;
-	(x)->p->n  = (x);
+	(x)->n->p  = (x);
 	(x)->p     = (l);
 	(l)->n     = (x);
 }
