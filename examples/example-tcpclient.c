@@ -75,9 +75,9 @@ int main(void) {
 		.capath = NULL,
 		.crtfile = NULL,
 		.keyfile = NULL,
-		.verifypeer = false
+		.verifypeer = true
 	};
-	cdk_net_startup(1, &conf);
+	cdk_net_startup(4, &conf);
 
 	cdk_handler_t handler = {
 		.on_connect = handle_connect,
