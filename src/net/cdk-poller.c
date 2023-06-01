@@ -40,6 +40,7 @@ void platform_poller_poll(cdk_poller_t* poller) {
     };
     cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], EVENT_TYPE_R, &handler);
     if (channel) {
+        channel->tcp.tls = NULL;
         memcpy(&channel->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
         platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
     }

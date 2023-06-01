@@ -261,13 +261,14 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
         if (connected) {
             channel = cdk_channel_create(_poller_roundrobin(), sock, EVENT_TYPE_W, handler);
             if (channel) {
-                if (tlsctx) {
-                    cdk_tls_connect(channel);
+                if (channel->tcp.tls) {
+                    platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
                 }
                 else {
                     channel->handler->on_connect(channel);
                 }
             }
+            return channel;
         }
         else {
             channel = cdk_channel_create(_poller_roundrobin(), sock, EVENT_TYPE_C, handler);

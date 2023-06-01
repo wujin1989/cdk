@@ -97,6 +97,7 @@ typedef struct cdk_timer_job_s           cdk_timer_job_t;
 typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
+typedef enum   cdk_tls_state_s           cdk_tls_state_t;
 typedef struct cdk_unpack_s              cdk_unpack_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_txlist_node_s         cdk_txlist_node_t;
@@ -283,6 +284,14 @@ struct cdk_tlsconf_s {
 	bool verifypeer;
 };
 
+enum cdk_tls_state_s {
+	TLS_STATE_NONE = 0,
+	TLS_STATE_CONNECTING,
+	TLS_STATE_ACCEPTING,
+	TLS_STATE_CONNECTED,
+	TLS_STATE_ACCEPTED,
+};
+
 struct cdk_channel_s {
 	cdk_poller_t*      poller;
 	cdk_sock_t         fd;
@@ -299,6 +308,7 @@ struct cdk_channel_s {
 			cdk_unpack_t     unpacker;
 			cdk_timer_job_t* ctimer;
 			cdk_tls_t*       tls;
+			cdk_tls_state_t  state;
 		}tcp;
 		struct {
 			cdk_offset_buf_t rxbuf;

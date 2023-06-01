@@ -71,11 +71,11 @@ static void handle_close(cdk_channel_t* channel, char* error) {
 int main(void) {
 
 	cdk_tlsconf_t conf = {
-		.cafile = "ca.pem",
-		.capath = ".",
+		.cafile = "certs/ca.crt",
+		.capath = NULL,
 		.crtfile = NULL,
 		.keyfile = NULL,
-		.verifypeer = true
+		.verifypeer = false
 	};
 	cdk_net_startup(1, &conf);
 

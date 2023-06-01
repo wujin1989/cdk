@@ -60,8 +60,19 @@ static void __channel_destroy_callback(void* param) {
 }
 
 static void __channel_tcprecv(cdk_channel_t* channel) {
-    if (tlsctx) {
-        cdk_tls_read(channel);
+    if (channel->tcp.tls) {
+        switch (channel->tcp.state)
+        {
+        case TLS_STATE_ACCEPTING:
+            cdk_tls_accept(channel);
+            break;
+        case TLS_STATE_CONNECTING:
+            cdk_tls_connect(channel);
+            break;
+        default:
+            cdk_tls_read(channel);
+            break;
+        }
     }
     else {
         ssize_t n = platform_socket_recv(channel->fd, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE);
@@ -104,8 +115,19 @@ static void __channel_udprecv(cdk_channel_t* channel) {
 }
 
 static void __channel_tcpsend(cdk_channel_t* channel) {
-    if (tlsctx) {
-        cdk_tls_write(channel);
+    if (channel->tcp.tls) {
+        switch (channel->tcp.state)
+        {
+        case TLS_STATE_ACCEPTING:
+            cdk_tls_accept(channel);
+            break;
+        case TLS_STATE_CONNECTING:
+            cdk_tls_connect(channel);
+            break;
+        default:
+            cdk_tls_write(channel);
+            break;
+        }
     }
     else {
         while (!cdk_list_empty(&(channel->tcp.txlist))) {
@@ -159,7 +181,7 @@ static void __channel_tcpaccept(cdk_channel_t* channel) {
         return;
     }
     cdk_channel_t* newchannel = cdk_channel_create(_poller_roundrobin(), cli, EVENT_TYPE_R, channel->handler);
-    if (tlsctx) {
+    if (newchannel->tcp.tls) {
         cdk_tls_accept(newchannel);
     }
     else {
@@ -191,6 +213,7 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, int cmd
             }
             cdk_list_init(&(channel->tcp.txlist));
             channel->tcp.tls = cdk_tls_create(tlsctx);
+            channel->tcp.state = TLS_STATE_NONE;
             if (handler->connect_timeout) {
                 channel->tcp.ctimer = cdk_timer_add(&timer, __connect_timeout_callback, channel, handler->connect_timeout, false);
             }
@@ -280,7 +303,7 @@ void cdk_channel_connect(cdk_channel_t* channel) {
         channel->handler->on_close(channel, platform_socket_error2string(err));
     }
     else {
-        if (tlsctx) {
+        if (channel->tcp.tls) {
             cdk_tls_connect(channel);
         }
         else {
