@@ -46,3 +46,6 @@ target_link_libraries(example-sha1 PUBLIC cdk)
 
 add_executable(example-mtx "example-mtx.c")
 target_link_libraries(example-mtx PUBLIC cdk)
+
+add_executable(example-ringbuf "example-ringbuf.c")
+target_link_libraries(example-ringbuf PUBLIC cdk)
