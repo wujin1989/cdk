@@ -33,9 +33,9 @@ Linux:
 
 Mac:
 
-    cmake -G "Ninja Multi-Config" -B build -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
+    cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -G "Ninja Multi-Config" -B build
     or
-    cmake -G "Xcode" -B build -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
+    cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -G "Xcode" -B build
 
     cmake --build build --config Debug -j 8
     cmake --build build --config Release -j 8
