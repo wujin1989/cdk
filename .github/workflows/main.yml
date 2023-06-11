@@ -28,6 +28,7 @@ jobs:
       run: |
         brew update
         brew install openssl
+        brew link --force openssl
     - name: Run CMake
       run: cmake -B build -G "Ninja Multi-Config" -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
     - name: Build
