@@ -94,36 +94,45 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
 	{
 	case EVENT_TYPE_A:
 	case EVENT_TYPE_R:
-		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD, 0, 0, ud);
+		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, ud);
+        kevent(pfd, &ke, 1, NULL, 0, NULL);
+        EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, ud);
+        kevent(pfd, &ke, 1, NULL, 0, NULL);
 		break;
 	case EVENT_TYPE_C:
 	case EVENT_TYPE_W:
-		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD, 0, 0, ud);
+		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, ud);
+        kevent(pfd, &ke, 1, NULL, 0, NULL);
+        EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, ud);
+        kevent(pfd, &ke, 1, NULL, 0, NULL);
 		break;
 	default:
 		break;
 	}
-	kevent(pfd, &ke, 1, NULL, 0, NULL);
 }
 
 void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
 	struct kevent ke;
 
-	switch (type)
-	{
-	case EVENT_TYPE_A:
-	case EVENT_TYPE_R:
-		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD, 0, 0, ud);
-		break;
-	case EVENT_TYPE_C:
-	case EVENT_TYPE_W:
-		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD, 0, 0, ud);
-		break;
-	default:
-		break;
-	}
-	kevent(pfd, &ke, 1, NULL, 0, NULL);
-}
+    switch (type)
+    {
+    case EVENT_TYPE_A:
+    case EVENT_TYPE_R:
+        EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, ud);
+        kevent(pfd, &ke, 1, NULL, 0, NULL);
+        EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, ud);
+        kevent(pfd, &ke, 1, NULL, 0, NULL);
+        break;
+    case EVENT_TYPE_C:
+    case EVENT_TYPE_W:
+        EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, ud);
+        kevent(pfd, &ke, 1, NULL, 0, NULL);
+        EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, ud);
+        kevent(pfd, &ke, 1, NULL, 0, NULL);
+        break;
+    default:
+        break;
+    }}
 
 void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
 	struct kevent ke;
