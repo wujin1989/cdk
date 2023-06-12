@@ -41,7 +41,7 @@ Mac:
     cmake --build build --config Release -j 8
 
 # Documentation
-Reference docs/cdk-docs.html.
+Reference docs/API-Specification.html
 
 
 # License

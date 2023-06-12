@@ -1,0 +1,466 @@
+<!DOCTYPE html><html><head>
+      <title>API-Specification</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\wujin\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.6.8\node_modules\@shd101wyy\mume\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <style>
+      pre{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;direction:ltr;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;padding:1em;margin:.5em 0;overflow:auto;line-height:1.5;tab-size:4;hyphens:none;color:#2b3f6a;background-color:#eee9dd !important;border:#ddd3bb;border-radius:3px}pre[class*="language-"]{padding:1em}code[class*="language-"] .token.comment,pre[class*="language-"] .token.comment,code[class*="language-"] .token.prolog,pre[class*="language-"] .token.prolog,code[class*="language-"] .token.doctype,pre[class*="language-"] .token.doctype,code[class*="language-"] .token.cdata,pre[class*="language-"] .token.cdata{color:#9ca3b0;font-style:italic}code[class*="language-"] .token.punctuation,pre[class*="language-"] .token.punctuation{color:#9ca3b0}code[class*="language-"] .namespace,pre[class*="language-"] .namespace{opacity:.7}code[class*="language-"] .token.constant,pre[class*="language-"] .token.constant{color:#c16161}code[class*="language-"] .token.boolean,pre[class*="language-"] .token.boolean,code[class*="language-"] .token.number,pre[class*="language-"] .token.number,code[class*="language-"] .token.function-name,pre[class*="language-"] .token.function-name{color:#c16161}code[class*="language-"] .token.tag,pre[class*="language-"] .token.tag{color:#ac4343}code[class*="language-"] .token.symbol,pre[class*="language-"] .token.symbol{color:#8f932b}code[class*="language-"] .token.selector,pre[class*="language-"] .token.selector{color:#d08e25}code[class*="language-"] .token.attr-name,pre[class*="language-"] .token.attr-name{color:#d08e25}code[class*="language-"] .token.string,pre[class*="language-"] .token.string{background-color:rgba(255,204,0,0.03);color:rgba(106,68,28,0.77)}code[class*="language-"] .token.char,pre[class*="language-"] .token.char{color:#8f932b}code[class*="language-"] .token.url,pre[class*="language-"] .token.url{color:#d08e25}code[class*="language-"] .token.atrule,pre[class*="language-"] .token.atrule,code[class*="language-"] .token.attr-value,pre[class*="language-"] .token.attr-value,code[class*="language-"] .token.keyword,pre[class*="language-"] .token.keyword{color:#8f932b}code[class*="language-"] .token.function,pre[class*="language-"] .token.function{color:#d08e25}code[class*="language-"] .token.class-name,pre[class*="language-"] .token.class-name{color:#2b3f6a}code[class*="language-"] .token.variable,pre[class*="language-"] .token.variable{color:#5e78e1}code[class*="language-"] .token.regex,pre[class*="language-"] .token.regex,code[class*="language-"] .token.important,pre[class*="language-"] .token.important{color:#379566}code[class*="language-"] .token.important,pre[class*="language-"] .token.important,code[class*="language-"] .token.bold,pre[class*="language-"] .token.bold{font-weight:bold}code[class*="language-"] .token.italic,pre[class*="language-"] .token.italic{font-style:italic}code[class*="language-"] .token.entity,pre[class*="language-"] .token.entity{cursor:help}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:rgba(153,122,102,0.08);background:linear-gradient(to right, rgba(153,122,102,0.1) 70%, rgba(153,122,102,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:rgba(153,122,102,0.4);color:#f5f2f0;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px white}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}body{font-size:16px;background-color:#f3f2ee;font-family:"PT Serif",'Times New Roman',Times;color:#1f0909;line-height:1.5em}body ol,body ul{list-style:none}body blockquote,body q{quotes:none}body blockquote:before,body blockquote:after,body q:before,body q:after{content:'';content:none}body table{border-collapse:collapse;border-spacing:0}body h1,body h2,body h3,body h4,body h5,body h6{font-weight:bold}body h1{font-size:1.875em;line-height:1.6em;margin-top:2em}body h2,body h3{font-size:1.3125em;line-height:1.15;margin-top:2.285714em;margin-bottom:1.15em}body h3{font-weight:normal}body h4{font-size:1.125em;margin-top:2.67em}body h5,body h6{font-size:1em}body h1{border-bottom:1px solid;margin-bottom:1.875em;padding-bottom:.8125em}body a{text-decoration:none;color:#065588}body a:hover,body a:active{text-decoration:underline}body p,body blockquote,body .md-fences{margin-bottom:1.5em}body h1,body h2,body h3,body h4,body h5,body h6{margin-bottom:1.5em}body blockquote{font-style:italic;border-left:5px solid;margin-left:2em;padding-left:1em}body ul,body ol{margin:0 0 1.5em 1.5em}body ol li{list-style-type:decimal;list-style-position:outside}body ul li{list-style-type:disc;list-style-position:outside}body li>p{margin-top:0;margin-bottom:0}body .md-meta,body .md-before,body .md-after{color:#999}body table{margin-bottom:1.5em;font-size:1em}body thead th,body tfoot th{padding:.25em .25em .25em .4em;text-transform:uppercase}body th{text-align:left}body td{vertical-align:top;padding:.25em .25em .25em .4em}body code,body .md-fences{color:inherit;background-color:#dadada;padding-left:1ch;padding-right:1ch}body pre code{background-color:inherit}body .md-fences{margin-left:2em;margin-bottom:3em}body .md-fences .CodeMirror.CodeMirror-wrap{top:-0.8em}body pre,body code,body tt{font-size:.875em;line-height:1.714285em}body h1{line-height:1.3em;font-weight:normal;margin-bottom:.5em}body p+ul,body p+ol{margin-top:-1em}body h3+ul,body h4+ul,body h5+ul,body h6+ul,body h3+ol,body h4+ol,body h5+ol,body h6+ol{margin-top:.5em}body li>ul,body li>ol{margin-top:inherit}body h2,body h3{margin-bottom:.75em}body hr{border-top:none;border-right:none;border-bottom:1px solid;border-left:none}body h1{border-color:#c5c5c5}body blockquote{border-color:#bababa;color:#656565;background-color:#e6e4dc}body thead.md-table-edit{background-color:transparent}body thead{background-color:#dadada}body tr:nth-child(even){background:#e8e7e7}body hr{border-color:#c5c5c5}body .task-list{padding-left:1rem}body .task-list-item{list-style-type:none;margin-left:-1.8em}body .task-list-item .task-list-item-checkbox{margin-right:.8em}body .task-list-item input:before{content:'\221A';display:inline-block;width:1.25rem;height:1.5rem;vertical-align:middle;text-align:center;color:#ddd;background-color:#F3F2EE}body .task-list-item input:checked:before,body .task-list-item input[checked]:before{color:inherit}body img{max-width:100%}body kbd{color:#1f0909}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview .pagebreak,.markdown-preview .newpage{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center !important}.markdown-preview:not([for="preview"]) .code-chunk .btn-group{display:none}.markdown-preview:not([for="preview"]) .code-chunk .status{display:none}.markdown-preview:not([for="preview"]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,0.66);border:4px solid rgba(150,150,150,0.66);background-clip:content-box}html body[for="html-export"]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0}@media screen and (min-width:914px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{font-size:14px !important;padding:1em}}@media print{html body[for="html-export"]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for="html-export"]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,0.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,0.66);border:4px solid rgba(150,150,150,0.66);background-clip:content-box}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p,html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div{display:inline}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% -  300px);padding:2em calc(50% - 457px -  300px/2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for="html-export"]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for="html-export"]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+html body:before {
+  content: "Failed to compile `style.less`. ParseError: Unrecognised input. Possibly missing opening '{' in input on line 14, column 1:
+13 ---
+14 }
+15 
+" !important;
+  padding: 2em !important;
+}
+.mume.mume { display: none !important; }
+      </style>
+    </head>
+    <body for="html-export">
+      <div class="mume markdown-preview  ">
+      <center>
+Copyright&#xA9;2023 jin.wu. All rights reserved.
+</center>
+<h1 class="mume-header" id="cdk-api-specification">CDK API Specification</h1>
+
+<h2 class="mume-header" id="container">Container</h2>
+
+<h3 class="mume-header" id="cdk-list">cdk-list</h3>
+
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Retrieve a pointer to data type T based on the node x of a linked list.
+ *
+ * @param x, Node of a linked list
+ * @param T, Data type
+ * @param m, The member name of the linked list node x in the data type T
+ * @return Pointer to the data type T
+ */</span>
+<span class="token keyword keyword-extern">extern</span> T<span class="token operator">*</span> <span class="token function">cdk_list_data</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> x<span class="token punctuation">,</span> T<span class="token punctuation">,</span> m<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Initialize a linked list.
+ * 
+ * @param l, Ptr of a linked list
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_list_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_t</span><span class="token operator">*</span> l<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Insert node x at the head of linked list l.
+ * 
+ * @param l, Ptr of a linked-list
+ * @param x, Ptr of a linked-list node
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_list_insert_head</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_t</span><span class="token operator">*</span> l<span class="token punctuation">,</span> <span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> x<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Insert node x at the end of linked list l.
+ * 
+ * @param l, Ptr of a linked-list
+ * @param x, Ptr of a linked-list node
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_list_insert_tail</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_t</span><span class="token operator">*</span> l<span class="token punctuation">,</span> <span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> x<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Check if the linked list is empty.
+ * 
+ * @param l, Ptr of a linked-list
+ * @return True or False
+ */</span>
+<span class="token keyword keyword-extern">extern</span> bool <span class="token function">cdk_list_empty</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_t</span><span class="token operator">*</span> l<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Returns the first node of the linked list.
+ * 
+ * @param l, Ptr of a linked-list
+ * @return Ptr of first node
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> <span class="token function">cdk_list_head</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_t</span><span class="token operator">*</span> l<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Returns the last node of the linked list.
+ * 
+ * @param l, Ptr of a linked-list
+ * @return Ptr of last node
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> <span class="token function">cdk_list_tail</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_t</span><span class="token operator">*</span> l<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Returns the next node of node x.
+ * 
+ * @param x, Ptr of a linked-list node
+ * @return Ptr of next node
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> <span class="token function">cdk_list_next</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> x<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Returns the previous node of node x.
+ * 
+ * @param x, Ptr of a linked-list node
+ * @return Ptr of previous node
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> <span class="token function">cdk_list_prev</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> x<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Remove node x from linked list.
+ * 
+ * @param x, Ptr of a linked-list node
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_list_remove</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> x<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Returns the sentinel node of the linked list l.
+ * 
+ * @param l, Ptr of a linked-list
+ * @return Ptr of sentinel node
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_list_node_t</span><span class="token operator">*</span> <span class="token function">cdk_list_sentinel</span><span class="token punctuation">(</span><span class="token class-name">cdk_list_t</span><span class="token operator">*</span> l<span class="token punctuation">)</span>
+</pre><h3 class="mume-header" id="cdk-queue">cdk-queue</h3>
+
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Retrieve a pointer to data type T based on the node x of a queue.
+ *
+ * @param x, Node of a queue
+ * @param T, Data type
+ * @param m, The member name of the queue node x in the data type T
+ * @return Pointer to the data type T
+ */</span>
+<span class="token keyword keyword-extern">extern</span> T<span class="token operator">*</span> <span class="token function">cdk_queue_data</span><span class="token punctuation">(</span><span class="token class-name">cdk_queue_node_t</span><span class="token operator">*</span> x<span class="token punctuation">,</span> T<span class="token punctuation">,</span> m<span class="token punctuation">)</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Initialize a queue.
+ * 
+ * @param q, Ptr of a queue
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_queue_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_queue_t</span><span class="token operator">*</span> q<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Add node x to queue q.
+ * 
+ * @param q, Ptr of a queue
+ * @param x, Ptr of a queue node
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_queue_enqueue</span><span class="token punctuation">(</span><span class="token class-name">cdk_queue_t</span><span class="token operator">*</span> q<span class="token punctuation">,</span> <span class="token class-name">cdk_queue_node_t</span><span class="token operator">*</span> x<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Remove a node from queue q.
+ * 
+ * @param q, Ptr of a queue
+ * @return The pointer to the deleted queue node
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_queue_node_t</span><span class="token operator">*</span> <span class="token function">cdk_queue_dequeue</span><span class="token punctuation">(</span><span class="token class-name">cdk_queue_t</span><span class="token operator">*</span> q<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Check if the queue is empty.
+ * 
+ * @param q, Ptr of a queue.
+ * @return True or False
+ */</span>
+<span class="token keyword keyword-extern">extern</span> bool <span class="token function">cdk_queue_empty</span><span class="token punctuation">(</span><span class="token class-name">cdk_queue_t</span><span class="token operator">*</span> q<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-rbtree">cdk-rbtree</h3>
+
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Initialize a red-black tree.
+ * 
+ * @param tree, Ptr of a red-black tree
+ * @param keycmp, Ptr to the comparison function of the red-black tree key
+ * @return N/A
+ *
+ * Note: CDK provides the following built-in functions for keycmp&#xFF1A;
+    extern int default_keycmp_i8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_i16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_i32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_i64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_u8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_u16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_u32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_u64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_str(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2); 
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rbtree_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span><span class="token punctuation">(</span><span class="token operator">*</span>keycmp<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_node_key_t</span><span class="token operator">*</span><span class="token punctuation">,</span> <span class="token class-name">cdk_rbtree_node_key_t</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Insert the node into the red-black tree.
+ * 
+ * @param tree, Ptr of a red-black tree
+ * @param node, Ptr of a red-black tree&apos;s node
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rbtree_insert</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">,</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Find the node in the red-black tree according to the key.
+ * 
+ * @param tree, Ptr of a red-black tree
+ * @param key, rbtree node&apos;s key
+ * @return Ptr of rbtree node
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> <span class="token function">cdk_rbtree_find</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">,</span> <span class="token class-name">cdk_rbtree_node_key_t</span> key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Deletes the specified node from RBtree.
+ * 
+ * @param tree, Ptr of a red-black tree
+ * @param node, Ptr of a red-black tree&apos;s node
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rbtree_erase</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">,</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Retrieve the next node of the red-black tree based on the specified node.
+ * 
+ * @param node, Ptr of a red-black tree&apos;s node
+ * @return The next node pointer of the red-black tree
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> <span class="token function">cdk_rbtree_next</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Retrieve the previous node of the red-black tree based on the specified node.
+ * 
+ * @param node, Ptr of a red-black tree&apos;s node
+ * @return The previous node pointer of the red-black tree
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> <span class="token function">cdk_rbtree_prev</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Retrieve the first node of the red-black tree.
+ * 
+ * @param tree, Ptr of a red-black tree
+ * @return The first node pointer of the red-black tree
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> <span class="token function">cdk_rbtree_first</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Retrieve the last node of the red-black tree.
+ * 
+ * @param tree, Ptr of a red-black tree
+ * @return The last node pointer of the red-black tree
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> <span class="token function">cdk_rbtree_last</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * Check if red-black tree is empty.
+ * 
+ * @param tree, Ptr of a red-black tree
+ * @return True or False
+ */</span>
+<span class="token keyword keyword-extern">extern</span> bool <span class="token function">cdk_rbtree_empty</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-ringbuffer">cdk-ringbuffer</h3>
+
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_ringbuf_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_ringbuf_t</span><span class="token operator">*</span> ring<span class="token punctuation">,</span> <span class="token class-name">uint32_t</span> esize<span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> buf<span class="token punctuation">,</span> <span class="token class-name">uint32_t</span> bsize<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token keyword keyword-extern">extern</span> <span class="token class-name">uint32_t</span> <span class="token function">cdk_ringbuf_len</span><span class="token punctuation">(</span><span class="token class-name">cdk_ringbuf_t</span><span class="token operator">*</span> ring<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token keyword keyword-extern">extern</span> <span class="token class-name">uint32_t</span> <span class="token function">cdk_ringbuf_cap</span><span class="token punctuation">(</span><span class="token class-name">cdk_ringbuf_t</span><span class="token operator">*</span> ring<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token keyword keyword-extern">extern</span> <span class="token class-name">uint32_t</span> <span class="token function">cdk_ringbuf_avail</span><span class="token punctuation">(</span><span class="token class-name">cdk_ringbuf_t</span><span class="token operator">*</span> ring<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token keyword keyword-extern">extern</span> bool <span class="token function">cdk_ringbuf_full</span><span class="token punctuation">(</span><span class="token class-name">cdk_ringbuf_t</span><span class="token operator">*</span> ring<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token keyword keyword-extern">extern</span> bool <span class="token function">cdk_ringbuf_empty</span><span class="token punctuation">(</span><span class="token class-name">cdk_ringbuf_t</span><span class="token operator">*</span> ring<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token keyword keyword-extern">extern</span> <span class="token class-name">uint32_t</span> <span class="token function">cdk_ringbuf_write</span><span class="token punctuation">(</span><span class="token class-name">cdk_ringbuf_t</span><span class="token operator">*</span> ring<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> buf<span class="token punctuation">,</span> <span class="token class-name">uint32_t</span> entry_count<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token keyword keyword-extern">extern</span> <span class="token class-name">uint32_t</span> <span class="token function">cdk_ringbuf_read</span><span class="token punctuation">(</span><span class="token class-name">cdk_ringbuf_t</span><span class="token operator">*</span> ring<span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> buf<span class="token punctuation">,</span> <span class="token class-name">uint32_t</span> entry_count<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-stack">cdk-stack</h3>
+
+<h2 class="mume-header" id="crypto">Crypto</h2>
+
+<h3 class="mume-header" id="cdk-sha1">cdk-sha1</h3>
+
+<h3 class="mume-header" id="cdk-sha256">cdk-sha256</h3>
+
+<h2 class="mume-header" id="encoding">Encoding</h2>
+
+<h3 class="mume-header" id="cdk-base64">cdk-base64</h3>
+
+<h3 class="mume-header" id="cdk-varint">cdk-varint</h3>
+
+<h3 class="mume-header" id="cdk-json">cdk-json</h3>
+
+<h2 class="mume-header" id="net">Net</h2>
+
+<h3 class="mume-header" id="cdk-net">cdk-net</h3>
+
+<h2 class="mume-header" id="sync">Sync</h2>
+
+<h3 class="mume-header" id="cdk-rwlock">cdk-rwlock</h3>
+
+<h3 class="mume-header" id="cdk-spinlock">cdk-spinlock</h3>
+
+<h2 class="mume-header" id="others">Others</h2>
+
+<h3 class="mume-header" id="cdk-loader">cdk-loader</h3>
+
+<h3 class="mume-header" id="cdk-logger">cdk-logger</h3>
+
+<h3 class="mume-header" id="cdk-process">cdk-process</h3>
+
+<h3 class="mume-header" id="cdk-threadpool">cdk-threadpool</h3>
+
+<h3 class="mume-header" id="cdk-time">cdk-time</h3>
+
+<h3 class="mume-header" id="cdk-timer">cdk-timer</h3>
+
+<h3 class="mume-header" id="cdk-utils">cdk-utils</h3>
+
+
+      </div>
+      <div class="md-sidebar-toc">
+<div class="md-toc">
+<details style="padding:0;;padding-left:0px;" open>
+        <summary class="md-toc-link-wrapper">
+          <a href="#cdk-api-specification" class="md-toc-link"><p>CDK API Specification</p>
+</a>
+          </summary>
+        <div>
+          <details style="padding:0;;padding-left:24px;" open>
+        <summary class="md-toc-link-wrapper">
+          <a href="#container" class="md-toc-link"><p>Container</p>
+</a>
+          </summary>
+        <div>
+          <div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-list" class="md-toc-link">
+            <p>cdk-list</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-queue" class="md-toc-link">
+            <p>cdk-queue</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-rbtree" class="md-toc-link">
+            <p>cdk-rbtree</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-ringbuffer" class="md-toc-link">
+            <p>cdk-ringbuffer</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-stack" class="md-toc-link">
+            <p>cdk-stack</p>
+
+          </a></div>
+        </div>
+      </details>
+    <details style="padding:0;;padding-left:24px;" open>
+        <summary class="md-toc-link-wrapper">
+          <a href="#crypto" class="md-toc-link"><p>Crypto</p>
+</a>
+          </summary>
+        <div>
+          <div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-sha1" class="md-toc-link">
+            <p>cdk-sha1</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-sha256" class="md-toc-link">
+            <p>cdk-sha256</p>
+
+          </a></div>
+        </div>
+      </details>
+    <details style="padding:0;;padding-left:24px;" open>
+        <summary class="md-toc-link-wrapper">
+          <a href="#encoding" class="md-toc-link"><p>Encoding</p>
+</a>
+          </summary>
+        <div>
+          <div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-base64" class="md-toc-link">
+            <p>cdk-base64</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-varint" class="md-toc-link">
+            <p>cdk-varint</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-json" class="md-toc-link">
+            <p>cdk-json</p>
+
+          </a></div>
+        </div>
+      </details>
+    <details style="padding:0;;padding-left:24px;" open>
+        <summary class="md-toc-link-wrapper">
+          <a href="#net" class="md-toc-link"><p>Net</p>
+</a>
+          </summary>
+        <div>
+          <div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-net" class="md-toc-link">
+            <p>cdk-net</p>
+
+          </a></div>
+        </div>
+      </details>
+    <details style="padding:0;;padding-left:24px;" open>
+        <summary class="md-toc-link-wrapper">
+          <a href="#sync" class="md-toc-link"><p>Sync</p>
+</a>
+          </summary>
+        <div>
+          <div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-rwlock" class="md-toc-link">
+            <p>cdk-rwlock</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-spinlock" class="md-toc-link">
+            <p>cdk-spinlock</p>
+
+          </a></div>
+        </div>
+      </details>
+    <details style="padding:0;;padding-left:24px;" open>
+        <summary class="md-toc-link-wrapper">
+          <a href="#others" class="md-toc-link"><p>Others</p>
+</a>
+          </summary>
+        <div>
+          <div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-loader" class="md-toc-link">
+            <p>cdk-loader</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-logger" class="md-toc-link">
+            <p>cdk-logger</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-process" class="md-toc-link">
+            <p>cdk-process</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-threadpool" class="md-toc-link">
+            <p>cdk-threadpool</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-time" class="md-toc-link">
+            <p>cdk-time</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-timer" class="md-toc-link">
+            <p>cdk-timer</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-utils" class="md-toc-link">
+            <p>cdk-utils</p>
+
+          </a></div>
+        </div>
+      </details>
+    
+        </div>
+      </details>
+    
+</div>
+</div>
+      <a id="sidebar-toc-btn">&#x2261;</a>
+    
+    
+    
+    
+    
+    
+    
+    
+<script>
+document.body.setAttribute('html-show-sidebar-toc', true)
+var sidebarTOCBtn = document.getElementById('sidebar-toc-btn')
+sidebarTOCBtn.addEventListener('click', function(event) {
+  event.stopPropagation()
+  if (document.body.hasAttribute('html-show-sidebar-toc')) {
+    document.body.removeAttribute('html-show-sidebar-toc')
+  } else {
+    document.body.setAttribute('html-show-sidebar-toc', true)
+  }
+})
+</script>
+      
+  
+    </body></html>
