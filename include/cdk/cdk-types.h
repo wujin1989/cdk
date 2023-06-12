@@ -206,10 +206,10 @@ struct cdk_timer_s {
 };
 
 struct cdk_ringbuf_s {
-	char* b;
-	uint32_t w;   /* write pos */
-	uint32_t r;   /* read pos */
-	uint32_t m;   /* mask */
+	char* buf;
+	uint32_t wpos;   /* write pos */
+	uint32_t rpos;   /* read pos */
+	uint32_t mask;   /* mask */
 	uint32_t esz; /* entry size */
 };
 

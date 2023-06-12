@@ -23,7 +23,7 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void     cdk_ringbuf_init(cdk_ringbuf_t* ring, uint32_t esize, void* buf, uint32_t bsize);
+extern void     cdk_ringbuf_init(cdk_ringbuf_t* ring, uint32_t esize, void* buf, uint32_t bufsize);
 extern uint32_t cdk_ringbuf_len(cdk_ringbuf_t* ring);
 extern uint32_t cdk_ringbuf_cap(cdk_ringbuf_t* ring);
 extern uint32_t cdk_ringbuf_avail(cdk_ringbuf_t* ring);
