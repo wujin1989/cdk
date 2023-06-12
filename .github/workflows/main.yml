@@ -26,7 +26,6 @@ jobs:
       uses: lukka/get-cmake@latest
     - name: Install OpenSSL
       run: |
-        brew update
         brew install openssl
         brew link --force openssl
     - name: Run CMake
