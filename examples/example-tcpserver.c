@@ -73,7 +73,7 @@ int main(void) {
 		.keyfile = "certs/server.key",
 		.verifypeer = false
 	};
-    cdk_net_startup(4, /*NULL*/&conf);
+    cdk_net_startup(4, NULL/*&conf*/);
 
 	cdk_handler_t handler = {
 		.on_accept  = handle_accept,
