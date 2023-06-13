@@ -8,10 +8,8 @@ typedef struct people_s {
 } people_t;
 
 int main(void) {
-    void* buf = malloc(BUFFERSIZE);
-
     cdk_ringbuf_t ring;
-    cdk_ringbuf_init(&ring, sizeof(people_t), buf, BUFFERSIZE);
+    cdk_ringbuf_create(&ring, sizeof(people_t), BUFFERSIZE);
 
     printf("%zu\n", sizeof(people_t));
 
@@ -40,8 +38,8 @@ int main(void) {
     cdk_ringbuf_write(&ring, &obj2, 1);
     cdk_ringbuf_write(&ring, &obj3, 1);
     cdk_ringbuf_write(&ring, &obj4, 1);
-    cdk_ringbuf_write(&ring, &obj5, 1);
-
+    uint32_t n = cdk_ringbuf_write(&ring, &obj5, 1);
+    printf("write %d element\n", n);
     printf("ringbuffer len: %u\n", cdk_ringbuf_len(&ring));
 
     people_t arr[2];
@@ -51,6 +49,6 @@ int main(void) {
         printf("name: %s, age: %d\n", arr[i].name, arr[i].age);
     }
     printf("ringbuffer avail: %u\n", cdk_ringbuf_avail(&ring));
-    free(buf);
+    cdk_ringbuf_destroy(&ring);
     return 0;
 }

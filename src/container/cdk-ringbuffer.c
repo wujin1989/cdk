@@ -80,13 +80,20 @@ static uint32_t __ringbuf_internal_read_peek(cdk_ringbuf_t* ring, void* buf, uin
     return len;
 }
 
-void cdk_ringbuf_init(cdk_ringbuf_t* ring, uint32_t esize, void* buf, uint32_t bufsize) {
+void cdk_ringbuf_create(cdk_ringbuf_t* ring, uint32_t esize, uint32_t bufsize) {
 
-    ring->buf  = buf;
+    ring->buf  = malloc(bufsize);
     ring->esz  = esize;
     ring->mask = __ringbuf_rounddown_pow_of_two(bufsize / esize) - 1;
     ring->wpos = 0;
     ring->rpos = 0;
+}
+
+void cdk_ringbuf_destroy(cdk_ringbuf_t* ring) {
+    if (ring->buf) {
+        free(ring->buf);
+        ring->buf = NULL;
+    }
 }
 
 uint32_t cdk_ringbuf_len(cdk_ringbuf_t* ring) {

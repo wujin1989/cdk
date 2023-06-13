@@ -261,31 +261,141 @@ extern bool cdk_rbtree_empty(cdk_rbtree_t* tree);
 ```
 ### cdk-ringbuffer
 ```c
-extern void cdk_ringbuf_init(cdk_ringbuf_t* ring, uint32_t esize, void* buf, uint32_t bsize);
+/**
+ * Create a ring buffer.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @param esize, The size of each element in the ring buffer
+ * @param bufsize, Size of a ring buffer
+ * @return N/A
+ */
+extern void cdk_ringbuf_create(cdk_ringbuf_t* ring, uint32_t esize, uint32_t bufsize);
 ```
 ```c
+/**
+ * Destroy a ring buffer.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @return N/A
+ */
+extern void cdk_ringbuf_destroy(cdk_ringbuf_t* ring);
+```
+```c
+/**
+ * Retrieve the number of entries in the ring buffer.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @return The number of entries in the ring buffer
+ */
 extern uint32_t cdk_ringbuf_len(cdk_ringbuf_t* ring);
 ```
 ```c
+/**
+ * Retrieve the total number of entries that the ring buffer can hold.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @return The capacity in the ring buffer
+ */
 extern uint32_t cdk_ringbuf_cap(cdk_ringbuf_t* ring);
 ```
 ```c
+/**
+ * Retrieve the number of entries left to hold in the ring buffer.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @return The number of entries left to hold
+ */
 extern uint32_t cdk_ringbuf_avail(cdk_ringbuf_t* ring);
 ```
 ```c
+/**
+ * Check if ring buffer is full.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @return True or False
+ */
 extern bool cdk_ringbuf_full(cdk_ringbuf_t* ring);
 ```
 ```c
+/**
+ * Check if ring buffer is empty.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @return True or False
+ */
 extern bool cdk_ringbuf_empty(cdk_ringbuf_t* ring);
 ```
 ```c
+/**
+ * Write data to ring buffer.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @param buf, The address of the entries to be written into the ringbuffer
+ * @param entry_count, The number of entries to be written into the ringbuffer
+ * @return The number actually written into the ringbuffer
+ */
 extern uint32_t cdk_ringbuf_write(cdk_ringbuf_t* ring, const void* buf, uint32_t entry_count);
 ```
 ```c
+/**
+ * Read data From ring buffer.
+ * 
+ * @param ring, Ptr of a ring buffer
+ * @param buf, Save the entries read in the ringbuffer
+ * @param entry_count, The number of entries to be read from the ringbuffer
+ * @return The number actually read from the ringbuffer
+ */
 extern uint32_t cdk_ringbuf_read(cdk_ringbuf_t* ring, void* buf, uint32_t entry_count);
 ```
 ### cdk-stack
-
+```c
+/**
+ * Retrieve a pointer to data type T based on the node x of a stack.
+ *
+ * @param x, Node of a stack
+ * @param T, Data type
+ * @param m, The member name of the stack node x in the data type T
+ * @return Pointer to the data type T
+ */
+extern T* cdk_stack_data(cdk_stack_node_t* x, T, m)
+```
+```c
+/**
+ * Initialize a stack.
+ * 
+ * @param s, Ptr of a stack
+ * @return N/A
+ */
+extern void cdk_stack_init(cdk_stack_t* s);
+```
+```c
+/**
+ * Push node x to stack s.
+ * 
+ * @param s, Ptr of a stack
+ * @param x, Ptr of a stack node
+ * @return N/A
+ */
+extern void cdk_stack_push(cdk_stack_t* s, cdk_stack_node_t* x);
+```
+```c
+/**
+ * Pop a node from stack s.
+ * 
+ * @param s, Ptr of a stack
+ * @return The pointer to the popped stack node
+ */
+extern cdk_stack_node_t* cdk_stack_pop(cdk_stack_t* s);
+```
+```c
+/**
+ * Check if the stack is empty.
+ * 
+ * @param s, Ptr of a stack.
+ * @return True or False
+ */
+extern bool cdk_stack_empty(cdk_stack_t* s);
+```
 ## Crypto
 ### cdk-sha1
 ### cdk-sha256
