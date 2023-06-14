@@ -4,11 +4,11 @@ int main(void) {
     cdk_sha1_t ctx;
     cdk_sha1_init(&ctx);
 
-    uint8_t data[] = "hello world";
+    uint8_t* data = "hello world";
     uint32_t len = (uint32_t)strlen((const char*)data);
     cdk_sha1_update(&ctx, data, len);
 
-    unsigned char digest[20];
+    uint8_t digest[20];
     cdk_sha1_final(&ctx, digest);
 
     printf("SHA1 digest: ");

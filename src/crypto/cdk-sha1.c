@@ -105,9 +105,9 @@ void cdk_sha1_init(cdk_sha1_t* ctx)
     ctx->count[0] = ctx->count[1] = 0;
 }
 
-void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, uint32_t len)
+void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, size_t len)
 {
-    uint32_t i, j;
+    size_t i, j;
 
     j = ctx->count[0];
     if ((ctx->count[0] += len << 3) < j)
@@ -126,7 +126,7 @@ void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, uint32_t len)
     memcpy(&ctx->buffer[j], &data[i], len - i);
 }
 
-void cdk_sha1_final(cdk_sha1_t* ctx, uint8_t digest[20])
+void cdk_sha1_final(cdk_sha1_t* ctx, uint8_t digest[])
 {
     unsigned i;
     uint8_t finalcount[8];

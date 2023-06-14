@@ -31,5 +31,5 @@ _Pragma("once")
 #include "cdk/cdk-types.h"
 
 extern void cdk_sha256_init(cdk_sha256_t* ctx);
-extern void cdk_sha256_update(cdk_sha256_t* ctx, const uint8_t data[], size_t len);
-extern void cdk_sha256_final(cdk_sha256_t* ctx, uint8_t hash[32]);
+extern void cdk_sha256_update(cdk_sha256_t* ctx, uint8_t* data, size_t len);
+extern void cdk_sha256_final(cdk_sha256_t* ctx, uint8_t digest[32]);

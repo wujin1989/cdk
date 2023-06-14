@@ -75,7 +75,6 @@ _Pragma("once")
 #include "cdk/container/cdk-ringbuffer.h"
 #include "cdk/encoding/cdk-varint.h"
 #include "cdk/encoding/cdk-base64.h"
-#include "cdk/encoding/cdk-json.h"
 #include "cdk/crypto/cdk-sha256.h"
 #include "cdk/crypto/cdk-sha1.h"
 #include "cdk/net/cdk-net.h"
