@@ -644,15 +644,362 @@ extern uint64_t cdk_varint_decode(char* buf, int* pos);
 ```
 ## Net
 ### cdk-net
-
+```c
+/**
+ * @brief Convert a network address to presentation format
+ *
+ * This function converts a network address in `struct sockaddr_storage` format
+ * to presentation format and stores the result in the `cdk_addrinfo_t` structure.
+ *
+ * @param ss Pointer to the `struct sockaddr_storage` containing the network address
+ * @param ai Pointer to the `cdk_addrinfo_t` structure to store the converted
+ * address
+ * @return N/A
+ */
+extern void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai);
+```
+```c
+/**
+ * @brief Convert a network address from presentation format to binary form
+ *
+ * This function converts a network address in presentation format from 
+ * the `cdk_addrinfo_t` structure to binary form and stores the result in the `struct sockaddr_storage`.
+ *
+ * @param ai Pointer to the `cdk_addrinfo_t` structure containing the network address
+ * @param ss Pointer to the `struct sockaddr_storage` to store the converted address
+ * @return N/A
+ */
+extern void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
+```
+```c
+/**
+ * @brief Obtain the local or peer address associated with a socket
+ *
+ * This function obtains the local or peer address associated with 
+ * the specified socket `sock` and stores it in the `cdk_addrinfo_t` structure `ai`. 
+ * The `peer` flag indicates whether the peer address should be obtained 
+ * (if `true`) or the local address (if `false`).
+ *
+ * @param sock Socket descriptor
+ * @param ai   Pointer to the `cdk_addrinfo_t` structure to  store the obtained address
+ * @param peer Flag indicating whether to obtain the peer address (`true`) or local address (`false`)
+ * @return N/A
+ */
+extern void cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
+```
+```c
+/**
+ * @brief Get the address family of a socket
+ *
+ * This function returns the address family (e.g., AF_INET, AF_INET6) of the specified socket `sock`.
+ *
+ * @param sock Socket descriptor
+ * @return The address family of the socket
+ */
+extern int cdk_net_af(cdk_sock_t sock);
+```
+```c
+/**
+ * @brief Get the socket type of a socket
+ *
+ * This function returns the socket type (e.g., SOCK_STREAM, SOCK_DGRAM) of the specified socket `sock`.
+ *
+ * @param sock Socket descriptor
+ * @return The socket type of the socket
+ */
+extern int cdk_net_socktype(cdk_sock_t sock);
+```
+```c
+/**
+ * @brief Set the receive buffer size of a socket
+ *
+ * This function sets the receive buffer size of the specified socket `sock` to the specified value `val`.
+ *
+ * @param sock Socket descriptor
+ * @param val  The value of the receive buffer size to set
+ * @return N/A
+ */
+extern void cdk_net_set_recvbuf(cdk_sock_t sock, int val);
+```
+```c
+/**
+ * @brief Set the send buffer size of a socket
+ *
+ * This function sets the send buffer size of the specified socket `sock` to the specified value `val`.
+ *
+ * @param sock Socket descriptor
+ * @param val  The value of the send buffer size to set
+ * @return N/A
+ */
+extern void cdk_net_set_sendbuf(cdk_sock_t sock, int val);
+```
+```c
+/**
+ * @brief Listen for incoming connections on a network address
+ *
+ * This function listens for incoming connections on the specified network address `host:port`
+ * of the specified `type`. It creates a channel and associates it with the provided `handler`.
+ *
+ * @param type    The network address type (e.g., "tcp", "udp")
+ * @param host    The host address to listen on
+ * @param port    The port number to listen on
+ * @param handler Pointer to the handler function for incoming events on the channel
+ * @return Pointer to the created channel for listening
+ */
+extern cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler);
+```
+```c
+/**
+ * @brief Establish a network connection to a remote host
+ *
+ * This function establishes a network connection to the remote host specified by the `host:port`
+ * address of the specified `type`. It creates a channel and associates it with the provided `handler`.
+ *
+ * @param type    The network address type (e.g., "tcp", "udp")
+ * @param host    The remote host address to connect to
+ * @param port    The port number to connect to
+ * @param handler Pointer to the handler function for incoming events on the channel
+ * @return Pointer to the created channel for the connection
+ */
+extern cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler);
+```
+```c
+/**
+ * @brief Start polling for network events
+ *
+ * This function starts the network event polling loop, which continuously polls for network events
+ * and triggers the corresponding handlers for the associated channels.
+ * @param N/A
+ * @return N/A
+ */
+extern void cdk_net_poll(void);
+```
+```c
+/**
+ * @brief Post a receive operation for a channel
+ *
+ * This function posts a receive operation for the specified channel. It indicates that the channel
+ * is ready to receive data.
+ *
+ * @param channel Pointer to the channel to post the receive operation on
+ * @return N/A
+ */
+extern void cdk_net_postrecv(cdk_channel_t* channel);
+```
+```c
+/**
+ * @brief Post a send operation for a channel
+ *
+ * This function posts a send operation for the specified channel. It indicates that the channel
+ * has data available to be sent.
+ *
+ * @param channel Pointer to the channel to post the send operation on
+ * @param data    Pointer to the data to be sent
+ * @param size    Size of the data to be sent
+ * @return N/A
+ */
+extern void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size);
+```
+```c
+/**
+ * @brief Post a event to a poller
+ *
+ * This function posts a event to the specified poller. The event will be processed by the
+ * corresponding event handler.
+ *
+ * @param poller Pointer to the poller to post the event to
+ * @param event  Pointer to the network event to be posted
+ * @return N/A
+ */
+extern void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event);
+```
+```c
+/**
+ * @brief Close a network channel
+ *
+ * This function closes the specified network channel and releases associated resources.
+ *
+ * @param channel Pointer to the channel to be closed
+ * @return N/A
+ */
+extern void cdk_net_close(cdk_channel_t* channel);
+```
+```c
+/**
+ * @brief Initialize a network unpacker for a channel
+ *
+ * This function initializes a network unpacker for the specified channel. The unpacker is used
+ * to unpack received data into meaningful messages or packets.
+ *
+ * @param channel  Pointer to the channel to initialize the unpacker for
+ * @param unpacker Pointer to the unpacker structure to be initialized
+ * @return N/A
+ */
+extern void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker);
+```
+```c
+/**
+ * @brief Start up the network system with worker threads and TLS configuration
+ *
+ * This function starts up the network system with the specified number of worker threads and
+ * the provided TLS configuration. It prepares the system to handle network operations.
+ *
+ * @param nworkers  Number of worker threads to start
+ * @param tlsconf   Pointer to the TLS configuration for secure network communication (can be NULL for non-secure communication)
+ * @return N/A
+ */
+extern void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf);
+```
+```c
+/**
+ * @brief Clean up and shut down the network system
+ *
+ * This function cleans up and shuts down the network system. It releases all associated resources
+ * and terminates the network operations.
+ * 
+ * @param N/A
+ * @return N/A
+ */
+extern void cdk_net_cleanup(void);
+```
 ## Sync
 ### cdk-rwlock
+```c
+/**
+ * @brief Initialize a reader-writer lock
+ *
+ * This function initializes a reader-writer lock by setting its initial state.
+ *
+ * @param rwlock Pointer to the reader-writer lock to be initialized
+ * @return N/A
+ */
+extern void cdk_rwlock_init(cdk_rwlock_t* rwlock);
+```
+```c
+/**
+ * @brief Acquire a read lock
+ *
+ * This function acquires a read lock on the specified reader-writer lock. Multiple threads can
+ * acquire the read lock simultaneously, allowing concurrent read access to a shared resource.
+ *
+ * @param rwlock Pointer to the reader-writer lock to acquire the read lock on
+ * @return N/A
+ */
+extern void cdk_rwlock_rdlock(cdk_rwlock_t* rwlock);
+```
+```c
+/**
+ * @brief Acquire a write lock
+ *
+ * This function acquires a write lock on the specified reader-writer lock. Only one thread can
+ * acquire the write lock at a time, ensuring exclusive write access to a shared resource.
+ *
+ * @param rwlock Pointer to the reader-writer lock to acquire the write lock on
+ * @return N/A
+ */
+extern void cdk_rwlock_wrlock(cdk_rwlock_t* rwlock);
+```
+```c
+/**
+ * @brief Release a read lock
+ *
+ * This function releases a previously acquired read lock on the specified reader-writer lock.
+ * It allows other threads to acquire the read lock and access the shared resource.
+ *
+ * @param rwlock Pointer to the reader-writer lock to release the read lock from
+ * @return N/A
+ */
+extern void cdk_rwlock_rdunlock(cdk_rwlock_t* rwlock);
+```
+```c
+/**
+ * @brief Release a write lock
+ *
+ * This function releases a previously acquired write lock on the specified reader-writer lock.
+ * It allows other threads to acquire the write lock and access the shared resource.
+ *
+ * @param rwlock Pointer to the reader-writer lock to release the write lock from
+ * @return N/A
+ */
+extern void cdk_rwlock_wrunlock(cdk_rwlock_t* rwlock);
+```
 ### cdk-spinlock
-
-
+```c
+/**
+ * @brief Initialize a spinlock
+ *
+ * This function initializes a spinlock by setting its initial state.
+ *
+ * @param lock Pointer to the spinlock to be initialized
+ * @return N/A
+ */
+extern void cdk_spinlock_init(cdk_spinlock_t* lock);
+```
+```c
+/**
+ * @brief Acquire a spinlock
+ *
+ * This function acquires a spinlock, which is a simple form of lock that uses busy waiting. It
+ * ensures exclusive access to a shared resource by blocking other threads from acquiring the lock
+ * until it is released.
+ *
+ * @param lock Pointer to the spinlock to be acquired
+ * @return N/A
+ */
+extern void cdk_spinlock_lock(cdk_spinlock_t* lock);
+```
+```c
+/**
+ * @brief Release a spinlock
+ *
+ * This function releases a previously acquired spinlock, allowing other threads to acquire the
+ * lock and access the shared resource.
+ *
+ * @param lock Pointer to the spinlock to be released
+ * @return N/A
+ */
+extern void cdk_spinlock_unlock(cdk_spinlock_t* lock);
+```
 ## Others
 ### cdk-loader
+```c
+/**
+ * @brief Create a loader
+ *
+ * This function creates a loader by initializing its internal state.
+ *
+ * @param m Name of the module or library to load
+ * @return Pointer to the created loader
+ */
+extern void* cdk_loader_create(char* m);
+```
+```c
+/**
+ * @brief Load a function using the loader
+ *
+ * This function loads a function specified by its name using the given loader. It retrieves the
+ * function's address or entry point for later use.
+ *
+ * @param m Pointer to the loader
+ * @param f Name of the function to load
+ * @return Pointer to the loaded function
+ */
+extern void* cdk_loader_load(void* m, const char* restrict f);
+```
+```c
+/**
+ * @brief Destroy a loader
+ *
+ * This function destroys a loader and releases any associated resources.
+ *
+ * @param m Pointer to the loader to be destroyed
+ * @return N/A
+ */
+extern void  cdk_loader_destroy(void* m);
+```
 ### cdk-logger
+extern void cdk_logger_create(const char* restrict out, int nthrds);
+extern void cdk_logger_destroy(void);
 ### cdk-process
 ### cdk-threadpool
 ### cdk-time
