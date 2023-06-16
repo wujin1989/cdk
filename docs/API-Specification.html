@@ -585,29 +585,537 @@ Copyright&#xA9;2023 jin.wu. All rights reserved.
 
 <h3 class="mume-header" id="cdk-net">cdk-net</h3>
 
-<h2 class="mume-header" id="sync">Sync</h2>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Convert a network address to presentation format
+ *
+ * This function converts a network address in `struct sockaddr_storage` format
+ * to presentation format and stores the result in the `cdk_addrinfo_t` structure.
+ *
+ * @param ss Pointer to the `struct sockaddr_storage` containing the network address
+ * @param ai Pointer to the `cdk_addrinfo_t` structure to store the converted
+ * address
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_ntop</span><span class="token punctuation">(</span><span class="token keyword keyword-struct">struct</span> <span class="token class-name">sockaddr_storage</span><span class="token operator">*</span> ss<span class="token punctuation">,</span> <span class="token class-name">cdk_addrinfo_t</span><span class="token operator">*</span> ai<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Convert a network address from presentation format to binary form
+ *
+ * This function converts a network address in presentation format from 
+ * the `cdk_addrinfo_t` structure to binary form and stores the result in the `struct sockaddr_storage`.
+ *
+ * @param ai Pointer to the `cdk_addrinfo_t` structure containing the network address
+ * @param ss Pointer to the `struct sockaddr_storage` to store the converted address
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_pton</span><span class="token punctuation">(</span><span class="token class-name">cdk_addrinfo_t</span><span class="token operator">*</span> ai<span class="token punctuation">,</span> <span class="token keyword keyword-struct">struct</span> <span class="token class-name">sockaddr_storage</span><span class="token operator">*</span> ss<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Obtain the local or peer address associated with a socket
+ *
+ * This function obtains the local or peer address associated with 
+ * the specified socket `sock` and stores it in the `cdk_addrinfo_t` structure `ai`. 
+ * The `peer` flag indicates whether the peer address should be obtained 
+ * (if `true`) or the local address (if `false`).
+ *
+ * @param sock Socket descriptor
+ * @param ai   Pointer to the `cdk_addrinfo_t` structure to  store the obtained address
+ * @param peer Flag indicating whether to obtain the peer address (`true`) or local address (`false`)
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_obtain_addr</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">,</span> <span class="token class-name">cdk_addrinfo_t</span><span class="token operator">*</span> ai<span class="token punctuation">,</span> bool peer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Get the address family of a socket
+ *
+ * This function returns the address family (e.g., AF_INET, AF_INET6) of the specified socket `sock`.
+ *
+ * @param sock Socket descriptor
+ * @return The address family of the socket
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-int">int</span> <span class="token function">cdk_net_af</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Get the socket type of a socket
+ *
+ * This function returns the socket type (e.g., SOCK_STREAM, SOCK_DGRAM) of the specified socket `sock`.
+ *
+ * @param sock Socket descriptor
+ * @return The socket type of the socket
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-int">int</span> <span class="token function">cdk_net_socktype</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Set the receive buffer size of a socket
+ *
+ * This function sets the receive buffer size of the specified socket `sock` to the specified value `val`.
+ *
+ * @param sock Socket descriptor
+ * @param val  The value of the receive buffer size to set
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_set_recvbuf</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span> val<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Set the send buffer size of a socket
+ *
+ * This function sets the send buffer size of the specified socket `sock` to the specified value `val`.
+ *
+ * @param sock Socket descriptor
+ * @param val  The value of the send buffer size to set
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_set_sendbuf</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span> val<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Listen for incoming connections on a network address
+ *
+ * This function listens for incoming connections on the specified network address `host:port`
+ * of the specified `type`. It creates a channel and associates it with the provided `handler`.
+ *
+ * @param type    The network address type (e.g., &quot;tcp&quot;, &quot;udp&quot;)
+ * @param host    The host address to listen on
+ * @param port    The port number to listen on
+ * @param handler Pointer to the handler function for incoming events on the channel
+ * @return Pointer to the created channel for listening
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> <span class="token function">cdk_net_listen</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> type<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">,</span> <span class="token class-name">cdk_handler_t</span><span class="token operator">*</span> handler<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Establish a network connection to a remote host
+ *
+ * This function establishes a network connection to the remote host specified by the `host:port`
+ * address of the specified `type`. It creates a channel and associates it with the provided `handler`.
+ *
+ * @param type    The network address type (e.g., &quot;tcp&quot;, &quot;udp&quot;)
+ * @param host    The remote host address to connect to
+ * @param port    The port number to connect to
+ * @param handler Pointer to the handler function for incoming events on the channel
+ * @return Pointer to the created channel for the connection
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> <span class="token function">cdk_net_dial</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> type<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">,</span> <span class="token class-name">cdk_handler_t</span><span class="token operator">*</span> handler<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Start polling for network events
+ *
+ * This function starts the network event polling loop, which continuously polls for network events
+ * and triggers the corresponding handlers for the associated channels.
+ * @param N/A
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_poll</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Post a receive operation for a channel
+ *
+ * This function posts a receive operation for the specified channel. It indicates that the channel
+ * is ready to receive data.
+ *
+ * @param channel Pointer to the channel to post the receive operation on
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_postrecv</span><span class="token punctuation">(</span><span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> channel<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Post a send operation for a channel
+ *
+ * This function posts a send operation for the specified channel. It indicates that the channel
+ * has data available to be sent.
+ *
+ * @param channel Pointer to the channel to post the send operation on
+ * @param data    Pointer to the data to be sent
+ * @param size    Size of the data to be sent
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_postsend</span><span class="token punctuation">(</span><span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> channel<span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> data<span class="token punctuation">,</span> <span class="token class-name">size_t</span> size<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Post a event to a poller
+ *
+ * This function posts a event to the specified poller. The event will be processed by the
+ * corresponding event handler.
+ *
+ * @param poller Pointer to the poller to post the event to
+ * @param event  Pointer to the network event to be posted
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_postevent</span><span class="token punctuation">(</span><span class="token class-name">cdk_poller_t</span><span class="token operator">*</span> poller<span class="token punctuation">,</span> <span class="token class-name">cdk_event_t</span><span class="token operator">*</span> event<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Close a network channel
+ *
+ * This function closes the specified network channel and releases associated resources.
+ *
+ * @param channel Pointer to the channel to be closed
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_close</span><span class="token punctuation">(</span><span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> channel<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Initialize a network unpacker for a channel
+ *
+ * This function initializes a network unpacker for the specified channel. The unpacker is used
+ * to unpack received data into meaningful messages or packets.
+ *
+ * @param channel  Pointer to the channel to initialize the unpacker for
+ * @param unpacker Pointer to the unpacker structure to be initialized
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_unpacker_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> channel<span class="token punctuation">,</span> <span class="token class-name">cdk_unpack_t</span><span class="token operator">*</span> unpacker<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Start up the network system with worker threads and TLS configuration
+ *
+ * This function starts up the network system with the specified number of worker threads and
+ * the provided TLS configuration. It prepares the system to handle network operations.
+ *
+ * @param nworkers  Number of worker threads to start
+ * @param tlsconf   Pointer to the TLS configuration for secure network communication (can be NULL for non-secure communication)
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_startup</span><span class="token punctuation">(</span><span class="token keyword keyword-int">int</span> nworkers<span class="token punctuation">,</span> <span class="token class-name">cdk_tlsconf_t</span><span class="token operator">*</span> tlsconf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Clean up and shut down the network system
+ *
+ * This function cleans up and shuts down the network system. It releases all associated resources
+ * and terminates the network operations.
+ * 
+ * @param N/A
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_cleanup</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h2 class="mume-header" id="sync">Sync</h2>
 
 <h3 class="mume-header" id="cdk-rwlock">cdk-rwlock</h3>
 
-<h3 class="mume-header" id="cdk-spinlock">cdk-spinlock</h3>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Initialize a reader-writer lock
+ *
+ * This function initializes a reader-writer lock by setting its initial state.
+ *
+ * @param rwlock Pointer to the reader-writer lock to be initialized
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rwlock_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_rwlock_t</span><span class="token operator">*</span> rwlock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Acquire a read lock
+ *
+ * This function acquires a read lock on the specified reader-writer lock. Multiple threads can
+ * acquire the read lock simultaneously, allowing concurrent read access to a shared resource.
+ *
+ * @param rwlock Pointer to the reader-writer lock to acquire the read lock on
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rwlock_rdlock</span><span class="token punctuation">(</span><span class="token class-name">cdk_rwlock_t</span><span class="token operator">*</span> rwlock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Acquire a write lock
+ *
+ * This function acquires a write lock on the specified reader-writer lock. Only one thread can
+ * acquire the write lock at a time, ensuring exclusive write access to a shared resource.
+ *
+ * @param rwlock Pointer to the reader-writer lock to acquire the write lock on
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rwlock_wrlock</span><span class="token punctuation">(</span><span class="token class-name">cdk_rwlock_t</span><span class="token operator">*</span> rwlock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Release a read lock
+ *
+ * This function releases a previously acquired read lock on the specified reader-writer lock.
+ * It allows other threads to acquire the read lock and access the shared resource.
+ *
+ * @param rwlock Pointer to the reader-writer lock to release the read lock from
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rwlock_rdunlock</span><span class="token punctuation">(</span><span class="token class-name">cdk_rwlock_t</span><span class="token operator">*</span> rwlock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Release a write lock
+ *
+ * This function releases a previously acquired write lock on the specified reader-writer lock.
+ * It allows other threads to acquire the write lock and access the shared resource.
+ *
+ * @param rwlock Pointer to the reader-writer lock to release the write lock from
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rwlock_wrunlock</span><span class="token punctuation">(</span><span class="token class-name">cdk_rwlock_t</span><span class="token operator">*</span> rwlock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-spinlock">cdk-spinlock</h3>
 
-<h2 class="mume-header" id="others">Others</h2>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Initialize a spinlock
+ *
+ * This function initializes a spinlock by setting its initial state.
+ *
+ * @param lock Pointer to the spinlock to be initialized
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_spinlock_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_spinlock_t</span><span class="token operator">*</span> lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Acquire a spinlock
+ *
+ * This function acquires a spinlock, which is a simple form of lock that uses busy waiting. It
+ * ensures exclusive access to a shared resource by blocking other threads from acquiring the lock
+ * until it is released.
+ *
+ * @param lock Pointer to the spinlock to be acquired
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_spinlock_lock</span><span class="token punctuation">(</span><span class="token class-name">cdk_spinlock_t</span><span class="token operator">*</span> lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Release a spinlock
+ *
+ * This function releases a previously acquired spinlock, allowing other threads to acquire the
+ * lock and access the shared resource.
+ *
+ * @param lock Pointer to the spinlock to be released
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_spinlock_unlock</span><span class="token punctuation">(</span><span class="token class-name">cdk_spinlock_t</span><span class="token operator">*</span> lock<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h2 class="mume-header" id="others">Others</h2>
 
 <h3 class="mume-header" id="cdk-loader">cdk-loader</h3>
 
-<h3 class="mume-header" id="cdk-logger">cdk-logger</h3>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Create a loader
+ *
+ * This function creates a loader by initializing its internal state.
+ *
+ * @param m Name of the module or library to load
+ * @return Pointer to the created loader
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> <span class="token function">cdk_loader_create</span><span class="token punctuation">(</span><span class="token keyword keyword-char">char</span><span class="token operator">*</span> m<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Load a function using the loader
+ *
+ * This function loads a function specified by its name using the given loader. It retrieves the
+ * function&apos;s address or entry point for later use.
+ *
+ * @param m Pointer to the loader
+ * @param f Name of the function to load
+ * @return Pointer to the loaded function
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> <span class="token function">cdk_loader_load</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token operator">*</span> m<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> restrict f<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Destroy a loader
+ *
+ * This function destroys a loader and releases any associated resources.
+ *
+ * @param m Pointer to the loader to be destroyed
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span>  <span class="token function">cdk_loader_destroy</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token operator">*</span> m<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-logger">cdk-logger</h3>
 
-<h3 class="mume-header" id="cdk-process">cdk-process</h3>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Create a logger
+ *
+ * This function creates a logger and initializes its internal state. It specifies the output destination
+ * for log messages and the number of threads to be used for logging.
+ *
+ * @param out The output destination for log messages
+ * @param nthrds The number of threads to be used for logging
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_logger_create</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> restrict out<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span> nthrds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Destroy a logger
+ *
+ * This function destroys a logger and releases any associated resources. It should be called when the
+ * logger is no longer needed.
+ * @param N/A
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_logger_destroy</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Log an informational message
+ *
+ * This function logs an informational message with the provided format and optional arguments.
+ * It is typically used to provide informative and non-critical messages during program execution.
+ *
+ * @param format The format string for the log message
+ * @param ... Optional arguments to be formatted and included in the log message
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_logi</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span> <span class="token operator">*</span>restrict format<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Log a debug message
+ *
+ * This function logs a debug message with the provided format and optional arguments.
+ * It is typically used for detailed debugging and troubleshooting purposes during program execution.
+ *
+ * @param format The format string for the log message
+ * @param ... Optional arguments to be formatted and included in the log message
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_logd</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span> <span class="token operator">*</span>restrict format<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Log a warning message
+ *
+ * This function logs a warning message with the provided format and optional arguments.
+ * It is typically used to indicate potential issues or non-fatal errors during program execution.
+ *
+ * @param format The format string for the log message
+ * @param ... Optional arguments to be formatted and included in the log message
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_logw</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span> <span class="token operator">*</span>restrict format<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Log a warning message
+ *
+ * This function logs a warning message with the provided format and optional arguments.
+ * It is typically used to indicate potential issues or non-fatal errors during program execution.
+ *
+ * @param format The format string for the log message
+ * @param ... Optional arguments to be formatted and included in the log message
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_loge</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span> <span class="token operator">*</span>restrict format<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-process">cdk-process</h3>
 
-<h3 class="mume-header" id="cdk-threadpool">cdk-threadpool</h3>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Get the process ID
+ *
+ * This function retrieves the process ID (PID) of the current process.
+ * The PID is a unique identifier assigned to a process by the operating system.
+ *
+ * @return The process ID (PID) of the current process
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_pid_t</span> <span class="token function">cdk_process_getpid</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-threadpool">cdk-threadpool</h3>
 
-<h3 class="mume-header" id="cdk-time">cdk-time</h3>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Create a thread pool
+ *
+ * This function creates a thread pool with the specified number of threads.
+ * A thread pool is a collection of threads that can be used to execute tasks concurrently.
+ *
+ * @param pool Pointer to the thread pool object to be initialized
+ * @param nthrds The number of threads to create in the thread pool
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_thrdpool_create</span><span class="token punctuation">(</span><span class="token class-name">cdk_thrdpool_t</span><span class="token operator">*</span> pool<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span> nthrds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Post a task to the thread pool
+ *
+ * This function posts a task, represented by a function pointer and an argument, to the thread pool.
+ * The task will be executed by one of the threads in the pool in an asynchronous manner.
+ *
+ * @param pool Pointer to the thread pool where the task will be submitted
+ * @param routine Function pointer to the task routine to be executed
+ * @param arg Pointer to the argument to be passed to the task routine
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_thrdpool_post</span><span class="token punctuation">(</span><span class="token class-name">cdk_thrdpool_t</span><span class="token operator">*</span> pool<span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span> <span class="token punctuation">(</span><span class="token operator">*</span>routine<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> arg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Destroy a thread pool
+ *
+ * This function destroys a thread pool, releasing all associated resources.
+ * After calling this function, the thread pool should no longer be used.
+ *
+ * @param pool Pointer to the thread pool object to be destroyed
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_thrdpool_destroy</span><span class="token punctuation">(</span><span class="token class-name">cdk_thrdpool_t</span><span class="token operator">*</span> pool<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-time">cdk-time</h3>
 
-<h3 class="mume-header" id="cdk-timer">cdk-timer</h3>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Get the current time since the Unix Epoch (UTC)
+ *
+ * This function returns the current time as the number of milliseconds
+ * elapsed since the Unix Epoch, which is defined as midnight (00:00:00 UTC) on
+ * January 1, 1970.
+ *
+ * @return The current time since the Unix Epoch in milliseconds
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">uint64_t</span> <span class="token function">cdk_time_now</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Convert a timestamp to local time
+ *
+ * This function converts the given timestamp to local time and stores the result in the struct tm.
+ *
+ * @param t Pointer to the timestamp to be converted
+ * @param r Pointer to the struct tm to store the converted local time
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_time_localtime</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token class-name">time_t</span><span class="token operator">*</span> t<span class="token punctuation">,</span> <span class="token keyword keyword-struct">struct</span> <span class="token class-name">tm</span><span class="token operator">*</span> r<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Sleep for a specified duration
+ *
+ * This function suspends the execution of the current thread for the specified number of milliseconds.
+ *
+ * @param ms The duration to sleep in milliseconds
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_time_sleep</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token class-name">uint32_t</span> ms<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-timer">cdk-timer</h3>
 
-<h3 class="mume-header" id="cdk-utils">cdk-utils</h3>
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Create a timer
+ *
+ * This function initializes a timer, which can be used to manage and schedule timer jobs.
+ *
+ * @param timer Pointer to the timer to be created
+ * @param nthrds Number of worker threads for the timer
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_create</span><span class="token punctuation">(</span><span class="token class-name">cdk_timer_t</span><span class="token operator">*</span> timer<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span> nthrds<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Destroy a timer
+ *
+ * This function cleans up and releases the resources associated with a timer object.
+ *
+ * @param timer Pointer to the timer object to be destroyed
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_destroy</span><span class="token punctuation">(</span><span class="token class-name">cdk_timer_t</span><span class="token operator">*</span> timer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Add a timer job
+ *
+ * This function adds a timer job to the specified timer. The timer job is scheduled to run after the specified
+ * expiration time, and optionally repeat at regular intervals.
+ *
+ * @param timer Pointer to the timer object
+ * @param routine Pointer to the function to be executed by the timer job
+ * @param arg Argument to be passed to the timer job function
+ * @param expire Expiration time in milliseconds for the timer job
+ * @param repeat Flag indicating whether the timer job should repeat after each expiration
+ * @return Pointer to the timer job object representing the added job
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_timer_job_t</span><span class="token operator">*</span> <span class="token function">cdk_timer_add</span><span class="token punctuation">(</span><span class="token class-name">cdk_timer_t</span><span class="token operator">*</span> timer<span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span> <span class="token punctuation">(</span><span class="token operator">*</span>routine<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> arg<span class="token punctuation">,</span> <span class="token class-name">uint32_t</span> expire<span class="token punctuation">,</span> bool repeat<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Delete a timer job
+ *
+ * This function removes a timer job from the specified timer. The timer job will no longer be executed by the timer.
+ *
+ * @param timer Pointer to the timer object
+ * @param job Pointer to the timer job object to be deleted
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_del</span><span class="token punctuation">(</span><span class="token class-name">cdk_timer_t</span><span class="token operator">*</span> timer<span class="token punctuation">,</span> <span class="token class-name">cdk_timer_job_t</span><span class="token operator">*</span> job<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><h3 class="mume-header" id="cdk-utils">cdk-utils</h3>
 
-
+<pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Get the byte order of the system
+ *
+ * This function determines the byte order of the system by checking the endianness.
+ * It returns an integer value indicating the byte order of the system.
+ * The value is typically used to determine whether the system is little-endian or big-endian.
+ *
+ * @return An integer representing the byte order of the system:
+ *         - 0 if the system is big-endian
+ *         - 1 if the system is little-endian
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-int">int</span> <span class="token function">cdk_utils_byteorder</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Get the number of CPUs available on the system
+ *
+ * This function returns the number of CPUs available on the system.
+ *
+ * @return An integer representing the number of CPUs on the system
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-int">int</span> <span class="token function">cdk_utils_cpus</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Get the system thread ID
+ *
+ * This function returns the thread ID of the calling thread.
+ *
+ * @return The system thread ID
+ */</span>
+<span class="token class-name">cdk_tid_t</span> <span class="token function">cdk_utils_systemtid</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre><pre data-role="codeBlock" data-info="c" class="language-c"><span class="token comment">/**
+ * @brief Generate a random integer within the specified range
+ *
+ * This function generates a random integer within the specified range.
+ *
+ * @param min The minimum value of the range (inclusive)
+ * @param max The maximum value of the range (inclusive)
+ * @return The randomly generated integer
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-int">int</span> <span class="token function">cdk_utils_rand</span><span class="token punctuation">(</span><span class="token keyword keyword-int">int</span> min<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span> max<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</pre>
       </div>
       <div class="md-sidebar-toc">
 <div class="md-toc">

@@ -998,10 +998,266 @@ extern void* cdk_loader_load(void* m, const char* restrict f);
 extern void  cdk_loader_destroy(void* m);
 ```
 ### cdk-logger
+```c
+/**
+ * @brief Create a logger
+ *
+ * This function creates a logger and initializes its internal state. It specifies the output destination
+ * for log messages and the number of threads to be used for logging.
+ *
+ * @param out The output destination for log messages
+ * @param nthrds The number of threads to be used for logging
+ * @return N/A
+ */
 extern void cdk_logger_create(const char* restrict out, int nthrds);
+```
+```c
+/**
+ * @brief Destroy a logger
+ *
+ * This function destroys a logger and releases any associated resources. It should be called when the
+ * logger is no longer needed.
+ * @param N/A
+ * @return N/A
+ */
 extern void cdk_logger_destroy(void);
+```
+```c
+/**
+ * @brief Log an informational message
+ *
+ * This function logs an informational message with the provided format and optional arguments.
+ * It is typically used to provide informative and non-critical messages during program execution.
+ *
+ * @param format The format string for the log message
+ * @param ... Optional arguments to be formatted and included in the log message
+ * @return N/A
+ */
+extern void cdk_logi(const char *restrict format, ...);
+```
+```c
+/**
+ * @brief Log a debug message
+ *
+ * This function logs a debug message with the provided format and optional arguments.
+ * It is typically used for detailed debugging and troubleshooting purposes during program execution.
+ *
+ * @param format The format string for the log message
+ * @param ... Optional arguments to be formatted and included in the log message
+ * @return N/A
+ */
+extern void cdk_logd(const char *restrict format, ...);
+```
+```c
+/**
+ * @brief Log a warning message
+ *
+ * This function logs a warning message with the provided format and optional arguments.
+ * It is typically used to indicate potential issues or non-fatal errors during program execution.
+ *
+ * @param format The format string for the log message
+ * @param ... Optional arguments to be formatted and included in the log message
+ * @return N/A
+ */
+extern void cdk_logw(const char *restrict format, ...);
+```
+```c
+/**
+ * @brief Log a warning message
+ *
+ * This function logs a warning message with the provided format and optional arguments.
+ * It is typically used to indicate potential issues or non-fatal errors during program execution.
+ *
+ * @param format The format string for the log message
+ * @param ... Optional arguments to be formatted and included in the log message
+ * @return N/A
+ */
+extern void cdk_loge(const char *restrict format, ...);
+```
 ### cdk-process
+```c
+/**
+ * @brief Get the process ID
+ *
+ * This function retrieves the process ID (PID) of the current process.
+ * The PID is a unique identifier assigned to a process by the operating system.
+ *
+ * @return The process ID (PID) of the current process
+ */
+extern cdk_pid_t cdk_process_getpid(void);
+```
 ### cdk-threadpool
+```c
+/**
+ * @brief Create a thread pool
+ *
+ * This function creates a thread pool with the specified number of threads.
+ * A thread pool is a collection of threads that can be used to execute tasks concurrently.
+ *
+ * @param pool Pointer to the thread pool object to be initialized
+ * @param nthrds The number of threads to create in the thread pool
+ * @return N/A
+ */
+extern void cdk_thrdpool_create(cdk_thrdpool_t* pool, int nthrds);
+```
+```c
+/**
+ * @brief Post a task to the thread pool
+ *
+ * This function posts a task, represented by a function pointer and an argument, to the thread pool.
+ * The task will be executed by one of the threads in the pool in an asynchronous manner.
+ *
+ * @param pool Pointer to the thread pool where the task will be submitted
+ * @param routine Function pointer to the task routine to be executed
+ * @param arg Pointer to the argument to be passed to the task routine
+ * @return N/A
+ */
+extern void cdk_thrdpool_post(cdk_thrdpool_t* pool, void (*routine)(void*), void* arg);
+```
+```c
+/**
+ * @brief Destroy a thread pool
+ *
+ * This function destroys a thread pool, releasing all associated resources.
+ * After calling this function, the thread pool should no longer be used.
+ *
+ * @param pool Pointer to the thread pool object to be destroyed
+ * @return N/A
+ */
+extern void cdk_thrdpool_destroy(cdk_thrdpool_t* pool);
+```
 ### cdk-time
+```c
+/**
+ * @brief Get the current time since the Unix Epoch (UTC)
+ *
+ * This function returns the current time as the number of milliseconds
+ * elapsed since the Unix Epoch, which is defined as midnight (00:00:00 UTC) on
+ * January 1, 1970.
+ *
+ * @return The current time since the Unix Epoch in milliseconds
+ */
+extern uint64_t cdk_time_now(void);
+```
+```c
+/**
+ * @brief Convert a timestamp to local time
+ *
+ * This function converts the given timestamp to local time and stores the result in the struct tm.
+ *
+ * @param t Pointer to the timestamp to be converted
+ * @param r Pointer to the struct tm to store the converted local time
+ * @return N/A
+ */
+extern void cdk_time_localtime(const time_t* t, struct tm* r);
+```
+```c
+/**
+ * @brief Sleep for a specified duration
+ *
+ * This function suspends the execution of the current thread for the specified number of milliseconds.
+ *
+ * @param ms The duration to sleep in milliseconds
+ * @return N/A
+ */
+extern void cdk_time_sleep(const uint32_t ms);
+```
 ### cdk-timer
+```c
+/**
+ * @brief Create a timer
+ *
+ * This function initializes a timer, which can be used to manage and schedule timer jobs.
+ *
+ * @param timer Pointer to the timer to be created
+ * @param nthrds Number of worker threads for the timer
+ * @return N/A
+ */
+extern void cdk_timer_create(cdk_timer_t* timer, int nthrds);
+```
+```c
+/**
+ * @brief Destroy a timer
+ *
+ * This function cleans up and releases the resources associated with a timer object.
+ *
+ * @param timer Pointer to the timer object to be destroyed
+ * @return N/A
+ */
+extern void cdk_timer_destroy(cdk_timer_t* timer);
+```
+```c
+/**
+ * @brief Add a timer job
+ *
+ * This function adds a timer job to the specified timer. The timer job is scheduled to run after the specified
+ * expiration time, and optionally repeat at regular intervals.
+ *
+ * @param timer Pointer to the timer object
+ * @param routine Pointer to the function to be executed by the timer job
+ * @param arg Argument to be passed to the timer job function
+ * @param expire Expiration time in milliseconds for the timer job
+ * @param repeat Flag indicating whether the timer job should repeat after each expiration
+ * @return Pointer to the timer job object representing the added job
+ */
+extern cdk_timer_job_t* cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat);
+```
+```c
+/**
+ * @brief Delete a timer job
+ *
+ * This function removes a timer job from the specified timer. The timer job will no longer be executed by the timer.
+ *
+ * @param timer Pointer to the timer object
+ * @param job Pointer to the timer job object to be deleted
+ * @return N/A
+ */
+extern void cdk_timer_del(cdk_timer_t* timer, cdk_timer_job_t* job);
+```
 ### cdk-utils
+```c
+/**
+ * @brief Get the byte order of the system
+ *
+ * This function determines the byte order of the system by checking the endianness.
+ * It returns an integer value indicating the byte order of the system.
+ * The value is typically used to determine whether the system is little-endian or big-endian.
+ *
+ * @return An integer representing the byte order of the system:
+ *         - 0 if the system is big-endian
+ *         - 1 if the system is little-endian
+ */
+extern int cdk_utils_byteorder(void);
+```
+```c
+/**
+ * @brief Get the number of CPUs available on the system
+ *
+ * This function returns the number of CPUs available on the system.
+ *
+ * @return An integer representing the number of CPUs on the system
+ */
+extern int cdk_utils_cpus(void);
+```
+```c
+/**
+ * @brief Get the system thread ID
+ *
+ * This function returns the thread ID of the calling thread.
+ *
+ * @return The system thread ID
+ */
+cdk_tid_t cdk_utils_systemtid(void);
+```
+```c
+/**
+ * @brief Generate a random integer within the specified range
+ *
+ * This function generates a random integer within the specified range.
+ *
+ * @param min The minimum value of the range (inclusive)
+ * @param max The maximum value of the range (inclusive)
+ * @return The randomly generated integer
+ */
+extern int cdk_utils_rand(int min, int max);
+```

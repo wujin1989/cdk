@@ -11,5 +11,6 @@ int main(void) {
 
 	uint64_t val = cdk_varint_decode(str, &pos);
 	printf("len=%d, pos=%d, val= %"PRIu64"\n", len, pos, val);
+
 	return 0;
 }

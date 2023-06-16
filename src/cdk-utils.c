@@ -35,7 +35,7 @@ cdk_tid_t cdk_utils_systemtid(void) {
 
 int cdk_utils_byteorder(void) {
 	
-	return (!*((unsigned char*)(&(unsigned short){ 0x01 })));
+	return (*((unsigned char*)(&(unsigned short){ 0x01 })));
 }
 
 int cdk_utils_rand(int min, int max) {
