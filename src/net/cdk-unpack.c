@@ -135,7 +135,7 @@ static void __unpack_lengthfield(cdk_channel_t* channel) {
 
 			ps = *((uint32_t*)(tmp + channel->tcp.unpacker.lengthfield.offset));
 			//0 means little-endian, 1 means big-endian.
-			if (!cdk_utils_byteorder()) {
+			if (cdk_utils_byteorder()) {
 				ps = ntohl(ps);
 			}
 		}
@@ -145,7 +145,7 @@ static void __unpack_lengthfield(cdk_channel_t* channel) {
 
 			ps = (uint32_t)cdk_varint_decode(tmp + channel->tcp.unpacker.lengthfield.offset, &flexible);
 
-			if (!cdk_utils_byteorder()) {
+			if (cdk_utils_byteorder()) {
 				ps = ntohl(ps);
 			}
 			hs = channel->tcp.unpacker.lengthfield.payload + flexible - channel->tcp.unpacker.lengthfield.size;
