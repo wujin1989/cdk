@@ -1,12 +1,12 @@
 #include "cdk.h"
 
 int main() {
-    uint8_t* message = "123456789";
+    char* message = "123456789";
     size_t message_len = strlen(message);
 
     cdk_sha256_t ctx;
     cdk_sha256_init(&ctx);
-    cdk_sha256_update(&ctx, message, message_len);
+    cdk_sha256_update(&ctx, (uint8_t*)message, message_len);
 
     uint8_t digest[32];
     cdk_sha256_final(&ctx, digest);
