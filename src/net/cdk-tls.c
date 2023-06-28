@@ -184,7 +184,7 @@ void cdk_tls_accept(cdk_channel_t* channel) {
 }
 
 void cdk_tls_read(cdk_channel_t* channel) {
-	int n = SSL_read((SSL*)channel->tcp.tls, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE);
+	int n = SSL_read((SSL*)channel->tcp.tls, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE / 2);
 	if (n <= 0) {
 		int err = SSL_get_error((SSL*)channel->tcp.tls, n);
 		if (err == SSL_ERROR_WANT_READ) {

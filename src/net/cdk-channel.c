@@ -75,7 +75,7 @@ static void __channel_tcprecv(cdk_channel_t* channel) {
         }
     }
     else {
-        ssize_t n = platform_socket_recv(channel->fd, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE);
+        ssize_t n = platform_socket_recv(channel->fd, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE / 2);
         if (n == -1) {
             if ((platform_socket_lasterror() != PLATFORM_SO_ERROR_EAGAIN)
                 || (platform_socket_lasterror() != PLATFORM_SO_ERROR_WSAEWOULDBLOCK)) {
