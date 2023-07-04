@@ -41,6 +41,9 @@ _Pragma("once")
 #include <ws2ipdef.h>
 #include <WS2tcpip.h>
 #include <process.h>
+
+#pragma comment(lib,"ws2_32.lib")
+#pragma comment(lib,"winmm.lib")
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)

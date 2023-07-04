@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 
 project(cdk VERSION 1.0.0 LANGUAGES C)
 
+option(BUILD_DYNAMIC_LIBRARY "build the dynamic library" OFF)
+
 if (CMAKE_SIZEOF_VOID_P LESS 8)
 	message(FATAL_ERROR "only 64bit supported")
 endif()
@@ -76,16 +78,13 @@ if(UNIX)
 	)
 endif()
 
-add_library(cdk STATIC ${SRCS})
-
-target_link_libraries(cdk PUBLIC Threads::Threads ${OPENSSL_LIBRARIES})
-
-if(WIN32)
-	target_link_libraries(cdk PUBLIC winmm ws2_32)
-endif()
-
-if(UNIX)
-	target_link_libraries(cdk PUBLIC ${CMAKE_DL_LIBS})
+if(BUILD_DYNAMIC_LIBRARY)
+    add_library(cdk SHARED ${SRCS})
+	target_link_libraries(cdk PUBLIC Threads::Threads ${OPENSSL_LIBRARIES} ${CMAKE_DL_LIBS})
+	set_target_properties(cdk PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
+else()
+    add_library(cdk STATIC ${SRCS})
+	target_link_libraries(cdk PUBLIC Threads::Threads ${OPENSSL_LIBRARIES} ${CMAKE_DL_LIBS})
 endif()
 
 add_subdirectory(examples)
