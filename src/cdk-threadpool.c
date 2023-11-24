@@ -42,11 +42,14 @@ static int __thrdpool_thrdfunc(void* arg) {
 		while (pool->status && cdk_queue_empty(&pool->queue)) {
 			cnd_wait(&pool->qcnd, &pool->qmtx);
 		}
-		job = cdk_queue_data(cdk_queue_dequeue(&pool->queue), thrdpool_job_t, n);
-
-		if (pool->status) {
-			job->routine(job->arg);
+		cdk_queue_node_t* node = cdk_queue_dequeue(&pool->queue);
+		if (!node) {
+			mtx_unlock(&pool->qmtx);
+			return -1;
 		}
+		job = cdk_queue_data(node, thrdpool_job_t, n);
+		job->routine(job->arg);
+
 		free(job);
 		job = NULL;
 		mtx_unlock(&pool->qmtx);
@@ -94,9 +97,7 @@ void cdk_thrdpool_destroy(cdk_thrdpool_t* pool) {
 	
 	pool->status = false;
 
-	mtx_lock(&pool->qmtx);
 	cnd_broadcast(&pool->qcnd);
-	mtx_unlock(&pool->qmtx);
 
 	for (int i = 0; i < pool->thrdcnt; i++) {
 		thrd_join(pool->thrds[i], NULL);
