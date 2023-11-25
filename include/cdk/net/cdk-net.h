@@ -32,7 +32,6 @@ extern void           cdk_net_set_recvbuf(cdk_sock_t sock, int val);
 extern void           cdk_net_set_sendbuf(cdk_sock_t sock, int val);
 extern cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler);
 extern cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler);
-extern void           cdk_net_poll(void);
 extern void           cdk_net_postrecv(cdk_channel_t* channel);
 extern void           cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size);
 extern void           cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event);

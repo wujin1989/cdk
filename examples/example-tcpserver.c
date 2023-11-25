@@ -84,7 +84,6 @@ int main(void) {
 	};
 	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 	
-	cdk_net_poll();
 	cdk_net_cleanup();
 	return 0;
 }

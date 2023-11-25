@@ -33,9 +33,9 @@
 cdk_timer_t timer;
 cdk_tls_ctx_t* tlsctx;
 
-static cdk_list_t pollerlst;
-static cdk_poller_t* mainpoller;
+static cdk_list_t pollers;
 static mtx_t pollermtx;
+static thrd_t* workers;
 
 typedef struct event_ctx_s {
     cdk_channel_t* channel;
@@ -85,19 +85,16 @@ static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
 cdk_poller_t* _poller_roundrobin(void)
 {
     mtx_lock(&pollermtx);
-    if (cdk_list_empty(&pollerlst)) {
-        return mainpoller;
-    }
     static cdk_poller_t* currpoller;
     if (currpoller == NULL) {
-        currpoller = cdk_list_data(cdk_list_head(&pollerlst), cdk_poller_t, node);
+        currpoller = cdk_list_data(cdk_list_head(&pollers), cdk_poller_t, node);
     }
     else {
         cdk_list_node_t* n = cdk_list_next(&currpoller->node);
-        if (n != cdk_list_sentinel(&pollerlst)) {
+        if (n != cdk_list_sentinel(&pollers)) {
             currpoller = cdk_list_data(n, cdk_poller_t, node);
         }
-        if (n == cdk_list_sentinel(&pollerlst)) {
+        if (n == cdk_list_sentinel(&pollers)) {
             currpoller = cdk_list_data(cdk_list_next(n), cdk_poller_t, node);
         }
     }
@@ -130,7 +127,7 @@ static int __workerthread(void* param) {
         abort();
     }
     mtx_lock(&pollermtx);
-    cdk_list_insert_tail(&pollerlst, &poller->node);
+    cdk_list_insert_tail(&pollers, &poller->node);
     mtx_unlock(&pollermtx);
 
     platform_poller_poll(poller);
@@ -229,7 +226,7 @@ cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* po
     if (!strncmp(type, "tcp", strlen("tcp")))
     {
         sock = platform_socket_listen(host, port, SOCK_STREAM);
-        channel = cdk_channel_create(mainpoller, sock, EVENT_TYPE_A, handler);
+        channel = cdk_channel_create(_poller_roundrobin(), sock, EVENT_TYPE_A, handler);
     }
     if (!strncmp(type, "udp", strlen("udp")))
     {
@@ -293,11 +290,6 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
         platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
     }
     return channel;
-}
-
-void cdk_net_poll(void) {
-    platform_poller_poll(mainpoller);
-    platform_poller_destroy(mainpoller);
 }
 
 void cdk_net_postrecv(cdk_channel_t* channel) {
@@ -384,17 +376,12 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
     platform_socket_startup();
 
     cdk_timer_create(&timer, 1);
-    cdk_list_init(&pollerlst);
+    cdk_list_init(&pollers);
     mtx_init(&pollermtx, mtx_plain);
 
-    mainpoller = platform_poller_create();
-    if (mainpoller == NULL) {
-        abort();
-    }
+    workers = malloc(nworkers * sizeof(thrd_t));
     for (int i = 0; i < nworkers; i++) {
-        thrd_t tid;
-        thrd_create(&tid, __workerthread, NULL);
-        thrd_detach(tid);
+        thrd_create(workers + i, __workerthread, NULL);
     }
     if (tlsconf) {
         tlsctx = cdk_tls_ctx_create(tlsconf);
@@ -402,6 +389,12 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
 }
 
 void cdk_net_cleanup(void) {
+    for(int i = 0; i < (sizeof(workers) / sizeof(thrd_t)); i++) {
+        thrd_join(*(workers + i), NULL);
+    }
+    free(workers);
+    workers = NULL;
+    
     platform_socket_cleanup();
     cdk_timer_destroy(&timer);
     mtx_destroy(&pollermtx);

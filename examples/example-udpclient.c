@@ -37,7 +37,6 @@ int main(void) {
 	thrd_create(&tid, routine, channel);
 	thrd_detach(tid);
 
-	cdk_net_poll();
 	cdk_net_cleanup();
 	return 0;
 }
