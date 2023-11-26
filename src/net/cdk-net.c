@@ -283,7 +283,11 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
             cdk_net_pton(&ai, &ss);
 
             channel->udp.peer.ss = ss;
-            channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
+	    /**
+	     * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage, 
+	     * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
+	     */
+            channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in): sizeof(struct sockaddr_in6);
         }
     }
     if (channel) {

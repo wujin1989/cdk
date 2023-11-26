@@ -15,29 +15,7 @@ The compiler needs to support C11.
 
 
 # Compile
-Windows:
-
     cmake -G "Ninja Multi-Config" -B build
-    or
-    cmake -G "Visual Studio 17 2022" -B build
-
-    cmake --build build --config Debug -j 8
-    cmake --build build --config Release -j 8
-
-Linux:
-
-    cmake -G "Ninja Multi-Config" -B build
-	
-    cmake --build build --config Debug -j 8
-    cmake --build build --config Release -j 8
-
-Mac:
-
-    cmake -G "Ninja Multi-Config" -B build
-    or
-    cmake -G "Xcode" -B build
-
-    cmake --build build --config Debug -j 8
     cmake --build build --config Release -j 8
 
 # Documentation

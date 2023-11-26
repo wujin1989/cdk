@@ -765,17 +765,6 @@ extern cdk_channel_t* cdk_net_dial(const char* type, const char* host, const cha
 ```
 ```c
 /**
- * @brief Start polling for network events
- *
- * This function starts the network event polling loop, which continuously polls for network events
- * and triggers the corresponding handlers for the associated channels.
- * @param N/A
- * @return N/A
- */
-extern void cdk_net_poll(void);
-```
-```c
-/**
  * @brief Post a receive operation for a channel
  *
  * This function posts a receive operation for the specified channel. It indicates that the channel
