@@ -304,6 +304,7 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
 }
 
 void cdk_net_postrecv(cdk_channel_t* channel) {
+    mtx_lock(&channel->mtx);
     channel->cmd = EVENT_TYPE_R;
     if (channel->flag) {
         platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
@@ -312,6 +313,7 @@ void cdk_net_postrecv(cdk_channel_t* channel) {
         channel->flag = true;
         platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
     }
+    mtx_unlock(&channel->mtx);
 }
 
 void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {
