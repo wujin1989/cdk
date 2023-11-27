@@ -34,7 +34,8 @@ cdk_timer_t timer;
 cdk_tls_ctx_t* tlsctx;
 
 static cdk_list_t pollers;
-static mtx_t pollermtx;
+static mtx_t pollers_mtx;
+static cnd_t pollers_cnd;
 static thrd_t* workers;
 
 typedef struct event_ctx_s {
@@ -84,7 +85,10 @@ static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
 
 cdk_poller_t* _poller_roundrobin(void)
 {
-    mtx_lock(&pollermtx);
+    mtx_lock(&pollers_mtx);
+    while (cdk_list_empty(&pollers)) {
+        cnd_wait(&pollers_cnd, &pollers_mtx);
+    }
     static cdk_poller_t* currpoller;
     if (currpoller == NULL) {
         currpoller = cdk_list_data(cdk_list_head(&pollers), cdk_poller_t, node);
@@ -98,7 +102,7 @@ cdk_poller_t* _poller_roundrobin(void)
             currpoller = cdk_list_data(cdk_list_next(n), cdk_poller_t, node);
         }
     }
-    mtx_unlock(&pollermtx);
+    mtx_unlock(&pollers_mtx);
     return currpoller;
 }
 
@@ -124,16 +128,19 @@ void _eventfd_close(cdk_channel_t* channel, char* error) {
 static int __workerthread(void* param) {
     cdk_poller_t* poller = platform_poller_create();
     if (poller == NULL) {
-        abort();
+        return -1;
     }
-    mtx_lock(&pollermtx);
+    mtx_lock(&pollers_mtx);
     cdk_list_insert_tail(&pollers, &poller->node);
-    mtx_unlock(&pollermtx);
+    cnd_signal(&pollers_cnd);
+    mtx_unlock(&pollers_mtx);
 
     platform_poller_poll(poller);
-    mtx_lock(&pollermtx);
+
+    mtx_lock(&pollers_mtx);
     cdk_list_remove(&poller->node);
-    mtx_unlock(&pollermtx);
+    mtx_unlock(&pollers_mtx);
+
     platform_poller_destroy(poller);
     return 0;
 }
@@ -381,7 +388,8 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
 
     cdk_timer_create(&timer, 1);
     cdk_list_init(&pollers);
-    mtx_init(&pollermtx, mtx_plain);
+    mtx_init(&pollers_mtx, mtx_plain);
+    cnd_init(&pollers_cnd);
 
     workers = malloc(nworkers * sizeof(thrd_t));
     for (int i = 0; i < nworkers; i++) {
@@ -401,6 +409,7 @@ void cdk_net_cleanup(void) {
     
     platform_socket_cleanup();
     cdk_timer_destroy(&timer);
-    mtx_destroy(&pollermtx);
+    mtx_destroy(&pollers_mtx);
+    cnd_destroy(&pollers_cnd);
     cdk_tls_ctx_destroy(tlsctx);
 }
