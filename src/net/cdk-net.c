@@ -348,8 +348,6 @@ void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {
         mtx_unlock(&channel->mtx);
         return;
 	}
-    mtx_unlock(&channel->mtx);
-
 	if (channel->type == SOCK_STREAM) {
 		cdk_list_insert_tail(&(channel->tcp.txlist), &(node->n));
 	}
@@ -364,6 +362,7 @@ void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {
         channel->flag = true;
         platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
     }
+    mtx_unlock(&channel->mtx);
 }
 
 void cdk_net_close(cdk_channel_t* channel) {
