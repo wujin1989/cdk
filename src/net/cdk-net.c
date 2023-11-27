@@ -37,6 +37,7 @@ static cdk_list_t pollers;
 static mtx_t pollers_mtx;
 static cnd_t pollers_cnd;
 static thrd_t* workers;
+static int cnt;
 
 typedef struct event_ctx_s {
     cdk_channel_t* channel;
@@ -387,13 +388,19 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
 {
     platform_socket_startup();
 
+    if (!nworkers) {
+        cnt = 1;
+    }
+    else {
+        cnt = nworkers;
+    }
     cdk_timer_create(&timer, 1);
     cdk_list_init(&pollers);
     mtx_init(&pollers_mtx, mtx_plain);
     cnd_init(&pollers_cnd);
 
-    workers = malloc(nworkers * sizeof(thrd_t));
-    for (int i = 0; i < nworkers; i++) {
+    workers = malloc(cnt * sizeof(thrd_t));
+    for (int i = 0; i < cnt; i++) {
         thrd_create(workers + i, __workerthread, NULL);
     }
     if (tlsconf) {
@@ -402,8 +409,8 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
 }
 
 void cdk_net_cleanup(void) {
-    for(int i = 0; i < (sizeof(workers) / sizeof(thrd_t)); i++) {
-        thrd_join(*(workers + i), NULL);
+    for(int i = 0; i < cnt; i++) {
+        thrd_join(workers[i], NULL);
     }
     free(workers);
     workers = NULL;
