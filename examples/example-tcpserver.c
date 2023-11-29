@@ -1,13 +1,11 @@
 #include "cdk.h"
 
 typedef struct _net_msg_hdr_t {
-
 	uint32_t      p_s;   /* payload size */
 	uint32_t      p_t;   /* payload type */
 }net_msg_hdr_t;
 
 typedef struct _net_msg_t {
-
 	net_msg_hdr_t      h;
 	char               p[];
 }net_msg_t;
@@ -32,21 +30,15 @@ static void handle_accept(cdk_channel_t* channel) {
 		.lengthfield.size = 4
 	};
 	cdk_net_unpacker_init(channel, &unpacker3);
-	
-	cdk_net_postrecv(channel);
 }
 
 static void handle_write(cdk_channel_t* channel, void* buf, size_t len) {
-
 	net_msg_t* msg = (net_msg_t*)buf;
 	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
-	cdk_net_postrecv(channel);
 }
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
-
 	net_msg_t* rmsg = (net_msg_t*)buf;
 	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
-
 
 	net_msg_t* smsg = malloc(sizeof(net_msg_t) + strlen("world") + 1);
 	if (smsg) {
@@ -59,13 +51,11 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 }
 
 static void handle_close(cdk_channel_t* channel, char* error) {
-
 	printf("connection closed, reason: %s\n", error);
 	cdk_net_close(channel);
 }
 
 int main(void) {
-
 	cdk_tlsconf_t conf = {
 		.cafile = NULL,
 		.capath = NULL,

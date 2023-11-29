@@ -26,10 +26,10 @@ _Pragma("once")
 #define MAX_PROCESS_EVENTS 1024
 
 typedef struct cdk_pollevent_s {
+	uint32_t events;
 	void* ptr;
 }cdk_pollevent_t;
 
-extern void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud);
-extern void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud);
-extern void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd);
+extern void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud);
+extern void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud);
 extern int  platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events);

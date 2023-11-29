@@ -1,7 +1,6 @@
 #include "cdk.h"
 
 static void handle_write(cdk_channel_t* channel, void* buf, size_t len) {
-	cdk_net_postrecv(channel);
 }
 
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
@@ -18,7 +17,7 @@ static int routine(void* p) {
 	cdk_channel_t* channel = p;
 	while (true) {
 		cdk_net_postsend(channel, "helloworld", strlen("helloworld") + 1);
-		cdk_time_sleep(10);
+		//cdk_time_sleep(10);
 	}
 	return 0;
 }

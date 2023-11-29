@@ -65,13 +65,10 @@ static void __channelsend_callback(void* param) {
     if (ctx.channel->type == SOCK_DGRAM) {
         cdk_list_insert_tail(&(ctx.channel->udp.txlist), &(ctx.node->n));
     }
-    ctx.channel->cmd = EVENT_TYPE_W;
-    if (ctx.channel->flag) {
-        platform_event_mod(ctx.channel->poller->pfd, ctx.channel->fd, ctx.channel->cmd, ctx.channel);
-    }
-    if (!ctx.channel->flag) {
-        ctx.channel->flag = true;
-        platform_event_add(ctx.channel->poller->pfd, ctx.channel->fd, ctx.channel->cmd, ctx.channel);
+    if (!(ctx.channel->events & EVENT_TYPE_W)) {
+        ctx.channel->events |= EVENT_TYPE_W;
+        platform_event_add(ctx.channel->poller->pfd, ctx.channel->fd, EVENT_TYPE_W, ctx.channel);
+        
     }
 }
 
@@ -234,15 +231,18 @@ cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* po
     if (!strncmp(type, "tcp", strlen("tcp")))
     {
         sock = platform_socket_listen(host, port, SOCK_STREAM);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, EVENT_TYPE_A, handler);
+        channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+
+        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_A, channel);
+        channel->events |= EVENT_TYPE_A;
     }
     if (!strncmp(type, "udp", strlen("udp")))
     {
         sock = platform_socket_listen(host, port, SOCK_DGRAM);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, EVENT_TYPE_R, handler);
-    }
-    if (channel) {
-        platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
+        channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+
+        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+        channel->events |= EVENT_TYPE_R;
     }
     return channel;
 }
@@ -261,28 +261,32 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
     memset(&ss, 0, sizeof(struct sockaddr_storage));
 
     if (!strncmp(type, "tcp", strlen("tcp"))) {
-
         sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
-        if (connected) {
-            channel = cdk_channel_create(_poller_roundrobin(), sock, EVENT_TYPE_W, handler);
-            if (channel) {
+        channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        if (channel) {
+            if (connected) {
                 if (channel->tcp.tls) {
-                    platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
+                    cdk_tls_cli_handshake(channel);
                 }
                 else {
+                    platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
+                    channel->events &= ~EVENT_TYPE_C;
+                    
                     channel->handler->on_connect(channel);
+
+                    platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+                    channel->events |= EVENT_TYPE_R;
                 }
+                return channel;
             }
-            return channel;
-        }
-        else {
-            channel = cdk_channel_create(_poller_roundrobin(), sock, EVENT_TYPE_C, handler);
+            platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
+            channel->events |= EVENT_TYPE_C;
         }
     }
     if (!strncmp(type, "udp", strlen("udp"))) {
 
         sock = platform_socket_dial(host, port, SOCK_DGRAM, NULL);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, EVENT_TYPE_W, handler);
+        channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
         if (channel) {
             memcpy(ai.a, host, strlen(host));
             ai.p = (uint16_t)strtoul(port, NULL, 10);
@@ -296,29 +300,15 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
 	     * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
 	     */
             channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in): sizeof(struct sockaddr_in6);
+
+            platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+            channel->events |= EVENT_TYPE_R;
         }
-    }
-    if (channel) {
-        platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
     }
     return channel;
 }
 
-void cdk_net_postrecv(cdk_channel_t* channel) {
-    mtx_lock(&channel->mtx);
-    channel->cmd = EVENT_TYPE_R;
-    if (channel->flag) {
-        platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-    }
-    if (!channel->flag) {
-        channel->flag = true;
-        platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
-    }
-    mtx_unlock(&channel->mtx);
-}
-
 void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {
-
     mtx_lock(&channel->mtx);
     if (!channel->active) {
         return;
@@ -336,7 +326,6 @@ void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {
 	node->off = 0;
 
 	if (!thrd_equal(channel->poller->tid, thrd_current())) {
-
         event_ctx_t* pctx = malloc(sizeof(event_ctx_t));
 		if (pctx) {
 			pctx->channel = channel;
@@ -357,13 +346,9 @@ void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {
 	if (channel->type == SOCK_DGRAM) {
 		cdk_list_insert_tail(&(channel->udp.txlist), &(node->n));
 	}
-    channel->cmd = EVENT_TYPE_W;
-    if (channel->flag) {
-        platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-    }
-    if (!channel->flag) {
-        channel->flag = true;
-        platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
+    if (!(channel->events & EVENT_TYPE_W)) {
+        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+        channel->events |= EVENT_TYPE_W;
     }
     mtx_unlock(&channel->mtx);
 }

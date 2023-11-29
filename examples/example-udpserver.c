@@ -65,7 +65,6 @@ int routine(void* p) {
 }
 
 static void handle_write(cdk_channel_t* conn, void* buf, size_t len) {
-	cdk_net_postrecv(conn);
 }
 static void handle_read(cdk_channel_t* conn, void* buf, size_t len) {
 	cdk_addrinfo_t ai;

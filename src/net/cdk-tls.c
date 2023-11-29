@@ -99,105 +99,84 @@ void cdk_tls_destroy(cdk_tls_t* tls) {
 	}
 }
 
-static void __tls_connect(void* param) {
+static bool __tls_connect(void* param) {
 	cdk_channel_t* channel = param;
 
 	int ret = SSL_connect((SSL*)channel->tcp.tls);
 	if (ret == 1) {
 		channel->tcp.state = TLS_STATE_CONNECTED;
-		channel->handler->on_connect(channel);
-		return;
+
+		platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+		channel->events &= ~EVENT_TYPE_W;
+		return true;
 	}
 	int err = SSL_get_error((SSL*)channel->tcp.tls, ret);
 	if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE))
 	{
 		channel->tcp.state = TLS_STATE_CONNECTING;
-		if (err == SSL_ERROR_WANT_READ) {
-			channel->cmd = EVENT_TYPE_R;
-			if (channel->flag) {
-				platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			}
-			else {
-				platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			}
-		}
-		if (err == SSL_ERROR_WANT_WRITE) {
-			channel->cmd = EVENT_TYPE_W;
-			if (channel->flag) {
-				platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			}
-			else {
-				platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			}
+
+		if (!(channel->events & EVENT_TYPE_W)) {
+			platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+			channel->events |= EVENT_TYPE_W;
 		}
 	}
 	else {
 		channel->handler->on_close(channel, __tls_error2string(err));
 	}
+	return false;
 }
 
-static void __tls_accept(void* param) {
+static bool __tls_accept(void* param) {
 	cdk_channel_t* channel = param;
 
 	int ret = SSL_accept((SSL*)channel->tcp.tls);
 	if (ret == 1) {
 		channel->tcp.state = TLS_STATE_ACCEPTED;
-		channel->handler->on_accept(channel);
-		return;
+
+		platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+		channel->events &= ~EVENT_TYPE_W;
+		return true;
 	}
 	int err = SSL_get_error((SSL*)channel->tcp.tls, ret);
 	if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE))
 	{
 		channel->tcp.state = TLS_STATE_ACCEPTING;
-		if (err == SSL_ERROR_WANT_READ) {
-			channel->cmd = EVENT_TYPE_R;
-			if (channel->flag) {
-				platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			}
-			else {
-				platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			}
-		}
-		if (err == SSL_ERROR_WANT_WRITE) {
-			channel->cmd = EVENT_TYPE_W;
-			if (channel->flag) {
-				platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			}
-			else {
-				platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			}
+
+		if (!(channel->events & EVENT_TYPE_W)) {
+			platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+			channel->events |= EVENT_TYPE_W;
 		}
 	}
 	else {
 		channel->handler->on_close(channel, __tls_error2string(err));
 	}
+	return false;
 }
 
-void cdk_tls_connect(cdk_channel_t* channel) {
+bool cdk_tls_cli_handshake(cdk_channel_t* channel) {
 	SSL_set_fd((SSL*)channel->tcp.tls, (int)channel->fd);
-	__tls_connect(channel);
+	return __tls_connect(channel);
 }
 
-void cdk_tls_accept(cdk_channel_t* channel) {
+bool cdk_tls_srv_handshake(cdk_channel_t* channel) {
 	SSL_set_fd((SSL*)channel->tcp.tls, (int)channel->fd);
-	__tls_accept(channel);
+	return __tls_accept(channel);
 }
 
 void cdk_tls_read(cdk_channel_t* channel) {
 	int n = SSL_read((SSL*)channel->tcp.tls, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE / 2);
 	if (n <= 0) {
 		int err = SSL_get_error((SSL*)channel->tcp.tls, n);
-		if (err == SSL_ERROR_WANT_READ) {
-			channel->cmd = EVENT_TYPE_R;
-			platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			return;
+		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE))
+		{
+			if (!(channel->events & EVENT_TYPE_W)) {
+				platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+				channel->events |= EVENT_TYPE_W;
+			}
 		}
-		if (err == SSL_ERROR_WANT_WRITE) {
-			channel->cmd = EVENT_TYPE_W;
-			platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-			return;
+		else {
+			channel->handler->on_close(channel, __tls_error2string(err));
 		}
-		channel->handler->on_close(channel, __tls_error2string(err));
 		return;
 	}
 	channel->tcp.rxbuf.off += n;
@@ -205,24 +184,27 @@ void cdk_tls_read(cdk_channel_t* channel) {
 }
 
 void cdk_tls_write(cdk_channel_t* channel) {
-	while (!cdk_list_empty(&(channel->tcp.txlist))) {
+	if (cdk_list_empty(&(channel->tcp.txlist))) {
+		platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+		channel->events &= ~EVENT_TYPE_W;
+	}
+	if (!cdk_list_empty(&(channel->tcp.txlist))) {
 		cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->tcp.txlist)), cdk_txlist_node_t, n);
 
 		while (e->off < e->len) {
 			int n = SSL_write((SSL*)channel->tcp.tls, e->buf + e->off, (int)(e->len - e->off));
 			if (n <= 0) {
 				int err = SSL_get_error((SSL*)channel->tcp.tls, n);
-				if (err == SSL_ERROR_WANT_READ) {
-					channel->cmd = EVENT_TYPE_R;
-					platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-					return;
+				if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE))
+				{
+					if (!(channel->events & EVENT_TYPE_W)) {
+						platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+						channel->events |= EVENT_TYPE_W;
+					}
 				}
-				if (err == SSL_ERROR_WANT_WRITE) {
-					channel->cmd = EVENT_TYPE_W;
-					platform_event_mod(channel->poller->pfd, channel->fd, channel->cmd, channel);
-					return;
+				else {
+					channel->handler->on_close(channel, __tls_error2string(err));
 				}
-				channel->handler->on_close(channel, __tls_error2string(err));
 				return;
 			}
 			e->off += n;

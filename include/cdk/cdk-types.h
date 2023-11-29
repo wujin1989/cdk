@@ -75,10 +75,10 @@ typedef enum cdk_unpack_type_e {
 }cdk_unpack_type_t;
 
 typedef enum cdk_event_type_e{
-	EVENT_TYPE_R,
-	EVENT_TYPE_W,
-	EVENT_TYPE_A,
-	EVENT_TYPE_C,
+	EVENT_TYPE_R = 1,
+	EVENT_TYPE_W = 2,
+	EVENT_TYPE_A = 4,
+	EVENT_TYPE_C = 8,
 }cdk_event_type_t;
 
 #define cdk_tls_ctx_t void
@@ -298,8 +298,7 @@ enum cdk_tls_state_s {
 struct cdk_channel_s {
 	cdk_poller_t*      poller;
 	cdk_sock_t         fd;
-	int                cmd;
-	bool               flag;
+	int                events;
 	cdk_handler_t*     handler;
 	int                type;
 	bool               active;

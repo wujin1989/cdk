@@ -38,11 +38,13 @@ void platform_poller_poll(cdk_poller_t* poller) {
         .type = UNPACK_TYPE_FIXEDLEN,
         .fixedlen.len = sizeof(int)
     };
-    cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], EVENT_TYPE_R, &handler);
+    cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], &handler);
     if (channel) {
         channel->tcp.tls = NULL;
         memcpy(&channel->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
-        platform_event_add(channel->poller->pfd, channel->fd, channel->cmd, channel);
+
+        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+        channel->events |= EVENT_TYPE_R;
     }
     while (poller->active)
     {
@@ -50,24 +52,19 @@ void platform_poller_poll(cdk_poller_t* poller) {
         for (int i = 0; i < nevents; i++)
         {
             cdk_channel_t* channel = events[i].ptr;
-            if (channel) {
-                switch (channel->cmd)
-                {
-                case EVENT_TYPE_A:
-                    cdk_channel_accept(channel);
-                    break;
-                case EVENT_TYPE_R:
-                    cdk_channel_recv(channel);
-                    break;
-                case EVENT_TYPE_C:
-                    cdk_channel_connect(channel);
-                    break;
-                case EVENT_TYPE_W:
-                    cdk_channel_send(channel);
-                    break;
-                default:
-                    break;
-                }
+            uint32_t tevents = events[i].events;
+
+            if ((channel->events & EVENT_TYPE_A) && (tevents & EVENT_TYPE_R)) {
+                cdk_channel_accept(channel);
+            }
+            if ((channel->events & EVENT_TYPE_R) && (tevents & EVENT_TYPE_R)) {
+                cdk_channel_recv(channel);
+            }
+            if ((channel->events & EVENT_TYPE_C) && (tevents & EVENT_TYPE_W)) {
+                cdk_channel_connect(channel);
+            }
+            if ((channel->events & EVENT_TYPE_W) && (tevents & EVENT_TYPE_W)) {
+                cdk_channel_send(channel);
             }
         }
     }

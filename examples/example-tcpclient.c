@@ -51,10 +51,8 @@ static void handle_connect_timeout(cdk_channel_t* channel) {
 }
 
 static void handle_write(cdk_channel_t* channel, void* buf, size_t len) {
-
 	net_msg_t* msg = (net_msg_t*)buf;
 	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
-	cdk_net_postrecv(channel);
 }
 
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
@@ -69,7 +67,6 @@ static void handle_close(cdk_channel_t* channel, char* error) {
 }
 
 int main(void) {
-
 	cdk_tlsconf_t conf = {
 		.cafile = "certs/ca.crt",
 		.capath = NULL,
@@ -77,7 +74,7 @@ int main(void) {
 		.keyfile = NULL,
 		.verifypeer = true
 	};
-	cdk_net_startup(4, NULL/*&conf*/);
+	cdk_net_startup(4, &conf);
 
 	cdk_handler_t handler = {
 		.on_connect = handle_connect,
