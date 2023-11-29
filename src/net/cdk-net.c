@@ -223,46 +223,41 @@ void cdk_net_set_sendbuf(cdk_sock_t sock, int val) {
     platform_socket_set_sendbuf(sock, val);
 }
 
-cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler)
+void cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler)
 {
-    cdk_sock_t sock;
-    cdk_channel_t* channel = NULL;
-
     if (!strncmp(type, "tcp", strlen("tcp")))
     {
-        sock = platform_socket_listen(host, port, SOCK_STREAM);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        cdk_sock_t sock = platform_socket_listen(host, port, SOCK_STREAM);
+        cdk_channel_t* channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
 
         platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_A, channel);
         channel->events |= EVENT_TYPE_A;
     }
     if (!strncmp(type, "udp", strlen("udp")))
     {
-        sock = platform_socket_listen(host, port, SOCK_DGRAM);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        cdk_sock_t sock = platform_socket_listen(host, port, SOCK_DGRAM);
+        cdk_channel_t* channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        if (channel) {
+            channel->handler->on_ready(channel);
 
-        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
-        channel->events |= EVENT_TYPE_R;
+            platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+            channel->events |= EVENT_TYPE_R;
+        }
     }
-    return channel;
 }
 
-cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler)
+void cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler)
 {
-    bool connected;
-    cdk_sock_t sock;
-    cdk_channel_t* channel = NULL;
     cdk_addrinfo_t ai;
     struct sockaddr_storage ss;
-
-    connected = false;
 
     memset(&ai, 0, sizeof(cdk_addrinfo_t));
     memset(&ss, 0, sizeof(struct sockaddr_storage));
 
     if (!strncmp(type, "tcp", strlen("tcp"))) {
-        sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        bool connected;
+        cdk_sock_t sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
+        cdk_channel_t* channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
         if (channel) {
             if (connected) {
                 if (channel->tcp.tls) {
@@ -277,16 +272,15 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
                     platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
                     channel->events |= EVENT_TYPE_R;
                 }
-                return channel;
+                return;
             }
             platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
             channel->events |= EVENT_TYPE_C;
         }
     }
     if (!strncmp(type, "udp", strlen("udp"))) {
-
-        sock = platform_socket_dial(host, port, SOCK_DGRAM, NULL);
-        channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        cdk_sock_t sock = platform_socket_dial(host, port, SOCK_DGRAM, NULL);
+        cdk_channel_t* channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
         if (channel) {
             memcpy(ai.a, host, strlen(host));
             ai.p = (uint16_t)strtoul(port, NULL, 10);
@@ -301,11 +295,12 @@ cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port
 	     */
             channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in): sizeof(struct sockaddr_in6);
 
+            channel->handler->on_ready(channel);
+
             platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
             channel->events |= EVENT_TYPE_R;
         }
     }
-    return channel;
 }
 
 void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {

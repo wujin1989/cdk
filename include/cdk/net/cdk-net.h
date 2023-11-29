@@ -23,18 +23,18 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void           cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai);
-extern void           cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
-extern void           cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
-extern int            cdk_net_af(cdk_sock_t sock);
-extern int            cdk_net_socktype(cdk_sock_t sock);
-extern void           cdk_net_set_recvbuf(cdk_sock_t sock, int val);
-extern void           cdk_net_set_sendbuf(cdk_sock_t sock, int val);
-extern cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler);
-extern cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler);
-extern void           cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size);
-extern void           cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event);
-extern void           cdk_net_close(cdk_channel_t* channel);
-extern void           cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker);
-extern void           cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf);
-extern void           cdk_net_cleanup(void);
+extern void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai);
+extern void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
+extern void cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
+extern int cdk_net_af(cdk_sock_t sock);
+extern int cdk_net_socktype(cdk_sock_t sock);
+extern void cdk_net_set_recvbuf(cdk_sock_t sock, int val);
+extern void cdk_net_set_sendbuf(cdk_sock_t sock, int val);
+extern void cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler);
+extern void cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler);
+extern void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size);
+extern void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event);
+extern void cdk_net_close(cdk_channel_t* channel);
+extern void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker);
+extern void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf);
+extern void cdk_net_cleanup(void);

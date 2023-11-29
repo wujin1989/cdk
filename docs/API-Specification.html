@@ -3,7 +3,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+      <link rel="stylesheet" href="file:///c:\Users\wujin\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.10\crossnote\dependencies\katex\katex.min.css">
       
       
       
@@ -651,9 +651,9 @@ Copyright©2023 jin.wu. All rights reserved.
  * @param host    The host address to listen on
  * @param port    The port number to listen on
  * @param handler Pointer to the handler function for incoming events on the channel
- * @return Pointer to the created channel for listening
+ * @return N/A
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> <span class="token function">cdk_net_listen</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> type<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">,</span> <span class="token class-name">cdk_handler_t</span><span class="token operator">*</span> handler<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_listen</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> type<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">,</span> <span class="token class-name">cdk_handler_t</span><span class="token operator">*</span> handler<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
  * @brief Establish a network connection to a remote host
  *
@@ -664,9 +664,9 @@ Copyright©2023 jin.wu. All rights reserved.
  * @param host    The remote host address to connect to
  * @param port    The port number to connect to
  * @param handler Pointer to the handler function for incoming events on the channel
- * @return Pointer to the created channel for the connection
+ * @return N/A
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> <span class="token function">cdk_net_dial</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> type<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">,</span> <span class="token class-name">cdk_handler_t</span><span class="token operator">*</span> handler<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_dial</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> type<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">,</span> <span class="token class-name">cdk_handler_t</span><span class="token operator">*</span> handler<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
  * @brief Post a receive operation for a channel
  *

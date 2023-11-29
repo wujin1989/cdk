@@ -57,45 +57,50 @@ int routine(void* p) {
 		printf("received buf: %s, len: %zu\n", msg->buf, msg->len);
 
 		cdk_net_postsend(msg->conn, "recvive complete.", strlen("recvive complete.") + 1);
-
 		free(msg);
 		msg = NULL;
 	}
 	return 0;
 }
 
-static void handle_write(cdk_channel_t* conn, void* buf, size_t len) {
+static void on_write(cdk_channel_t* channel, void* buf, size_t len) {
+
 }
-static void handle_read(cdk_channel_t* conn, void* buf, size_t len) {
+
+static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
 	cdk_addrinfo_t ai;
-	cdk_net_ntop(&conn->udp.peer.ss, &ai);
+	cdk_net_ntop(&channel->udp.peer.ss, &ai);
 
 	msg_t* msg = malloc(sizeof(msg_t) + len);
 	if (!msg) {
 		return;
 	}
 	msg->len = len;
-	msg->conn = conn;
+	msg->conn = channel;
 	memcpy(msg->buf, buf, len);
 	synchronized_queue_enqueue(&mq, &msg->node);
 }
 
-static void handle_close(cdk_channel_t* conn, char* error) {
-	printf("connection closed, reason: %s\n", error);
-	cdk_net_close(conn);
+static void on_close(cdk_channel_t* channel, char* error) {
+	printf("channel closed, reason: %s\n", error);
+	cdk_net_close(channel);
 }
+
+static void on_ready(cdk_channel_t* channel) {
+	thrd_t tid;
+	thrd_create(&tid, routine, NULL);
+	thrd_detach(tid);
+}
+
 int main(void) {
 	cdk_net_startup(4, NULL);
 	synchronized_queue_create(&mq);
 
-	thrd_t tid;
-	thrd_create(&tid, routine, NULL);
-	thrd_detach(tid);
-
 	cdk_handler_t handler = {
-		.on_read = handle_read,
-		.on_write = handle_write,
-		.on_close = handle_close
+		.on_ready = on_ready,
+		.on_read = on_read,
+		.on_write = on_write,
+		.on_close = on_close
 	};
 	cdk_net_listen("udp", "0.0.0.0", "9999", &handler);
 	

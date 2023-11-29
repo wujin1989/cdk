@@ -37,6 +37,9 @@ static void handle_write(cdk_channel_t* channel, void* buf, size_t len) {
 	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
 }
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
+
+	int a = (int)cdk_utils_systemtid();
+
 	net_msg_t* rmsg = (net_msg_t*)buf;
 	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
 
@@ -63,7 +66,7 @@ int main(void) {
 		.keyfile = "certs/server.key",
 		.verifypeer = false
 	};
-    cdk_net_startup(4, &conf);
+    cdk_net_startup(4, NULL);
 
 	cdk_handler_t handler = {
 		.on_accept  = handle_accept,

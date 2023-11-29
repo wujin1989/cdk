@@ -327,11 +327,14 @@ struct cdk_handler_s {
 	void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
 	void (*on_write)  (cdk_channel_t*, void* buf, size_t len);
 	void (*on_close)  (cdk_channel_t*, char* error);
-	/** the following callback function is only used by tcp. */
+
+	/** the following is only used by udp. */
+	void (*on_ready) (cdk_channel_t*);
+
+	/** the following is only used by tcp. */
 	void (*on_accept) (cdk_channel_t*);
 	void (*on_connect)(cdk_channel_t*);
 	void (*on_connect_timeout)(cdk_channel_t*);
-	/** the following fields is only used by dial. */
 	int connect_timeout;
 };
 

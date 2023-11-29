@@ -744,9 +744,9 @@ extern void cdk_net_set_sendbuf(cdk_sock_t sock, int val);
  * @param host    The host address to listen on
  * @param port    The port number to listen on
  * @param handler Pointer to the handler function for incoming events on the channel
- * @return Pointer to the created channel for listening
+ * @return N/A
  */
-extern cdk_channel_t* cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler);
+extern void cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler);
 ```
 ```c
 /**
@@ -759,9 +759,9 @@ extern cdk_channel_t* cdk_net_listen(const char* type, const char* host, const c
  * @param host    The remote host address to connect to
  * @param port    The port number to connect to
  * @param handler Pointer to the handler function for incoming events on the channel
- * @return Pointer to the created channel for the connection
+ * @return N/A
  */
-extern cdk_channel_t* cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler);
+extern void cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler);
 ```
 ```c
 /**

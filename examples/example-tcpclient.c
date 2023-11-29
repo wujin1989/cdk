@@ -74,7 +74,7 @@ int main(void) {
 		.keyfile = NULL,
 		.verifypeer = true
 	};
-	cdk_net_startup(4, &conf);
+	cdk_net_startup(4, NULL);
 
 	cdk_handler_t handler = {
 		.on_connect = handle_connect,
