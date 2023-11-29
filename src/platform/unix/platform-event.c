@@ -23,55 +23,46 @@
 
 #if defined(__linux__)
 
-void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
+void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
 
-	switch (type)
-	{
-	case EVENT_TYPE_A:
-	case EVENT_TYPE_R:
+	int op = ud->events == 0 ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
+	events |= ud->events;
+	if ((events & EVENT_TYPE_A) || (events & EVENT_TYPE_R)) {
 		ee.events |= EPOLLIN;
-		break;
-	case EVENT_TYPE_C:
-	case EVENT_TYPE_W:
+	}
+	if ((events & EVENT_TYPE_C) || (events & EVENT_TYPE_W)) {
 		ee.events |= EPOLLOUT;
-		break;
-	default:
-		break;
 	}
 	ee.data.ptr = ud;
-	epoll_ctl(pfd, EPOLL_CTL_ADD, sfd, (struct epoll_event*)&ee);
+
+	epoll_ctl(pfd, op, sfd, (struct epoll_event*)&ee);
 }
 
-void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
+void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
 	struct epoll_event ee;
 	memset(&ee, 0, sizeof(struct epoll_event));
 
-	switch (type)
-	{
-	case EVENT_TYPE_A:
-	case EVENT_TYPE_R:
+	int mask = ud->events & (~events);
+	int op = mask == 0 ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
+
+	if ((mask & EVENT_TYPE_A) || (mask & EVENT_TYPE_R)) {
 		ee.events |= EPOLLIN;
-		break;
-	case EVENT_TYPE_C:
-	case EVENT_TYPE_W:
+	}
+	if ((mask & EVENT_TYPE_C) || (mask & EVENT_TYPE_W)) {
 		ee.events |= EPOLLOUT;
-		break;
-	default:
-		break;
 	}
 	ee.data.ptr = ud;
-	epoll_ctl(pfd, EPOLL_CTL_MOD, sfd, (struct epoll_event*)&ee);
-}
 
-void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
-	epoll_ctl(pfd, EPOLL_CTL_DEL, sfd, NULL);
+	epoll_ctl(pfd, op, sfd, &ee);
 }
 
 int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
+
 	struct epoll_event __events[MAX_PROCESS_EVENTS];
 	int n;
+
 	do {
 		n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, -1);
 	} while (n == -1 && errno == EINTR);
@@ -81,65 +72,47 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
 	}
 	for (int i = 0; i < n; i++) {
 		events[i].ptr = __events[i].data.ptr;
+		if (__events[i].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
+			events[i].events |= EVENT_TYPE_R;
+		}
+		if (__events[i].events & (EPOLLOUT | EPOLLHUP | EPOLLERR)) {
+			events[i].events |= EVENT_TYPE_W;
+		}
 	}
 	return n;
 }
 #endif
 
 #if defined(__APPLE__)
-void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
+void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
 	struct kevent ke;
 	
-	switch (type)
-	{
-	case EVENT_TYPE_A:
-	case EVENT_TYPE_R:
+	if ((events & EVENT_TYPE_A) || (events & EVENT_TYPE_R)) {
 		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, ud);
-        kevent(pfd, &ke, 1, NULL, 0, NULL);
-        EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, ud);
-        kevent(pfd, &ke, 1, NULL, 0, NULL);
-		break;
-	case EVENT_TYPE_C:
-	case EVENT_TYPE_W:
+		kevent(pfd, &ke, 1, NULL, 0, NULL);
+		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, ud);
+		kevent(pfd, &ke, 1, NULL, 0, NULL);
+	}
+	if ((events & EVENT_TYPE_C) || (events & EVENT_TYPE_W)) {
 		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, ud);
-        kevent(pfd, &ke, 1, NULL, 0, NULL);
-        EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, ud);
-        kevent(pfd, &ke, 1, NULL, 0, NULL);
-		break;
-	default:
-		break;
+		kevent(pfd, &ke, 1, NULL, 0, NULL);
+		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, ud);
+		kevent(pfd, &ke, 1, NULL, 0, NULL);
 	}
 }
 
-void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int type, void* ud) {
-	struct kevent ke;
+void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
+	(void)ud;
 
-    switch (type)
-    {
-    case EVENT_TYPE_A:
-    case EVENT_TYPE_R:
-        EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, ud);
-        kevent(pfd, &ke, 1, NULL, 0, NULL);
-        EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, ud);
-        kevent(pfd, &ke, 1, NULL, 0, NULL);
-        break;
-    case EVENT_TYPE_C:
-    case EVENT_TYPE_W:
-        EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, ud);
-        kevent(pfd, &ke, 1, NULL, 0, NULL);
-        EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, ud);
-        kevent(pfd, &ke, 1, NULL, 0, NULL);
-        break;
-    default:
-        break;
-    }}
-
-void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
 	struct kevent ke;
-	EV_SET(&ke, sfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	kevent(pfd, &ke, 1, NULL, 0, NULL);
-	EV_SET(&ke, sfd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	kevent(pfd, &ke, 1, NULL, 0, NULL);
+	if ((events & EVENT_TYPE_A) || (events & EVENT_TYPE_R)) {
+		EV_SET(&ke, sfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+		kevent(pfd, &ke, 1, NULL, 0, NULL);
+	}
+	if ((events & EVENT_TYPE_C) || (events & EVENT_TYPE_W)) {
+		EV_SET(&ke, sfd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+		kevent(pfd, &ke, 1, NULL, 0, NULL);
+	}
 }
 
 int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
@@ -148,6 +121,12 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
 
 	for (int i = 0; i < n; i++) {
 		events[i].ptr = __events[i].udata;
+		if (__events[i].filter & EVFILT_READ) {
+			events[i].events |= EVENT_TYPE_R;
+		}
+		if (__events[i].filter & EVFILT_WRITE) {
+			events[i].events |= EVENT_TYPE_W;
+		}
 	}
 	return n;
 }
