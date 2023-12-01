@@ -39,36 +39,77 @@ static cnd_t pollers_cnd;
 static thrd_t* workers;
 static int cnt;
 
-typedef struct event_ctx_s {
+typedef struct async_channel_send_ctx_s{
     cdk_channel_t* channel;
-    cdk_txlist_node_t* node;
-}event_ctx_t;
+    size_t size;
+    char data[];
+}async_channel_send_ctx_t;
 
-static void __channelsend_callback(void* param) {
-    event_ctx_t* pctx = param;
-    event_ctx_t ctx = *pctx;
-
-    free(pctx);
-    pctx = NULL;
-
-    if (!ctx.channel) {
+static void _channel_send(cdk_channel_t* channel, void* data, size_t size) {
+    if (data == NULL || size == 0) {
         return;
     }
-    if (!ctx.channel->active) {
-        free(ctx.node);
-        ctx.node = NULL;
+    cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
+    if (!node) {
         return;
     }
-    if (ctx.channel->type == SOCK_STREAM) {
-        cdk_list_insert_tail(&(ctx.channel->tcp.txlist), &(ctx.node->n));
+    memset(node, 0, sizeof(cdk_txlist_node_t) + size);
+    memcpy(node->buf, data, size);
+    node->len = size;
+    node->off = 0;
+
+    if (channel->type == SOCK_STREAM) {
+        cdk_list_insert_tail(&(channel->tcp.txlist), &(node->n));
     }
-    if (ctx.channel->type == SOCK_DGRAM) {
-        cdk_list_insert_tail(&(ctx.channel->udp.txlist), &(ctx.node->n));
+    if (channel->type == SOCK_DGRAM) {
+        cdk_list_insert_tail(&(channel->udp.txlist), &(node->n));
     }
-    if (!(ctx.channel->events & EVENT_TYPE_W)) {
-        ctx.channel->events |= EVENT_TYPE_W;
-        platform_event_add(ctx.channel->poller->pfd, ctx.channel->fd, EVENT_TYPE_W, ctx.channel);
-        
+    if (!(channel->events & EVENT_TYPE_W)) {
+        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+        channel->events |= EVENT_TYPE_W;
+    }
+}
+
+static void __async_channel_send_callback(void* param) {
+    async_channel_send_ctx_t* ctx = param;
+
+    _channel_send(ctx->channel, ctx->data, ctx->size);
+
+    free(ctx);
+    ctx = NULL;
+}
+
+static void _async_channel_send(cdk_channel_t* channel, void* data, size_t size) {
+    async_channel_send_ctx_t* ctx = malloc(sizeof(async_channel_send_ctx_t) + size);
+    if (ctx) {
+        memset(ctx, 0, sizeof(async_channel_send_ctx_t) + size);
+        ctx->channel = channel;
+        ctx->size = size;
+        memcpy(ctx->data, data, size);
+    }
+    cdk_event_t* e = malloc(sizeof(cdk_event_t));
+    if (e) {
+        e->cb = __async_channel_send_callback;
+        e->arg = ctx;
+        cdk_net_postevent(channel->poller, e, true);
+    }
+}
+
+static void _channel_destroy(cdk_channel_t* channel) {
+    cdk_channel_destroy(channel);
+}
+
+static void __async_channel_destroy_callback(void* param) {
+    cdk_channel_t* channel = param;
+    _channel_destroy(channel);
+}
+
+static void _async_channel_destroy(cdk_channel_t* channel) {
+    cdk_event_t* e = malloc(sizeof(cdk_event_t));
+    if (e) {
+        e->cb = __async_channel_destroy_callback;
+        e->arg = channel;
+        cdk_net_postevent(channel->poller, e, true);
     }
 }
 
@@ -102,25 +143,6 @@ cdk_poller_t* _poller_roundrobin(void)
     }
     mtx_unlock(&pollers_mtx);
     return currpoller;
-}
-
-void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len)
-{
-    mtx_lock(&channel->poller->evmtx);
-    if (!cdk_list_empty(&channel->poller->evlist))
-    {
-        cdk_event_t* e = cdk_list_data(cdk_list_head(&channel->poller->evlist), cdk_event_t, node);
-        cdk_list_remove(&e->node);
-        e->cb(e->arg);
-
-        free(e);
-        e = NULL;
-    }
-    mtx_unlock(&channel->poller->evmtx);
-}
-
-void _eventfd_close(cdk_channel_t* channel, char* error) {
-    cdk_channel_destroy(channel);
 }
 
 static int __workerthread(void* param) {
@@ -304,61 +326,35 @@ void cdk_net_dial(const char* type, const char* host, const char* port, cdk_hand
 }
 
 void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {
-    mtx_lock(&channel->mtx);
-    if (!channel->active) {
-        return;
+	if (thrd_equal(channel->poller->tid, thrd_current())) {
+        _channel_send(channel, data, size);
     }
-    if (data == NULL || size == 0) {
-        return;
+    else {
+        _async_channel_send(channel, data, size);
     }
-    cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
-    if (!node) {
-        return;
-    }
-	memset(node, 0, sizeof(cdk_txlist_node_t) + size);
-	memcpy(node->buf, data, size);
-	node->len = size;
-	node->off = 0;
-
-	if (!thrd_equal(channel->poller->tid, thrd_current())) {
-        event_ctx_t* pctx = malloc(sizeof(event_ctx_t));
-		if (pctx) {
-			pctx->channel = channel;
-			pctx->node = node;
-		}
-		cdk_event_t* e = malloc(sizeof(cdk_event_t));
-		if (e) {
-			e->cb = __channelsend_callback;
-			e->arg = pctx;
-			cdk_net_postevent(channel->poller, e);
-		}
-        mtx_unlock(&channel->mtx);
-        return;
-	}
-	if (channel->type == SOCK_STREAM) {
-		cdk_list_insert_tail(&(channel->tcp.txlist), &(node->n));
-	}
-	if (channel->type == SOCK_DGRAM) {
-		cdk_list_insert_tail(&(channel->udp.txlist), &(node->n));
-	}
-    if (!(channel->events & EVENT_TYPE_W)) {
-        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
-        channel->events |= EVENT_TYPE_W;
-    }
-    mtx_unlock(&channel->mtx);
 }
 
 void cdk_net_close(cdk_channel_t* channel) {
-    cdk_channel_destroy(channel);
+    if (thrd_equal(channel->poller->tid, thrd_current())) {
+        _channel_destroy(channel);
+    }
+    else {
+        _async_channel_destroy(channel);
+    }
 }
 
 void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker) {
     memcpy(&channel->tcp.unpacker, unpacker, sizeof(cdk_unpack_t));
 }
 
-void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event) {
+void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event, bool totail) {
 	mtx_lock(&poller->evmtx);
-	cdk_list_insert_tail(&poller->evlist, &event->node);
+    if (totail) {
+        cdk_list_insert_tail(&poller->evlist, &event->node);
+    }
+    else {
+        cdk_list_insert_head(&poller->evlist, &event->node);
+    }
 	int hardcode = 1;
 	platform_socket_send(poller->evfds[0], &hardcode, sizeof(int));
 	mtx_unlock(&poller->evmtx);

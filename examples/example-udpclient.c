@@ -38,7 +38,7 @@ int main(void) {
 		.on_close = on_close
 	};
 	cdk_net_dial("udp", "127.0.0.1", "9999", &handler);
-	
+
 	cdk_net_cleanup();
 	return 0;
 }

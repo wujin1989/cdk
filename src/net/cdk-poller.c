@@ -24,28 +24,37 @@
 #include "cdk/container/cdk-list.h"
 #include "net/cdk-channel.h"
 
-extern void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len);
-extern void _eventfd_close(cdk_channel_t* channel, char* error);
+static void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len)
+{
+    mtx_lock(&channel->poller->evmtx);
+    if (!cdk_list_empty(&channel->poller->evlist))
+    {
+        cdk_event_t* e = cdk_list_data(cdk_list_head(&channel->poller->evlist), cdk_event_t, node);
+        cdk_list_remove(&e->node);
+        e->cb(e->arg);
+
+        free(e);
+        e = NULL;
+    }
+    mtx_unlock(&channel->poller->evmtx);
+}
+
+static void _eventfd_close(cdk_channel_t* channel, char* error) {
+    cdk_channel_destroy(channel);
+}
+
+static cdk_handler_t eventfd_handler = {
+            .on_read = _eventfd_read,
+            .on_close = _eventfd_close
+};
+static cdk_unpack_t eventfd_unpacker = {
+    .type = UNPACK_TYPE_FIXEDLEN,
+    .fixedlen.len = sizeof(int)
+};
 
 void platform_poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS];
 
-    cdk_handler_t handler = {
-        .on_read = _eventfd_read,
-        .on_close = _eventfd_close
-    };
-    cdk_unpack_t unpacker = {
-        .type = UNPACK_TYPE_FIXEDLEN,
-        .fixedlen.len = sizeof(int)
-    };
-    cdk_channel_t* channel = cdk_channel_create(poller, poller->evfds[1], &handler);
-    if (channel) {
-        channel->tcp.tls = NULL;
-        memcpy(&channel->tcp.unpacker, &unpacker, sizeof(cdk_unpack_t));
-
-        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
-        channel->events |= EVENT_TYPE_R;
-    }
     while (poller->active)
     {
         int nevents = platform_event_wait(poller->pfd, events);
@@ -82,6 +91,14 @@ cdk_poller_t* platform_poller_create(void)
         cdk_list_init(&poller->evlist);
         mtx_init(&poller->evmtx, mtx_plain);
         platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
+
+        poller->wakeup = cdk_channel_create(poller, poller->evfds[1], &eventfd_handler);
+        if (poller->wakeup) {
+            memcpy(&poller->wakeup->tcp.unpacker, &eventfd_unpacker, sizeof(cdk_unpack_t));
+
+            platform_event_add(poller->pfd, poller->wakeup->fd, EVENT_TYPE_R, poller->wakeup);
+            poller->wakeup->events |= EVENT_TYPE_R;
+        }
     }
     return poller;
 }
@@ -103,6 +120,9 @@ void platform_poller_destroy(cdk_poller_t* poller)
         e = NULL;
     }
     mtx_destroy(&poller->evmtx);
+
+    free(poller->wakeup);
+    poller->wakeup = NULL;
 
     free(poller);
     poller = NULL;

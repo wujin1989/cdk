@@ -270,6 +270,7 @@ struct cdk_poller_s {
 	cdk_list_t evlist;
 	bool active;
 	mtx_t evmtx;
+	cdk_channel_t* wakeup;
 	cdk_list_node_t node;
 };
 
@@ -301,8 +302,6 @@ struct cdk_channel_s {
 	int                events;
 	cdk_handler_t*     handler;
 	int                type;
-	bool               active;
-	mtx_t              mtx;
 	union {
 		struct {
 			cdk_offset_buf_t rxbuf;

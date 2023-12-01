@@ -47,16 +47,8 @@ static void __connect_timeout_callback(void* param) {
         e->cb = __connect_timeout;
         e->arg = channel;
 
-        cdk_net_postevent(channel->poller, e);
+        cdk_net_postevent(channel->poller, e, false);
     }
-}
-
-static void __channel_destroy_callback(void* param) {
-    cdk_channel_t* channel = param;
-
-    mtx_destroy(&channel->mtx);
-    free(channel);
-    channel = NULL;
 }
 
 static void __channel_tcprecv(cdk_channel_t* channel) {
@@ -245,8 +237,6 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_han
         channel->fd = sock;
         channel->handler = handler;
         channel->type = platform_socket_socktype(sock);
-        channel->active = true;
-        mtx_init(&channel->mtx, mtx_plain);
 
         if (channel->type == SOCK_STREAM) {
             channel->tcp.rxbuf.len = MAX_IOBUF_SIZE;
@@ -276,14 +266,9 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_han
     return NULL;
 }
 
-void cdk_channel_destroy(cdk_channel_t* channel)
-{
-    mtx_lock(&channel->mtx);
-    channel->active = false;
-
-    platform_event_del(channel->poller->pfd, channel->fd, channel->events, channel);
+void cdk_channel_destroy(cdk_channel_t* channel) {
     channel->events = 0;
-
+    platform_event_del(channel->poller->pfd, channel->fd, channel->events, channel);
     platform_socket_close(channel->fd);
 
     if (channel->type == SOCK_STREAM) {
@@ -310,9 +295,8 @@ void cdk_channel_destroy(cdk_channel_t* channel)
             e = NULL;
         }
     }
-    mtx_unlock(&channel->mtx);
-
-    cdk_timer_add(&timer, __channel_destroy_callback, channel, 10000, false);
+    free(channel);
+    channel = NULL;
 }
 
 void cdk_channel_recv(cdk_channel_t* channel) {
