@@ -22,10 +22,20 @@ static int routine(void* p) {
 	return 0;
 }
 
+static int routine2(void* p) {
+	cdk_channel_t* channel = p;
+	cdk_net_close(channel);
+	return 0;
+}
+
 static void on_ready(cdk_channel_t* channel) {
 	thrd_t tid;
 	thrd_create(&tid, routine, channel);
 	thrd_detach(tid);
+
+	thrd_t tid2;
+	thrd_create(&tid2, routine2, channel);
+	thrd_detach(tid2);
 }
 
 int main(void) {

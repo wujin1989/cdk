@@ -302,6 +302,7 @@ struct cdk_channel_s {
 	int                events;
 	cdk_handler_t*     handler;
 	int                type;
+	atomic_bool        active;
 	union {
 		struct {
 			cdk_offset_buf_t rxbuf;

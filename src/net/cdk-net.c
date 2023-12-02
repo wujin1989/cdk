@@ -46,6 +46,9 @@ typedef struct async_channel_send_ctx_s{
 }async_channel_send_ctx_t;
 
 static void _channel_send(cdk_channel_t* channel, void* data, size_t size) {
+    if (!atomic_load(&channel->active)) {
+        return;
+    }
     if (data == NULL || size == 0) {
         return;
     }
