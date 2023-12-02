@@ -45,29 +45,55 @@ typedef struct async_channel_send_ctx_s{
     char data[];
 }async_channel_send_ctx_t;
 
+static void _insert_txlist(cdk_channel_t* channel, void* data, size_t size) {
+    cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
+    if (node) {
+        memset(node, 0, sizeof(cdk_txlist_node_t) + size);
+        memcpy(node->buf, data, size);
+        node->len = size;
+        node->off = 0;
+
+        if (channel->type == SOCK_STREAM) {
+            cdk_list_insert_tail(&(channel->tcp.txlist), &(node->n));
+        }
+        if (channel->type == SOCK_DGRAM) {
+            cdk_list_insert_tail(&(channel->udp.txlist), &(node->n));
+        }
+    }
+}
+
 static void _channel_send(cdk_channel_t* channel, void* data, size_t size) {
     if (data == NULL || size == 0) {
         return;
     }
-    cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
-    if (!node) {
+    if (cdk_list_empty(&(channel->tcp.txlist))) {
+        size_t offset = 0;
+        while (offset < size) {
+            ssize_t n = platform_socket_send(channel->fd, (char*)(data) + offset, (int)(size - offset));
+            if (n == -1) {
+                if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN)
+                    || (platform_socket_lasterror() == PLATFORM_SO_ERROR_WSAEWOULDBLOCK)) {
+
+                    if (!(channel->events & EVENT_TYPE_W)) {
+                        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+                        channel->events |= EVENT_TYPE_W;
+                    }
+                    break;
+                }
+                channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
+                return;
+            }
+            offset += n;
+        }
+        if (offset < size) {
+            _insert_txlist(channel, (char*)(data) + offset, (size - offset));
+        }
+        if (offset > 0) {
+            channel->handler->on_write(channel, data, offset);
+        }
         return;
     }
-    memset(node, 0, sizeof(cdk_txlist_node_t) + size);
-    memcpy(node->buf, data, size);
-    node->len = size;
-    node->off = 0;
-
-    if (channel->type == SOCK_STREAM) {
-        cdk_list_insert_tail(&(channel->tcp.txlist), &(node->n));
-    }
-    if (channel->type == SOCK_DGRAM) {
-        cdk_list_insert_tail(&(channel->udp.txlist), &(node->n));
-    }
-    if (!(channel->events & EVENT_TYPE_W)) {
-        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
-        channel->events |= EVENT_TYPE_W;
-    }
+    _insert_txlist(channel, data, size);
 }
 
 static void __async_channel_send_callback(void* param) {
@@ -323,7 +349,7 @@ void cdk_net_dial(const char* type, const char* host, const char* port, cdk_hand
 }
 
 bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
-    if (!atomic_load(&channel->active)) {
+    if (atomic_load(&channel->closing)) {
         return false;
     }
 	if (thrd_equal(channel->poller->tid, thrd_current())) {

@@ -237,7 +237,7 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
         channel->fd = sock;
         channel->handler = handler;
         channel->type = platform_socket_socktype(sock);
-        atomic_init(&channel->active, true);
+        atomic_init(&channel->closing, false);
 
         if (channel->type == SOCK_STREAM) {
             channel->tcp.rxbuf.len = MAX_IOBUF_SIZE;
@@ -268,10 +268,7 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
 }
 
 void channel_destroy(cdk_channel_t* channel) {
-    if (!atomic_load(&channel->active)) {
-        return;
-    }
-    atomic_store(&channel->active, false);
+    atomic_store(&channel->closing, true);
     
     platform_event_del(channel->poller->pfd, channel->fd, channel->events, channel);
     channel->events = 0;
