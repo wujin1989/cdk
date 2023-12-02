@@ -777,17 +777,16 @@ extern void cdk_net_postrecv(cdk_channel_t* channel);
 ```
 ```c
 /**
- * @brief Post a send operation for a channel
+ * @brief Send buffer by channel
  *
- * This function posts a send operation for the specified channel. It indicates that the channel
- * has data available to be sent.
+ * This function send buffer by the specified channel.
  *
- * @param channel Pointer to the channel to post the send operation on
+ * @param channel Pointer to the channel
  * @param data    Pointer to the data to be sent
  * @param size    Size of the data to be sent
  * @return N/A
  */
-extern void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size);
+extern void cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
 ```
 ```c
 /**

@@ -23,11 +23,6 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-#define MAX_IOBUF_SIZE  16384
-
-extern cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler_t* handler);
-extern void           cdk_channel_destroy(cdk_channel_t* channel);
-extern void           cdk_channel_recv(cdk_channel_t* channel);
-extern void           cdk_channel_send(cdk_channel_t* channel);
-extern void           cdk_channel_accept(cdk_channel_t* channel);
-extern void           cdk_channel_connect(cdk_channel_t* channel);
+extern cdk_poller_t* poller_create(void);
+extern void poller_destroy(cdk_poller_t* poller);
+extern void poller_poll(cdk_poller_t* poller);

@@ -46,7 +46,7 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 		smsg->h.p_t = htonl(2);
 		memcpy(smsg->p, "world", strlen("world") + 1);
 
-		cdk_net_postsend(channel, smsg, sizeof(net_msg_t) + strlen("world") + 1);
+		cdk_net_send(channel, smsg, sizeof(net_msg_t) + strlen("world") + 1);
 	}
 }
 

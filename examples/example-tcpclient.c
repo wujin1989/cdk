@@ -42,7 +42,7 @@ static void handle_connect(cdk_channel_t* channel) {
 	smsg->h.p_t = htonl(1);
 	memcpy(smsg->p, "hello", strlen("hello") + 1);
 
-	cdk_net_postsend(channel, smsg, sizeof(net_msg_t) + strlen("hello") + 1);
+	cdk_net_send(channel, smsg, sizeof(net_msg_t) + strlen("hello") + 1);
 }
 
 static void handle_connect_timeout(cdk_channel_t* channel) {

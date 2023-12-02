@@ -23,9 +23,9 @@
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
 #include "cdk/net/cdk-net.h"
-#include "cdk-channel.h"
-#include "cdk-poller.h"
-#include "cdk-tls.h"
+#include "channel.h"
+#include "poller.h"
+#include "tls.h"
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
@@ -46,9 +46,6 @@ typedef struct async_channel_send_ctx_s{
 }async_channel_send_ctx_t;
 
 static void _channel_send(cdk_channel_t* channel, void* data, size_t size) {
-    if (!atomic_load(&channel->active)) {
-        return;
-    }
     if (data == NULL || size == 0) {
         return;
     }
@@ -99,7 +96,7 @@ static void _async_channel_send(cdk_channel_t* channel, void* data, size_t size)
 }
 
 static void _channel_destroy(cdk_channel_t* channel) {
-    cdk_channel_destroy(channel);
+    channel_destroy(channel);
 }
 
 static void __async_channel_destroy_callback(void* param) {
@@ -149,7 +146,7 @@ cdk_poller_t* _poller_roundrobin(void)
 }
 
 static int __workerthread(void* param) {
-    cdk_poller_t* poller = platform_poller_create();
+    cdk_poller_t* poller = poller_create();
     if (poller == NULL) {
         return -1;
     }
@@ -158,13 +155,13 @@ static int __workerthread(void* param) {
     cnd_signal(&pollers_cnd);
     mtx_unlock(&pollers_mtx);
 
-    platform_poller_poll(poller);
+    poller_poll(poller);
 
     mtx_lock(&pollers_mtx);
     cdk_list_remove(&poller->node);
     mtx_unlock(&pollers_mtx);
 
-    platform_poller_destroy(poller);
+    poller_destroy(poller);
     return 0;
 }
 
@@ -253,7 +250,7 @@ void cdk_net_listen(const char* type, const char* host, const char* port, cdk_ha
     if (!strncmp(type, "tcp", strlen("tcp")))
     {
         cdk_sock_t sock = platform_socket_listen(host, port, SOCK_STREAM);
-        cdk_channel_t* channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
 
         platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_A, channel);
         channel->events |= EVENT_TYPE_A;
@@ -261,7 +258,7 @@ void cdk_net_listen(const char* type, const char* host, const char* port, cdk_ha
     if (!strncmp(type, "udp", strlen("udp")))
     {
         cdk_sock_t sock = platform_socket_listen(host, port, SOCK_DGRAM);
-        cdk_channel_t* channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
         if (channel) {
             channel->handler->on_ready(channel);
 
@@ -282,16 +279,13 @@ void cdk_net_dial(const char* type, const char* host, const char* port, cdk_hand
     if (!strncmp(type, "tcp", strlen("tcp"))) {
         bool connected;
         cdk_sock_t sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
-        cdk_channel_t* channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
         if (channel) {
             if (connected) {
                 if (channel->tcp.tls) {
-                    cdk_tls_cli_handshake(channel);
+                    tls_cli_handshake(channel);
                 }
                 else {
-                    platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
-                    channel->events &= ~EVENT_TYPE_C;
-                    
                     channel->handler->on_connect(channel);
 
                     platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
@@ -305,7 +299,7 @@ void cdk_net_dial(const char* type, const char* host, const char* port, cdk_hand
     }
     if (!strncmp(type, "udp", strlen("udp"))) {
         cdk_sock_t sock = platform_socket_dial(host, port, SOCK_DGRAM, NULL);
-        cdk_channel_t* channel = cdk_channel_create(_poller_roundrobin(), sock, handler);
+        cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
         if (channel) {
             memcpy(ai.a, host, strlen(host));
             ai.p = (uint16_t)strtoul(port, NULL, 10);
@@ -328,13 +322,17 @@ void cdk_net_dial(const char* type, const char* host, const char* port, cdk_hand
     }
 }
 
-void cdk_net_postsend(cdk_channel_t* channel, void* data, size_t size) {
+bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
+    if (!atomic_load(&channel->active)) {
+        return false;
+    }
 	if (thrd_equal(channel->poller->tid, thrd_current())) {
         _channel_send(channel, data, size);
     }
     else {
         _async_channel_send(channel, data, size);
     }
+    return true;
 }
 
 void cdk_net_close(cdk_channel_t* channel) {
@@ -383,7 +381,7 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
         thrd_create(workers + i, __workerthread, NULL);
     }
     if (tlsconf) {
-        tlsctx = cdk_tls_ctx_create(tlsconf);
+        tlsctx = tls_ctx_create(tlsconf);
     }
 }
 
@@ -398,5 +396,5 @@ void cdk_net_cleanup(void) {
     cdk_timer_destroy(&timer);
     mtx_destroy(&pollers_mtx);
     cnd_destroy(&pollers_cnd);
-    cdk_tls_ctx_destroy(tlsctx);
+    tls_ctx_destroy(tlsctx);
 }

@@ -23,12 +23,11 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_tls_ctx_t* cdk_tls_ctx_create(cdk_tlsconf_t* tlsconf);
-extern void           cdk_tls_ctx_destroy(cdk_tls_ctx_t* ctx);
-extern cdk_tls_t*     cdk_tls_create(cdk_tls_ctx_t* ctx);
-extern void           cdk_tls_close(cdk_tls_t* secure);
-extern void           cdk_tls_destroy(cdk_tls_t* secure);
-extern bool           cdk_tls_cli_handshake(cdk_channel_t* channel);
-extern bool           cdk_tls_srv_handshake(cdk_channel_t* channel);
-extern void           cdk_tls_read(cdk_channel_t* channel);
-extern void           cdk_tls_write(cdk_channel_t* channel);
+#define MAX_IOBUF_SIZE  16384
+
+extern cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler_t* handler);
+extern void channel_destroy(cdk_channel_t* channel);
+extern void channel_recv(cdk_channel_t* channel);
+extern void channel_send(cdk_channel_t* channel);
+extern void channel_accept(cdk_channel_t* channel);
+extern void channel_connect(cdk_channel_t* channel);

@@ -78,10 +78,10 @@ set(SRCS
 	src/sync/cdk-rwlock.c
 	src/sync/cdk-spinlock.c
 	src/net/cdk-net.c
-	src/net/cdk-poller.c
-	src/net/cdk-channel.c
-	src/net/cdk-unpack.c
-	src/net/cdk-tls.c
+	src/net/poller.c
+	src/net/channel.c
+	src/net/unpack.c
+	src/net/tls.c
 	src/cdk-threadpool.c
 	src/cdk-loader.c
 	src/cdk-logger.c

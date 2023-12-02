@@ -19,10 +19,10 @@
  *  IN THE SOFTWARE.
  */
 
-#include "cdk-tls.h"
+#include "tls.h"
 #include "cdk/net/cdk-net.h"
-#include "cdk-channel.h"
-#include "cdk-unpack.h"
+#include "channel.h"
+#include "unpack.h"
 #include "cdk/container/cdk-list.h"
 #include "platform/platform-event.h"
 #include <openssl/ssl.h>
@@ -34,7 +34,7 @@ static char* __tls_error2string(int err) {
 	return buffer;
 }
 
-cdk_tls_ctx_t* cdk_tls_ctx_create(cdk_tlsconf_t* tlsconf) {
+cdk_tls_ctx_t* tls_ctx_create(cdk_tlsconf_t* tlsconf) {
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
 
 	SSL_CTX* ctx = SSL_CTX_new(TLS_method());
@@ -70,13 +70,13 @@ cdk_tls_ctx_t* cdk_tls_ctx_create(cdk_tlsconf_t* tlsconf) {
 	return ctx;
 }
 
-void cdk_tls_ctx_destroy(cdk_tls_ctx_t* ctx) {
+void tls_ctx_destroy(cdk_tls_ctx_t* ctx) {
 	if (ctx) {
 		SSL_CTX_free((SSL_CTX*)ctx);
 	}
 }
 
-cdk_tls_t* cdk_tls_create(cdk_tls_ctx_t* ctx) {
+cdk_tls_t* tls_create(cdk_tls_ctx_t* ctx) {
 	if (!ctx) {
 		return NULL;
 	}
@@ -87,13 +87,13 @@ cdk_tls_t* cdk_tls_create(cdk_tls_ctx_t* ctx) {
 	return ssl;
 }
 
-void cdk_tls_close(cdk_tls_t* tls) {
+void tls_close(cdk_tls_t* tls) {
 	if (tls) {
 		SSL_shutdown((SSL*)tls);
 	}
 }
 
-void cdk_tls_destroy(cdk_tls_t* tls) {
+void tls_destroy(cdk_tls_t* tls) {
 	if (tls) {
 		SSL_free((SSL*)tls);
 	}
@@ -153,17 +153,17 @@ static bool __tls_accept(void* param) {
 	return false;
 }
 
-bool cdk_tls_cli_handshake(cdk_channel_t* channel) {
+bool tls_cli_handshake(cdk_channel_t* channel) {
 	SSL_set_fd((SSL*)channel->tcp.tls, (int)channel->fd);
 	return __tls_connect(channel);
 }
 
-bool cdk_tls_srv_handshake(cdk_channel_t* channel) {
+bool tls_srv_handshake(cdk_channel_t* channel) {
 	SSL_set_fd((SSL*)channel->tcp.tls, (int)channel->fd);
 	return __tls_accept(channel);
 }
 
-void cdk_tls_read(cdk_channel_t* channel) {
+void tls_read(cdk_channel_t* channel) {
 	int n = SSL_read((SSL*)channel->tcp.tls, (char*)(channel->tcp.rxbuf.buf) + channel->tcp.rxbuf.off, MAX_IOBUF_SIZE / 2);
 	if (n <= 0) {
 		int err = SSL_get_error((SSL*)channel->tcp.tls, n);
@@ -180,10 +180,10 @@ void cdk_tls_read(cdk_channel_t* channel) {
 		return;
 	}
 	channel->tcp.rxbuf.off += n;
-	cdk_unpack(channel);
+	unpack(channel);
 }
 
-void cdk_tls_write(cdk_channel_t* channel) {
+void tls_write(cdk_channel_t* channel) {
 	if (cdk_list_empty(&(channel->tcp.txlist))) {
 		platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
 		channel->events &= ~EVENT_TYPE_W;

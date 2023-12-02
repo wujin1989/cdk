@@ -17,7 +17,9 @@ static void on_close(cdk_channel_t* channel, char* error) {
 static int routine(void* p) {
 	cdk_channel_t* channel = p;
 	while (true) {
-		cdk_net_postsend(channel, "helloworld", strlen("helloworld") + 1);
+		if (!cdk_net_send(channel, "helloworld", strlen("helloworld") + 1)) {
+			break;
+		}
 	}
 	return 0;
 }

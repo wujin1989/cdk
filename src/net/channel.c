@@ -22,9 +22,9 @@
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
-#include "cdk-channel.h"
-#include "cdk-unpack.h"
-#include "cdk-tls.h"
+#include "channel.h"
+#include "unpack.h"
+#include "tls.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-time.h"
 #include "cdk/net/cdk-net.h"
@@ -56,7 +56,7 @@ static void __channel_tcprecv(cdk_channel_t* channel) {
         switch (channel->tcp.state)
         {
         case TLS_STATE_ACCEPTING:
-            if (cdk_tls_srv_handshake(channel)) {
+            if (tls_srv_handshake(channel)) {
                 channel->handler->on_accept(channel);
 
                 platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
@@ -64,7 +64,7 @@ static void __channel_tcprecv(cdk_channel_t* channel) {
             }
             break;
         case TLS_STATE_CONNECTING:
-            if (cdk_tls_cli_handshake(channel)) {
+            if (tls_cli_handshake(channel)) {
                 platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
                 channel->events &= ~EVENT_TYPE_C;
 
@@ -75,7 +75,7 @@ static void __channel_tcprecv(cdk_channel_t* channel) {
             }
             break;
         default:
-            cdk_tls_read(channel);
+            tls_read(channel);
             break;
         }
     }
@@ -99,7 +99,7 @@ static void __channel_tcprecv(cdk_channel_t* channel) {
             return;
         }
         channel->tcp.rxbuf.off += n;
-        cdk_unpack(channel);
+        unpack(channel);
     }
 }
 
@@ -127,7 +127,7 @@ static void __channel_tcpsend(cdk_channel_t* channel) {
         switch (channel->tcp.state)
         {
         case TLS_STATE_ACCEPTING:
-            if (cdk_tls_srv_handshake(channel)) {
+            if (tls_srv_handshake(channel)) {
                 channel->handler->on_accept(channel);
 
                 platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
@@ -135,7 +135,7 @@ static void __channel_tcpsend(cdk_channel_t* channel) {
             }
             break;
         case TLS_STATE_CONNECTING:
-            if (cdk_tls_cli_handshake(channel)) {
+            if (tls_cli_handshake(channel)) {
                 platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
                 channel->events &= ~EVENT_TYPE_C;
 
@@ -146,7 +146,7 @@ static void __channel_tcpsend(cdk_channel_t* channel) {
             }
             break;
         default:
-            cdk_tls_write(channel);
+            tls_write(channel);
             break;
         }
     }
@@ -212,10 +212,10 @@ static void __channel_tcpaccept(cdk_channel_t* channel) {
         channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
-    cdk_channel_t* newchannel = cdk_channel_create(_poller_roundrobin(), cli, channel->handler);
+    cdk_channel_t* newchannel = channel_create(_poller_roundrobin(), cli, channel->handler);
     if (newchannel) {
         if (newchannel->tcp.tls) {
-            if (cdk_tls_srv_handshake(newchannel)) {
+            if (tls_srv_handshake(newchannel)) {
                 channel->handler->on_accept(newchannel);
             }
         }
@@ -227,7 +227,7 @@ static void __channel_tcpaccept(cdk_channel_t* channel) {
     }
 }
 
-cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler_t* handler)
+cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler_t* handler)
 {
     cdk_channel_t* channel = malloc(sizeof(cdk_channel_t));
 
@@ -247,7 +247,7 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_han
                 memset(channel->tcp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
             }
             cdk_list_init(&(channel->tcp.txlist));
-            channel->tcp.tls = cdk_tls_create(tlsctx);
+            channel->tcp.tls = tls_create(tlsctx);
             channel->tcp.state = TLS_STATE_NONE;
             if (handler->connect_timeout) {
                 channel->tcp.ctimer = cdk_timer_add(&timer, __connect_timeout_callback, channel, handler->connect_timeout, false);
@@ -267,7 +267,10 @@ cdk_channel_t* cdk_channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_han
     return NULL;
 }
 
-void cdk_channel_destroy(cdk_channel_t* channel) {
+void channel_destroy(cdk_channel_t* channel) {
+    if (!atomic_load(&channel->active)) {
+        return;
+    }
     atomic_store(&channel->active, false);
     
     platform_event_del(channel->poller->pfd, channel->fd, channel->events, channel);
@@ -285,8 +288,8 @@ void cdk_channel_destroy(cdk_channel_t* channel) {
             free(e);
             e = NULL;
         }
-        cdk_tls_close(channel->tcp.tls);
-        cdk_tls_destroy(channel->tcp.tls);
+        tls_close(channel->tcp.tls);
+        tls_destroy(channel->tcp.tls);
     }
     if (channel->type == SOCK_DGRAM) {
         free(channel->udp.rxbuf.buf);
@@ -303,7 +306,7 @@ void cdk_channel_destroy(cdk_channel_t* channel) {
     channel = NULL;
 }
 
-void cdk_channel_recv(cdk_channel_t* channel) {
+void channel_recv(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
         __channel_tcprecv(channel);
     }
@@ -312,7 +315,7 @@ void cdk_channel_recv(cdk_channel_t* channel) {
     }
 }
 
-void cdk_channel_send(cdk_channel_t* channel) {
+void channel_send(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
         __channel_tcpsend(channel);
     }
@@ -321,11 +324,11 @@ void cdk_channel_send(cdk_channel_t* channel) {
     }
 }
 
-void cdk_channel_accept(cdk_channel_t* channel) {
+void channel_accept(cdk_channel_t* channel) {
     __channel_tcpaccept(channel);
 }
 
-void cdk_channel_connect(cdk_channel_t* channel) {
+void channel_connect(cdk_channel_t* channel) {
     int err;
     socklen_t len;
     len = sizeof(int);
@@ -338,7 +341,7 @@ void cdk_channel_connect(cdk_channel_t* channel) {
     }
     else {
         if (channel->tcp.tls) {
-            if (cdk_tls_cli_handshake(channel)) {
+            if (tls_cli_handshake(channel)) {
                 platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
                 channel->events &= ~EVENT_TYPE_C;
 

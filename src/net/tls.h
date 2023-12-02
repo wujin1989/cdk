@@ -23,6 +23,12 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_poller_t* platform_poller_create(void);
-extern void          platform_poller_destroy(cdk_poller_t* poller);
-extern void          platform_poller_poll(cdk_poller_t* poller);
+extern cdk_tls_ctx_t* tls_ctx_create(cdk_tlsconf_t* tlsconf);
+extern void tls_ctx_destroy(cdk_tls_ctx_t* ctx);
+extern cdk_tls_t* tls_create(cdk_tls_ctx_t* ctx);
+extern void tls_close(cdk_tls_t* secure);
+extern void tls_destroy(cdk_tls_t* secure);
+extern bool tls_cli_handshake(cdk_channel_t* channel);
+extern bool tls_srv_handshake(cdk_channel_t* channel);
+extern void tls_read(cdk_channel_t* channel);
+extern void tls_write(cdk_channel_t* channel);

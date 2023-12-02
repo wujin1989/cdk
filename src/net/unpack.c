@@ -177,7 +177,7 @@ static void __unpack_userdefined(cdk_channel_t* channel) {
 	channel->tcp.unpacker.userdefined.unpack(channel);
 }
 
-void cdk_unpack(cdk_channel_t* channel) {
+void unpack(cdk_channel_t* channel) {
 
 	switch (channel->tcp.unpacker.type)
 	{

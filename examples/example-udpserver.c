@@ -56,7 +56,7 @@ int routine(void* p) {
 		msg_t* msg = synchronized_queue_data(synchronized_queue_dequeue(&mq), msg_t, node);
 		printf("received buf: %s, len: %zu\n", msg->buf, msg->len);
 
-		cdk_net_postsend(msg->conn, "recvive complete.", strlen("recvive complete.") + 1);
+		cdk_net_send(msg->conn, "recvive complete.", strlen("recvive complete.") + 1);
 		free(msg);
 		msg = NULL;
 	}
