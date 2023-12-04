@@ -23,7 +23,7 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-#define MAX_IOBUF_SIZE  16384
+#define DEFAULT_IOBUF_SIZE  16384
 
 extern cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler_t* handler);
 extern void channel_destroy(cdk_channel_t* channel);
@@ -31,3 +31,19 @@ extern void channel_recv(cdk_channel_t* channel);
 extern void channel_send(cdk_channel_t* channel);
 extern void channel_accept(cdk_channel_t* channel);
 extern void channel_connect(cdk_channel_t* channel);
+extern void channel_enable_accept(cdk_channel_t* channel);
+extern void channel_enable_connect(cdk_channel_t* channel);
+extern void channel_enable_write(cdk_channel_t* channel);
+extern void channel_enable_read(cdk_channel_t* channel);
+extern void channel_disable_accept(cdk_channel_t* channel);
+extern void channel_disable_connect(cdk_channel_t* channel);
+extern void channel_disable_write(cdk_channel_t* channel);
+extern void channel_disable_read(cdk_channel_t* channel);
+extern void channel_disable_all(cdk_channel_t* channel);
+extern bool channel_is_accepting(cdk_channel_t* channel);
+extern bool channel_is_connecting(cdk_channel_t* channel);
+extern bool channel_is_writing(cdk_channel_t* channel);
+extern bool channel_is_reading(cdk_channel_t* channel);
+
+
+

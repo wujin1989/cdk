@@ -45,55 +45,45 @@ typedef struct async_channel_send_ctx_s{
     char data[];
 }async_channel_send_ctx_t;
 
-static void _insert_txlist(cdk_channel_t* channel, void* data, size_t size) {
-    cdk_txlist_node_t* node = malloc(sizeof(cdk_txlist_node_t) + size);
-    if (node) {
-        memset(node, 0, sizeof(cdk_txlist_node_t) + size);
-        memcpy(node->buf, data, size);
-        node->len = size;
-        node->off = 0;
-
-        if (channel->type == SOCK_STREAM) {
-            cdk_list_insert_tail(&(channel->tcp.txlist), &(node->n));
-        }
-        if (channel->type == SOCK_DGRAM) {
-            cdk_list_insert_tail(&(channel->udp.txlist), &(node->n));
-        }
-    }
+static void __write_complete_callback(void* param) {
+    cdk_channel_t* channel = param;
+    channel->handler->on_write(channel);
 }
 
 static void _channel_send(cdk_channel_t* channel, void* data, size_t size) {
-    if (data == NULL || size == 0) {
-        return;
-    }
-    if (cdk_list_empty(&(channel->tcp.txlist))) {
-        size_t offset = 0;
-        while (offset < size) {
-            ssize_t n = platform_socket_send(channel->fd, (char*)(data) + offset, (int)(size - offset));
-            if (n == -1) {
-                if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN)
-                    || (platform_socket_lasterror() == PLATFORM_SO_ERROR_WSAEWOULDBLOCK)) {
+    size_t remaining = size;
+    if (!channel_is_writing(channel) && channel->tcp.txbuf.off == 0) {
+        ssize_t n = platform_socket_send(channel->fd, data, size);
+        if (n >= 0) {
+            remaining -= n;
+            if (remaining == 0) {
+                /**
+                 * The use of cdk_net_postevent instead of directly invoking on_write is intended to prevent stack overflow.
+                 */
+                cdk_net_postevent(channel->poller, __write_complete_callback, channel, true);
+            }
+        }
+        if (n == -1) {
+            if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN)
+                || (platform_socket_lasterror() == PLATFORM_SO_ERROR_WSAEWOULDBLOCK)) {
 
-                    if (!(channel->events & EVENT_TYPE_W)) {
-                        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
-                        channel->events |= EVENT_TYPE_W;
-                    }
-                    break;
+                if (!channel_is_writing(channel)) {
+                    channel_enable_write(channel);
                 }
-                channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
                 return;
             }
-            offset += n;
+            channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
+            return;
         }
-        if (offset < size) {
-            _insert_txlist(channel, (char*)(data) + offset, (size - offset));
-        }
-        if (offset > 0) {
-            channel->handler->on_write(channel, data, offset);
-        }
-        return;
     }
-    _insert_txlist(channel, data, size);
+    if (remaining > 0) {
+        size_t oldLen = channel->tcp.txbuf.off;
+        
+        outputBuffer_.append(static_cast<const char*>(data) + nwrote, remaining);
+        if (!channel_is_writing(channel)) {
+            channel_enable_write(channel);
+        }
+    }
 }
 
 static void __async_channel_send_callback(void* param) {
@@ -112,12 +102,8 @@ static void _async_channel_send(cdk_channel_t* channel, void* data, size_t size)
         ctx->channel = channel;
         ctx->size = size;
         memcpy(ctx->data, data, size);
-    }
-    cdk_event_t* e = malloc(sizeof(cdk_event_t));
-    if (e) {
-        e->cb = __async_channel_send_callback;
-        e->arg = ctx;
-        cdk_net_postevent(channel->poller, e, true);
+
+        cdk_net_postevent(channel->poller, __async_channel_send_callback, ctx, true);
     }
 }
 
@@ -374,7 +360,12 @@ void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker) {
     memcpy(&channel->tcp.unpacker, unpacker, sizeof(cdk_unpack_t));
 }
 
-void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event, bool totail) {
+void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail) {
+    cdk_event_t* event = malloc(sizeof(cdk_event_t));
+    if (event) {
+        event->cb = cb;
+        event->arg = arg;
+    }
 	mtx_lock(&poller->evmtx);
     if (totail) {
         cdk_list_insert_tail(&poller->evlist, &event->node);

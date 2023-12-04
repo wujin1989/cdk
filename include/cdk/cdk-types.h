@@ -103,7 +103,6 @@ typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
 typedef enum   cdk_tls_state_s           cdk_tls_state_t;
 typedef struct cdk_unpack_s              cdk_unpack_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
-typedef struct cdk_txlist_node_s         cdk_txlist_node_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_event_s               cdk_event_t;
@@ -275,7 +274,7 @@ struct cdk_poller_s {
 };
 
 struct cdk_event_s {
-	void (*cb)(void* arg);
+	void (*cb)(void*);
 	void* arg;
 	cdk_list_node_t node;
 };
@@ -306,7 +305,7 @@ struct cdk_channel_s {
 	union {
 		struct {
 			cdk_offset_buf_t rxbuf;
-			cdk_list_t       txlist;
+			cdk_offset_buf_t txbuf;
 			cdk_unpack_t     unpacker;
 			cdk_timer_job_t* ctimer;
 			cdk_tls_t*       tls;
@@ -314,7 +313,7 @@ struct cdk_channel_s {
 		}tcp;
 		struct {
 			cdk_offset_buf_t rxbuf;
-			cdk_list_t       txlist;
+			cdk_offset_buf_t txbuf;
 			struct {
 				struct sockaddr_storage ss;
 				socklen_t sslen;
@@ -325,7 +324,7 @@ struct cdk_channel_s {
 
 struct cdk_handler_s {
 	void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
-	void (*on_write)  (cdk_channel_t*, void* buf, size_t len);
+	void (*on_write)  (cdk_channel_t*);
 	void (*on_close)  (cdk_channel_t*, char* error);
 
 	/** the following is only used by udp. */

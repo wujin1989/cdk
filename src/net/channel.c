@@ -34,21 +34,41 @@ extern cdk_tls_ctx_t* tlsctx;
 extern cdk_timer_t timer;
 extern cdk_poller_t* _poller_roundrobin(void);
 
-static void __connect_timeout(void* param) {
-    cdk_channel_t* channel = param;
-    channel->handler->on_connect_timeout(channel);
+static void _allocate_io_buffers(cdk_offset_buf_t* in, cdk_offset_buf_t* out) {
+    in->len = DEFAULT_IOBUF_SIZE;
+    in->off = 0;
+    in->buf = malloc(DEFAULT_IOBUF_SIZE);
+    if (in->buf) {
+        memset(in->buf, 0, DEFAULT_IOBUF_SIZE);
+    }
+    out->len = DEFAULT_IOBUF_SIZE;
+    out->off = 0;
+    out->buf = malloc(DEFAULT_IOBUF_SIZE);
+    if (out->buf) {
+        memset(out->buf, 0, DEFAULT_IOBUF_SIZE);
+    }
+}
+
+static void _deallocate_io_buffers(cdk_offset_buf_t* in, cdk_offset_buf_t* out) {
+    free(in->buf);
+    in->buf = NULL;
+    in->len = 0;
+    in->off = 0;
+
+    free(out->buf);
+    out->buf = NULL;
+    out->len = 0;
+    out->off = 0;
 }
 
 static void __connect_timeout_callback(void* param) {
     cdk_channel_t* channel = param;
+    channel->handler->on_connect_timeout(channel);
+}
 
-    cdk_event_t* e = malloc(sizeof(cdk_event_t));
-    if (e) {
-        e->cb = __connect_timeout;
-        e->arg = channel;
-
-        cdk_net_postevent(channel->poller, e, false);
-    }
+static void _connect_timeout_callback(void* param) {
+    cdk_channel_t* channel = param;
+    cdk_net_postevent(channel->poller, __connect_timeout_callback, channel, true);
 }
 
 static void __channel_tcprecv(cdk_channel_t* channel) {
@@ -240,27 +260,15 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
         atomic_init(&channel->closing, false);
 
         if (channel->type == SOCK_STREAM) {
-            channel->tcp.rxbuf.len = MAX_IOBUF_SIZE;
-            channel->tcp.rxbuf.off = 0;
-            channel->tcp.rxbuf.buf = malloc(MAX_IOBUF_SIZE);
-            if (channel->tcp.rxbuf.buf) {
-                memset(channel->tcp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
-            }
-            cdk_list_init(&(channel->tcp.txlist));
+            _allocate_io_buffers(&channel->tcp.rxbuf, &channel->tcp.txbuf);
             channel->tcp.tls = tls_create(tlsctx);
             channel->tcp.state = TLS_STATE_NONE;
             if (handler->connect_timeout) {
-                channel->tcp.ctimer = cdk_timer_add(&timer, __connect_timeout_callback, channel, handler->connect_timeout, false);
+                channel->tcp.ctimer = cdk_timer_add(&timer, _connect_timeout_callback, channel, handler->connect_timeout, false);
             }
         }
         if (channel->type == SOCK_DGRAM) {
-            channel->udp.rxbuf.len = MAX_IOBUF_SIZE;
-            channel->udp.rxbuf.off = 0;
-            channel->udp.rxbuf.buf = malloc(MAX_IOBUF_SIZE);
-            if (channel->udp.rxbuf.buf) {
-                memset(channel->udp.rxbuf.buf, 0, MAX_IOBUF_SIZE);
-            }
-            cdk_list_init(&(channel->udp.txlist));
+            _allocate_io_buffers(&channel->udp.rxbuf, &channel->udp.txbuf);
         }
         return channel;
     }
@@ -276,28 +284,12 @@ void channel_destroy(cdk_channel_t* channel) {
     platform_socket_close(channel->fd);
 
     if (channel->type == SOCK_STREAM) {
-        free(channel->tcp.rxbuf.buf);
-        channel->tcp.rxbuf.buf = NULL;
-
-        while (!cdk_list_empty(&(channel->tcp.txlist))) {
-            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->tcp.txlist)), cdk_txlist_node_t, n);
-            cdk_list_remove(&(e->n));
-            free(e);
-            e = NULL;
-        }
+        _deallocate_io_buffers(&channel->tcp.rxbuf, &channel->tcp.txbuf);
         tls_close(channel->tcp.tls);
         tls_destroy(channel->tcp.tls);
     }
     if (channel->type == SOCK_DGRAM) {
-        free(channel->udp.rxbuf.buf);
-        channel->udp.rxbuf.buf = NULL;
-
-        while (!cdk_list_empty(&(channel->udp.txlist))) {
-            cdk_txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->udp.txlist)), cdk_txlist_node_t, n);
-            cdk_list_remove(&(e->n));
-            free(e);
-            e = NULL;
-        }
+        _deallocate_io_buffers(&channel->udp.rxbuf, &channel->udp.txbuf);
     }
     free(channel);
     channel = NULL;
@@ -358,4 +350,65 @@ void channel_connect(cdk_channel_t* channel) {
             channel->events |= EVENT_TYPE_R;
         }
     }
+}
+
+void channel_enable_accept(cdk_channel_t* channel) {
+    platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_A, channel);
+    channel->events |= EVENT_TYPE_A;
+}
+
+void channel_enable_connect(cdk_channel_t* channel) {
+    platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
+    channel->events |= EVENT_TYPE_C;
+}
+
+void channel_enable_write(cdk_channel_t* channel) {
+    platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+    channel->events |= EVENT_TYPE_W;
+}
+
+void channel_enable_read(cdk_channel_t* channel) {
+    platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+    channel->events |= EVENT_TYPE_R;
+}
+
+void channel_disable_accept(cdk_channel_t* channel) {
+    platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_A, channel);
+    channel->events &= ~EVENT_TYPE_A;
+}
+
+void channel_disable_connect(cdk_channel_t* channel) {
+    platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
+    channel->events &= ~EVENT_TYPE_C;
+}
+
+void channel_disable_write(cdk_channel_t* channel) {
+    platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+    channel->events &= ~EVENT_TYPE_W;
+}
+
+void channel_disable_read(cdk_channel_t* channel) {
+    platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+    channel->events &= ~EVENT_TYPE_R;
+}
+
+void channel_disable_all(cdk_channel_t* channel) {
+    platform_event_del(channel->poller->pfd, channel->fd, channel->events, channel);
+    channel->events = 0;
+}
+
+bool channel_is_accepting(cdk_channel_t* channel) {
+    return channel->events & EVENT_TYPE_A;
+}
+
+bool channel_is_connecting(cdk_channel_t* channel) {
+    return channel->events & EVENT_TYPE_C;
+}
+
+bool channel_is_writing(cdk_channel_t* channel) {
+    return channel->events & EVENT_TYPE_W;
+}
+
+bool channel_is_reading(cdk_channel_t* channel) {
+    return channel->events & EVENT_TYPE_R;
 }
