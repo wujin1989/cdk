@@ -23,12 +23,13 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_tls_ctx_t* tls_ctx_create(cdk_tlsconf_t* tlsconf);
-extern void tls_ctx_destroy(cdk_tls_ctx_t* ctx);
-extern cdk_tls_t* tls_create(cdk_tls_ctx_t* ctx);
-extern void tls_close(cdk_tls_t* secure);
-extern void tls_destroy(cdk_tls_t* secure);
-extern bool tls_cli_handshake(cdk_channel_t* channel);
-extern bool tls_srv_handshake(cdk_channel_t* channel);
-extern void tls_read(cdk_channel_t* channel);
-extern void tls_write(cdk_channel_t* channel);
+#define ENABLE_TLS 1
+#define ENABLE_DTLS 2
+
+extern cdk_tls_t* tls_create(cdk_tlsconf_t* conf, int toggle);
+extern void tls_destroy(cdk_tls_t* tls);
+extern int tls_connect(cdk_tls_t* tls, int fd, int* error);
+extern int tls_accept(cdk_tls_t* tls, int fd, int* error);
+extern int tls_read(cdk_tls_t* tls, void* buf, int size, int* error);
+extern int tls_write(cdk_tls_t* tls, void* buf, int size, int* error);
+extern const char* tls_error2string(int err);

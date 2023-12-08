@@ -23,18 +23,14 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai);
-extern void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
-extern void cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
-extern int cdk_net_af(cdk_sock_t sock);
-extern int cdk_net_socktype(cdk_sock_t sock);
-extern void cdk_net_set_recvbuf(cdk_sock_t sock, int val);
-extern void cdk_net_set_sendbuf(cdk_sock_t sock, int val);
-extern void cdk_net_listen(cdk_protocol_t protocol, const char* host, const char* port, cdk_handler_t* handler);
-extern void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, cdk_handler_t* handler);
-extern void cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
-extern void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail);
-extern void cdk_net_close(cdk_channel_t* channel);
-extern void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker);
-extern void cdk_net_startup(int nworkers);
-extern void cdk_net_cleanup(void);
+typedef struct txlist_node_s {
+	cdk_list_node_t n;
+	size_t len;
+	char buf[];
+}txlist_node_t;
+
+extern void txlist_create(cdk_list_t* list);
+extern void txlist_destroy(cdk_list_t* list);
+extern void txlist_insert(cdk_list_t* list, void* data, size_t size, bool totail);
+extern void txlist_remove(txlist_node_t* node);
+extern bool txlist_empty(cdk_list_t* list);

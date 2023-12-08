@@ -29,6 +29,7 @@ extern cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_
 extern void channel_destroy(cdk_channel_t* channel);
 extern void channel_recv(cdk_channel_t* channel);
 extern void channel_send(cdk_channel_t* channel);
+extern void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size);
 extern void channel_accept(cdk_channel_t* channel);
 extern void channel_connect(cdk_channel_t* channel);
 extern void channel_enable_accept(cdk_channel_t* channel);

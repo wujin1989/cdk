@@ -143,7 +143,6 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
 }
 
 cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol) {
-
     cdk_sock_t sock;
     struct addrinfo  hints;
     struct addrinfo* res;

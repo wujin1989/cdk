@@ -81,8 +81,12 @@ typedef enum cdk_event_type_e{
 	EVENT_TYPE_C = 8,
 }cdk_event_type_t;
 
-#define cdk_tls_ctx_t void
-#define cdk_tls_t     void
+typedef enum cdk_protocol_e {
+	PROTOCOL_TCP = 1,
+	PROTOCOL_UDP = 2,
+}cdk_protocol_t;
+
+#define cdk_tls_t void
 
 typedef struct cdk_channel_s             cdk_channel_t;
 typedef struct cdk_handler_s             cdk_handler_t;
@@ -100,7 +104,6 @@ typedef struct cdk_timer_job_s           cdk_timer_job_t;
 typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
-typedef enum   cdk_tls_state_s           cdk_tls_state_t;
 typedef struct cdk_unpack_s              cdk_unpack_t;
 typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
@@ -249,13 +252,6 @@ struct cdk_offset_buf_s {
 	ssize_t off;
 };
 
-struct cdk_txlist_node_s {
-	cdk_list_node_t n;
-	size_t len;
-	size_t off;
-	char buf[];
-};
-
 struct cdk_addrinfo_s {
 	uint16_t    f;
 	char        a[INET6_ADDRSTRLEN];
@@ -287,33 +283,22 @@ struct cdk_tlsconf_s {
 	bool verifypeer;
 };
 
-enum cdk_tls_state_s {
-	TLS_STATE_NONE = 0,
-	TLS_STATE_CONNECTING,
-	TLS_STATE_ACCEPTING,
-	TLS_STATE_CONNECTED,
-	TLS_STATE_ACCEPTED,
-};
-
 struct cdk_channel_s {
-	cdk_poller_t*      poller;
-	cdk_sock_t         fd;
-	int                events;
-	cdk_handler_t*     handler;
-	int                type;
-	atomic_bool        closing;
+	cdk_poller_t*    poller;
+	cdk_sock_t       fd;
+	int              events;
+	cdk_handler_t*   handler;
+	int              type;
+	atomic_bool      closing;
+	cdk_offset_buf_t rxbuf;
+	cdk_list_t       txlist;
+	cdk_tls_t*       tls;
 	union {
 		struct {
-			cdk_offset_buf_t rxbuf;
-			cdk_offset_buf_t txbuf;
 			cdk_unpack_t     unpacker;
 			cdk_timer_job_t* ctimer;
-			cdk_tls_t*       tls;
-			cdk_tls_state_t  state;
 		}tcp;
 		struct {
-			cdk_offset_buf_t rxbuf;
-			cdk_offset_buf_t txbuf;
 			struct {
 				struct sockaddr_storage ss;
 				socklen_t sslen;
@@ -333,8 +318,10 @@ struct cdk_handler_s {
 	/** the following is only used by tcp. */
 	void (*on_accept) (cdk_channel_t*);
 	void (*on_connect)(cdk_channel_t*);
-	void (*on_connect_timeout)(cdk_channel_t*);
 	int connect_timeout;
+
+	/** the following is only used by tls. */
+	cdk_tlsconf_t* tlsconf;
 };
 
 struct cdk_sha256_s {

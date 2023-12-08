@@ -21,9 +21,9 @@
 
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
-#include "cdk/container/cdk-list.h"
 #include "cdk/net/cdk-net.h"
 #include "channel.h"
+#include "txlist.h"
 #include "poller.h"
 #include "tls.h"
 #include "cdk/cdk-time.h"
@@ -31,8 +31,6 @@
 #include "cdk/cdk-utils.h"
 
 cdk_timer_t timer;
-cdk_tls_ctx_t* tlsctx;
-
 static cdk_list_t pollers;
 static mtx_t pollers_mtx;
 static cnd_t pollers_cnd;
@@ -44,47 +42,6 @@ typedef struct async_channel_send_ctx_s{
     size_t size;
     char data[];
 }async_channel_send_ctx_t;
-
-static void __write_complete_callback(void* param) {
-    cdk_channel_t* channel = param;
-    channel->handler->on_write(channel);
-}
-
-static void _channel_send(cdk_channel_t* channel, void* data, size_t size) {
-    size_t remaining = size;
-    if (!channel_is_writing(channel) && channel->tcp.txbuf.off == 0) {
-        ssize_t n = platform_socket_send(channel->fd, data, size);
-        if (n >= 0) {
-            remaining -= n;
-            if (remaining == 0) {
-                /**
-                 * The use of cdk_net_postevent instead of directly invoking on_write is intended to prevent stack overflow.
-                 */
-                cdk_net_postevent(channel->poller, __write_complete_callback, channel, true);
-            }
-        }
-        if (n == -1) {
-            if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN)
-                || (platform_socket_lasterror() == PLATFORM_SO_ERROR_WSAEWOULDBLOCK)) {
-
-                if (!channel_is_writing(channel)) {
-                    channel_enable_write(channel);
-                }
-                return;
-            }
-            channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
-            return;
-        }
-    }
-    if (remaining > 0) {
-        size_t oldLen = channel->tcp.txbuf.off;
-        
-        outputBuffer_.append(static_cast<const char*>(data) + nwrote, remaining);
-        if (!channel_is_writing(channel)) {
-            channel_enable_write(channel);
-        }
-    }
-}
 
 static void __async_channel_send_callback(void* param) {
     async_channel_send_ctx_t* ctx = param;
@@ -125,6 +82,16 @@ static void _async_channel_destroy(cdk_channel_t* channel) {
     }
 }
 
+static void _connect_timeout_callback(void* param) {
+    cdk_channel_t* channel = param;
+    channel->handler->on_close(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ETIMEDOUT));
+}
+
+static void _connect_timeout_routine(void* param) {
+    cdk_channel_t* channel = param;
+    cdk_net_postevent(channel->poller, _connect_timeout_callback, channel, true);
+}
+
 static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
     if (af == AF_INET) {
         inet_ntop(af, src, dst, INET_ADDRSTRLEN);
@@ -134,8 +101,7 @@ static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
     }
 }
 
-cdk_poller_t* _poller_roundrobin(void)
-{
+cdk_poller_t* _poller_roundrobin(void) {
     mtx_lock(&pollers_mtx);
     while (cdk_list_empty(&pollers)) {
         cnd_wait(&pollers_cnd, &pollers_mtx);
@@ -257,87 +223,89 @@ void cdk_net_set_sendbuf(cdk_sock_t sock, int val) {
     platform_socket_set_sendbuf(sock, val);
 }
 
-void cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler)
-{
-    if (!strncmp(type, "tcp", strlen("tcp")))
-    {
-        cdk_sock_t sock = platform_socket_listen(host, port, SOCK_STREAM);
-        cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
-
-        platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_A, channel);
-        channel->events |= EVENT_TYPE_A;
+void cdk_net_listen(cdk_protocol_t protocol, const char* host, const char* port, cdk_handler_t* handler) {
+    int proto = 0;
+    if (protocol == PROTOCOL_TCP) {
+        proto = SOCK_STREAM;
     }
-    if (!strncmp(type, "udp", strlen("udp")))
-    {
-        cdk_sock_t sock = platform_socket_listen(host, port, SOCK_DGRAM);
-        cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
-        if (channel) {
+    if (protocol == PROTOCOL_UDP) {
+        proto = SOCK_DGRAM;
+    }
+    cdk_sock_t sock = platform_socket_listen(host, port, proto);
+    cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
+    if (channel) {
+        if (protocol == PROTOCOL_TCP) {
+            if (!channel_is_accepting(channel)) {
+                channel_enable_accept(channel);
+            }
+        }
+        if (protocol == PROTOCOL_UDP) {
             channel->handler->on_ready(channel);
-
-            platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
-            channel->events |= EVENT_TYPE_R;
+            if (!channel_is_reading(channel)) {
+                channel_enable_read(channel);
+            }
         }
     }
 }
 
-void cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler)
-{
-    cdk_addrinfo_t ai;
-    struct sockaddr_storage ss;
+void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, cdk_handler_t* handler) {
+    int proto = 0;
+    bool connected = false;
+    cdk_addrinfo_t ai = {0};
+    struct sockaddr_storage ss = {0};
 
-    memset(&ai, 0, sizeof(cdk_addrinfo_t));
-    memset(&ss, 0, sizeof(struct sockaddr_storage));
-
-    if (!strncmp(type, "tcp", strlen("tcp"))) {
-        bool connected;
-        cdk_sock_t sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
-        cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
-        if (channel) {
+    if (protocol == PROTOCOL_TCP) {
+        proto = SOCK_STREAM;
+    }
+    if (protocol == PROTOCOL_UDP) {
+        proto = SOCK_DGRAM;
+    }
+    cdk_sock_t sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
+    cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
+    if (channel) {
+        if (protocol == PROTOCOL_TCP) {
             if (connected) {
                 if (channel->tcp.tls) {
-                    tls_cli_handshake(channel);
-                }
-                else {
+                    _do_cli_handshake(channel);
+                } else {
+                    if (channel_is_connecting(channel)) {
+                        channel_disable_connect(channel);
+                    }
                     channel->handler->on_connect(channel);
-
-                    platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
-                    channel->events |= EVENT_TYPE_R;
+                    if (!channel_is_reading(channel)) {
+                        channel_enable_read(channel);
+                    }
                 }
                 return;
             }
-            platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_C, channel);
-            channel->events |= EVENT_TYPE_C;
+            if (channel_is_connecting(channel)) {
+                channel_enable_connect(channel);
+            }
+            if (handler->connect_timeout) {
+                channel->tcp.ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, handler->connect_timeout, false);
+            }
         }
-    }
-    if (!strncmp(type, "udp", strlen("udp"))) {
-        cdk_sock_t sock = platform_socket_dial(host, port, SOCK_DGRAM, NULL);
-        cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
-        if (channel) {
+        if (protocol == PROTOCOL_UDP) {
             memcpy(ai.a, host, strlen(host));
             ai.p = (uint16_t)strtoul(port, NULL, 10);
             ai.f = cdk_net_af(sock);
-
             cdk_net_pton(&ai, &ss);
-
             channel->udp.peer.ss = ss;
-	    /**
-	     * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage, 
-	     * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
-	     */
-            channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in): sizeof(struct sockaddr_in6);
+            /**
+             * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage,
+             * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
+             */
+            channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 
             channel->handler->on_ready(channel);
-
-            platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
-            channel->events |= EVENT_TYPE_R;
+            if (!channel_is_reading(channel)) {
+                channel_enable_read(channel);
+            }
         }
     }
 }
 
-bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
-    if (atomic_load(&channel->closing)) {
-        return false;
-    }
+void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
 	if (thrd_equal(channel->poller->tid, thrd_current())) {
         _channel_send(channel, data, size);
     }
@@ -378,8 +346,7 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
 	mtx_unlock(&poller->evmtx);
 }
 
-void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
-{
+void cdk_net_startup(int nworkers) {
     platform_socket_startup();
 
     if (!nworkers) {
@@ -397,9 +364,6 @@ void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf)
     for (int i = 0; i < cnt; i++) {
         thrd_create(workers + i, __workerthread, NULL);
     }
-    if (tlsconf) {
-        tlsctx = tls_ctx_create(tlsconf);
-    }
 }
 
 void cdk_net_cleanup(void) {
@@ -413,5 +377,4 @@ void cdk_net_cleanup(void) {
     cdk_timer_destroy(&timer);
     mtx_destroy(&pollers_mtx);
     cnd_destroy(&pollers_cnd);
-    tls_ctx_destroy(tlsctx);
 }

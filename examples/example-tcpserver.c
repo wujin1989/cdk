@@ -56,6 +56,8 @@ static void handle_close(cdk_channel_t* channel, char* error) {
 }
 
 int main(void) {
+    cdk_net_startup(4);
+	
 	cdk_tlsconf_t conf = {
 		.cafile = NULL,
 		.capath = NULL,
@@ -63,14 +65,13 @@ int main(void) {
 		.keyfile = "certs/server.key",
 		.verifypeer = false
 	};
-    cdk_net_startup(4, NULL);
-
 	cdk_handler_t handler = {
 		.on_accept  = handle_accept,
 		.on_read    = handle_read,
 		.on_write   = handle_write,
 		.on_close   = handle_close,
-		.connect_timeout = 0
+		.connect_timeout = 0,
+		.tlsconf = &conf
 	};
 	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 	
