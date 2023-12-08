@@ -64,6 +64,56 @@ static void _async_channel_send(cdk_channel_t* channel, void* data, size_t size)
     }
 }
 
+static void _handle_tcp_tfo_connect(void* param) {
+    cdk_channel_t* channel = param;
+    if (channel->tls) {
+        channel_tls_cli_handshake(channel);
+    } else {
+        if (channel_is_connecting(channel)) {
+            channel_disable_connect(channel);
+        }
+        channel->handler->on_connect(channel);
+        if (!channel_is_reading(channel)) {
+            channel_enable_read(channel);
+        }
+    }
+}
+
+static void _connect_timeout_callback(void* param) {
+    cdk_channel_t* channel = param;
+    channel->handler->on_close(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ETIMEDOUT));
+}
+
+static void _connect_timeout_routine(void* param) {
+    cdk_channel_t* channel = param;
+    cdk_net_postevent(channel->poller, _connect_timeout_callback, channel, true);
+}
+
+static void _handle_tcp_connect(void* param) {
+    cdk_channel_t* channel = param;
+    if (channel_is_connecting(channel)) {
+        channel_enable_connect(channel);
+    }
+    if (channel->handler->connect_timeout) {
+        channel->tcp.ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, channel->handler->connect_timeout, false);
+    }
+}
+
+static void _handle_tcp_accept(void* param) {
+    cdk_channel_t* channel = param;
+    if (!channel_is_accepting(channel)) {
+        channel_enable_accept(channel);
+    }
+}
+
+static void _handle_udp_ready(void* param) {
+    cdk_channel_t* channel = param;
+    channel->handler->on_ready(channel);
+    if (!channel_is_reading(channel)) {
+        channel_enable_read(channel);
+    }
+}
+
 static void _channel_destroy(cdk_channel_t* channel) {
     channel_destroy(channel);
 }
@@ -80,16 +130,6 @@ static void _async_channel_destroy(cdk_channel_t* channel) {
         e->arg = channel;
         cdk_net_postevent(channel->poller, e, true);
     }
-}
-
-static void _connect_timeout_callback(void* param) {
-    cdk_channel_t* channel = param;
-    channel->handler->on_close(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ETIMEDOUT));
-}
-
-static void _connect_timeout_routine(void* param) {
-    cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _connect_timeout_callback, channel, true);
 }
 
 static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
@@ -235,15 +275,10 @@ void cdk_net_listen(cdk_protocol_t protocol, const char* host, const char* port,
     cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
     if (channel) {
         if (protocol == PROTOCOL_TCP) {
-            if (!channel_is_accepting(channel)) {
-                channel_enable_accept(channel);
-            }
+            cdk_net_postevent(channel->poller, _handle_tcp_accept, channel, true);
         }
         if (protocol == PROTOCOL_UDP) {
-            channel->handler->on_ready(channel);
-            if (!channel_is_reading(channel)) {
-                channel_enable_read(channel);
-            }
+            cdk_net_postevent(channel->poller, _handle_udp_ready, channel, true);
         }
     }
 }
@@ -265,24 +300,9 @@ void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, c
     if (channel) {
         if (protocol == PROTOCOL_TCP) {
             if (connected) {
-                if (channel->tcp.tls) {
-                    _do_cli_handshake(channel);
-                } else {
-                    if (channel_is_connecting(channel)) {
-                        channel_disable_connect(channel);
-                    }
-                    channel->handler->on_connect(channel);
-                    if (!channel_is_reading(channel)) {
-                        channel_enable_read(channel);
-                    }
-                }
-                return;
-            }
-            if (channel_is_connecting(channel)) {
-                channel_enable_connect(channel);
-            }
-            if (handler->connect_timeout) {
-                channel->tcp.ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, handler->connect_timeout, false);
+                cdk_net_postevent(channel->poller, _handle_tcp_tfo_connect, channel, true);
+            } else {
+                cdk_net_postevent(channel->poller, _handle_tcp_connect, channel, true);
             }
         }
         if (protocol == PROTOCOL_UDP) {
@@ -297,17 +317,14 @@ void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, c
              */
             channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 
-            channel->handler->on_ready(channel);
-            if (!channel_is_reading(channel)) {
-                channel_enable_read(channel);
-            }
+            cdk_net_postevent(channel->poller, _handle_udp_ready, channel, true);
         }
     }
 }
 
 void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
 	if (thrd_equal(channel->poller->tid, thrd_current())) {
-        _channel_send(channel, data, size);
+        channel_send_explicit(channel, data, size);
     }
     else {
         _async_channel_send(channel, data, size);

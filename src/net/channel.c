@@ -236,13 +236,13 @@ static void _channel_udp_recv(cdk_channel_t* channel) {
     }
 }
 
-static void _do_cli_handshake(void* param) {
+void channel_tls_cli_handshake(void* param) {
     int err = 0;
     cdk_channel_t* channel = param;
     int n = tls_connect(channel->tls, channel->fd, &err);
     if (n <= 0) {
         if (n == 0) {
-            cdk_net_postevent(channel->poller, _do_cli_handshake, channel, true);
+            cdk_net_postevent(channel->poller, channel_tls_cli_handshake, channel, true);
             return;
         }
         channel->handler->on_close(channel, tls_error2string(err));
@@ -257,13 +257,13 @@ static void _do_cli_handshake(void* param) {
     }
 }
 
-static void _do_srv_handshake(void* param) {
+void channel_tls_srv_handshake(void* param) {
     int err = 0;
     cdk_channel_t* channel = param;
     int n = tls_accept(channel->tls, channel->fd, &err);
     if (n <= 0) {
         if (n == 0) {
-            cdk_net_postevent(channel->poller, _do_srv_handshake, channel, true);
+            cdk_net_postevent(channel->poller, channel_tls_srv_handshake, channel, true);
             return;
         }
         channel->handler->on_close(channel, tls_error2string(err));
@@ -371,10 +371,9 @@ void channel_connect(cdk_channel_t* channel) {
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
         channel->handler->on_close(channel, platform_socket_error2string(err));
-    }
-    else {
+    } else {
         if (channel->tls) {
-            _do_cli_handshake(channel);
+            channel_tls_cli_handshake(channel);
         } else {
             if (channel_is_connecting(channel)) {
                 channel_disable_connect(channel);
@@ -449,6 +448,12 @@ bool channel_is_reading(cdk_channel_t* channel) {
 }
 
 void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
+    if (channel->type == SOCK_STREAM) {
+        _channel_tcp_send(channel);
+    }
+    if (channel->type == SOCK_DGRAM) {
+        _channel_udp_send(channel);
+    }
     ssize_t n = 0;
     if (txlist_empty(&channel->txlist)) {
         if (channel->type == SOCK_STREAM) {

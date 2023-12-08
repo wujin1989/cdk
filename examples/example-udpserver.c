@@ -93,7 +93,7 @@ static void on_ready(cdk_channel_t* channel) {
 }
 
 int main(void) {
-	cdk_net_startup(4, NULL);
+	cdk_net_startup(4);
 	synchronized_queue_create(&mq);
 
 	cdk_handler_t handler = {

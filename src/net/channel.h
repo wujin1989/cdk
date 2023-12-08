@@ -45,6 +45,8 @@ extern bool channel_is_accepting(cdk_channel_t* channel);
 extern bool channel_is_connecting(cdk_channel_t* channel);
 extern bool channel_is_writing(cdk_channel_t* channel);
 extern bool channel_is_reading(cdk_channel_t* channel);
+extern void channel_tls_srv_handshake(void* param);
+extern void channel_tls_cli_handshake(void* param);
 
 
 

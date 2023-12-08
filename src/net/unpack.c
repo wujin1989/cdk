@@ -25,8 +25,8 @@
 
 static void __unpack_fixedlen(cdk_channel_t* channel) {
 
-	char* head = channel->tcp.rxbuf.buf;
-	char* tail = (char*)channel->tcp.rxbuf.buf + channel->tcp.rxbuf.off;
+	char* head = channel->rxbuf.buf;
+	char* tail = (char*)channel->rxbuf.buf + channel->rxbuf.off;
 	char* tmp = head;
 
 	uint32_t accumulated = (uint32_t)(tail - head);
@@ -44,17 +44,17 @@ static void __unpack_fixedlen(cdk_channel_t* channel) {
 	if (tmp == head) {
 		return;
 	}
-	channel->tcp.rxbuf.off = accumulated;
+	channel->rxbuf.off = accumulated;
 	if (accumulated) {
-		memmove(channel->tcp.rxbuf.buf, tmp, accumulated);
+		memmove(channel->rxbuf.buf, tmp, accumulated);
 	}
 	return;
 }
 
 static void __unpack_delimiter(cdk_channel_t* channel) {
 
-	char* head = channel->tcp.rxbuf.buf;
-	char* tail = (char*)channel->tcp.rxbuf.buf + channel->tcp.rxbuf.off;
+	char* head = channel->rxbuf.buf;
+	char* tail = (char*)channel->rxbuf.buf + channel->rxbuf.off;
 	char* tmp = head;
 
 	size_t dlen = strlen(channel->tcp.unpacker.delimiter.delimiter);
@@ -105,9 +105,9 @@ static void __unpack_delimiter(cdk_channel_t* channel) {
 	if (tmp == head) {
 		return;
 	}
-	channel->tcp.rxbuf.off = accumulated;
+	channel->rxbuf.off = accumulated;
 	if (accumulated) {
-		memmove(channel->tcp.rxbuf.buf, tmp, accumulated);
+		memmove(channel->rxbuf.buf, tmp, accumulated);
 	}
 	return;
 }
@@ -118,8 +118,8 @@ static void __unpack_lengthfield(cdk_channel_t* channel) {
 	uint32_t hs; /* header size  */
 	uint32_t ps; /* payload size */
 
-	char* head = channel->tcp.rxbuf.buf;
-	char* tail = (char*)channel->tcp.rxbuf.buf + channel->tcp.rxbuf.off;
+	char* head = channel->rxbuf.buf;
+	char* tail = (char*)channel->rxbuf.buf + channel->rxbuf.off;
 	char* tmp = head;
 
 	uint32_t accumulated = (uint32_t)(tail - head);
@@ -152,7 +152,7 @@ static void __unpack_lengthfield(cdk_channel_t* channel) {
 		}
 		fs = hs + ps + channel->tcp.unpacker.lengthfield.adj;
 
-		if (fs > channel->tcp.rxbuf.len) {
+		if (fs > channel->rxbuf.len) {
 			abort();
 		}
 		if (accumulated < fs) {
@@ -165,9 +165,9 @@ static void __unpack_lengthfield(cdk_channel_t* channel) {
 	if (tmp == head) {
 		return;
 	}
-	channel->tcp.rxbuf.off = accumulated;
+	channel->rxbuf.off = accumulated;
 	if (accumulated) {
-		memmove(channel->tcp.rxbuf.buf, tmp, accumulated);
+		memmove(channel->rxbuf.buf, tmp, accumulated);
 	}
 	return;
 }
