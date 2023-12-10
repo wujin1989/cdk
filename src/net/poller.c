@@ -31,10 +31,13 @@ static void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len)
     {
         cdk_event_t* e = cdk_list_data(cdk_list_head(&channel->poller->evlist), cdk_event_t, node);
         cdk_list_remove(&e->node);
+        mtx_unlock(&channel->poller->evmtx);
+
         e->cb(e->arg);
 
         free(e);
         e = NULL;
+        return;
     }
     mtx_unlock(&channel->poller->evmtx);
 }

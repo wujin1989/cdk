@@ -343,12 +343,12 @@ static void _channel_tcp_connect(cdk_channel_t* channel) {
 }
 
 static void _channel_udp_connect(cdk_channel_t* channel) {
+    if (channel_is_connecting(channel)) {
+        channel_disable_connect(channel);
+    }
     if (channel->tls) {
         channel_tls_cli_handshake(channel);
     } else {
-        if (channel_is_connecting(channel)) {
-            channel_disable_connect(channel);
-        }
         channel->handler->on_connect(channel);
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);

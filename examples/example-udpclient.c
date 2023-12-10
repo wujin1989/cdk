@@ -17,6 +17,7 @@ static int routine(void* p) {
 	cdk_channel_t* channel = p;
 	while (true) {
 		cdk_net_send(channel, "helloworld", strlen("helloworld") + 1);
+		//cdk_time_sleep(10);
 	}
 	return 0;
 }

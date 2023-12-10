@@ -331,9 +331,10 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
     else {
         cdk_list_insert_head(&poller->evlist, &event->node);
     }
+    mtx_unlock(&poller->evmtx);
+
 	int hardcode = 1;
 	platform_socket_send(poller->evfds[0], &hardcode, sizeof(int));
-	mtx_unlock(&poller->evmtx);
 }
 
 void cdk_net_startup(int nworkers) {

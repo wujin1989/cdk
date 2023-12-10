@@ -63,6 +63,7 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
 	struct epoll_event __events[MAX_PROCESS_EVENTS];
 	int n;
 
+	memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
 	do {
 		n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, -1);
 	} while (n == -1 && errno == EINTR);
@@ -117,6 +118,8 @@ void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channe
 
 int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
 	struct kevent __events[MAX_PROCESS_EVENTS];
+
+	memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
 	int n = kevent(pfd, NULL, 0, __events, MAX_PROCESS_EVENTS, NULL);
 
 	for (int i = 0; i < n; i++) {
