@@ -15,9 +15,8 @@ static void on_close(cdk_channel_t* channel, const char* error) {
 
 static int routine(void* p) {
 	cdk_channel_t* channel = p;
-	while (true) {
+	while (!channel->closing) {
 		cdk_net_send(channel, "helloworld", strlen("helloworld") + 1);
-		cdk_time_sleep(10);
 	}
 	return 0;
 }
@@ -52,7 +51,7 @@ int main(void) {
 		.on_read = on_read,
 		.on_write = on_write,
 		.on_close = on_close,
-		.tlsconf = &conf
+		.tlsconf = NULL
 	};
 	cdk_net_dial(PROTOCOL_UDP, "127.0.0.1", "9999", &handler);
 

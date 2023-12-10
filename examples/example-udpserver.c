@@ -106,7 +106,7 @@ int main(void) {
 		.on_read = on_read,
 		.on_write = on_write,
 		.on_close = on_close,
-		.tlsconf = &conf
+		.tlsconf = NULL
 	};
 	cdk_net_listen(PROTOCOL_UDP, "0.0.0.0", "9999", &handler);
 	
