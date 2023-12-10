@@ -11,7 +11,6 @@ static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
 
 static void on_close(cdk_channel_t* channel, const char* error) {
 	printf("channel closed, reason: %s\n", error);
-	cdk_net_close(channel);
 }
 
 static int routine(void* p) {
@@ -33,9 +32,9 @@ static void on_connect(cdk_channel_t* channel) {
 	thrd_create(&tid, routine, channel);
 	thrd_detach(tid);
 
-	thrd_t tid2;
+	/*thrd_t tid2;
 	thrd_create(&tid2, routine2, channel);
-	thrd_detach(tid2);
+	thrd_detach(tid2);*/
 }
 
 int main(void) {

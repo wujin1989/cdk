@@ -39,8 +39,7 @@ static void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len)
     mtx_unlock(&channel->poller->evmtx);
 }
 
-static void _eventfd_close(cdk_channel_t* channel, char* error) {
-    channel_destroy(channel);
+static void _eventfd_close(cdk_channel_t* channel, const char* error) {
 }
 
 static cdk_handler_t eventfd_handler = {
@@ -55,11 +54,9 @@ static cdk_unpack_t eventfd_unpacker = {
 void poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS];
 
-    while (poller->active)
-    {
+    while (poller->active) {
         int nevents = platform_event_wait(poller->pfd, events);
-        for (int i = 0; i < nevents; i++)
-        {
+        for (int i = 0; i < nevents; i++) {
             cdk_channel_t* channel = events[i].ptr;
             uint32_t tevents = events[i].events;
 

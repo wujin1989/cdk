@@ -72,7 +72,7 @@ static void _channel_encrypted_send(cdk_channel_t* channel) {
         if (n == 0) {
             return;
         }
-        channel->handler->on_close(channel, tls_error2string(err));
+        channel_destroy(channel, tls_error2string(err));
         return;
     }
     if (n < e->len) {
@@ -102,7 +102,7 @@ static void _channel_unencrypted_send(cdk_channel_t* channel) {
             || (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
         }
-        channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
+        channel_destroy(channel, platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
     if (n < e->len) {
@@ -143,7 +143,7 @@ static void _channel_encrypted_send_explicit(cdk_channel_t* channel, void* data,
                 }
                 return;
             }
-            channel->handler->on_close(channel, tls_error2string(err));
+            channel_destroy(channel, tls_error2string(err));
             return;
         }
     }
@@ -177,7 +177,7 @@ static void _channel_unencrypted_send_explicit(cdk_channel_t* channel, void* dat
                 }
                 return;
             }
-            channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
+            channel_destroy(channel, platform_socket_error2string(platform_socket_lasterror()));
             return;
         }
     }
@@ -237,7 +237,7 @@ static void _channel_udp_unencrypted_recv(cdk_channel_t* channel) {
             || (platform_socket_lasterror() == PLATFORM_SO_ERROR_ECONNRESET)) {
             return;
         }
-        channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
+        channel_destroy(channel, platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
     channel->handler->on_read(channel, channel->rxbuf.buf, n);
@@ -250,7 +250,7 @@ static void _channel_tcp_encrypted_recv(cdk_channel_t* channel) {
         if (n == 0) {
             return;
         }
-        channel->handler->on_close(channel, tls_error2string(err));
+        channel_destroy(channel, tls_error2string(err));
         return;
     }
     channel->rxbuf.off += n;
@@ -264,7 +264,7 @@ static void _channel_tcp_unencrypted_recv(cdk_channel_t* channel) {
             || (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
         }
-        channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
+        channel_destroy(channel, platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
     /**
@@ -273,7 +273,7 @@ static void _channel_tcp_unencrypted_recv(cdk_channel_t* channel) {
      * but it is necessary to unix.
      */
     if (n == 0) {
-        channel->handler->on_close(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ECONNRESET));
+        channel_destroy(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ECONNRESET));
         return;
     }
     channel->rxbuf.off += n;
@@ -287,7 +287,7 @@ static void _channel_tcp_accept(cdk_channel_t* channel) {
             || (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
         }
-        channel->handler->on_close(channel, platform_socket_error2string(platform_socket_lasterror()));
+        channel_destroy(channel, platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
     cdk_channel_t* newchannel = channel_create(_poller_roundrobin(), cli, channel->handler);
@@ -325,15 +325,15 @@ static void _channel_tcp_connect(cdk_channel_t* channel) {
 
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
-        channel->handler->on_close(channel, platform_socket_error2string(err));
+        channel_destroy(channel, platform_socket_error2string(err));
     }
     else {
+        if (channel_is_connecting(channel)) {
+            channel_disable_connect(channel);
+        }
         if (channel->tls) {
             channel_tls_cli_handshake(channel);
         } else {
-            if (channel_is_connecting(channel)) {
-                channel_disable_connect(channel);
-            }
             channel->handler->on_connect(channel);
             if (!channel_is_reading(channel)) {
                 channel_enable_read(channel);
@@ -419,11 +419,8 @@ void channel_tls_cli_handshake(void* param) {
             cdk_net_postevent(channel->poller, channel_tls_cli_handshake, channel, true);
             return;
         }
-        channel->handler->on_close(channel, tls_error2string(err));
+        channel_destroy(channel, tls_error2string(err));
         return;
-    }
-    if (channel_is_connecting(channel)) {
-        channel_disable_connect(channel);
     }
     channel->handler->on_connect(channel);
     if (!channel_is_reading(channel)) {
@@ -440,7 +437,7 @@ void channel_tls_srv_handshake(void* param) {
             cdk_net_postevent(channel->poller, channel_tls_srv_handshake, channel, true);
             return;
         }
-        channel->handler->on_close(channel, tls_error2string(err));
+        channel_destroy(channel, tls_error2string(err));
         return;
     }
     channel->handler->on_accept(channel);
@@ -475,21 +472,15 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
     return NULL;
 }
 
-void channel_destroy(cdk_channel_t* channel) {
+void channel_destroy(cdk_channel_t* channel, const char* reason) {
     atomic_store(&channel->closing, true);
-    
-    platform_event_del(channel->poller->pfd, channel->fd, channel->events, channel);
-    channel->events = 0;
-    
+    channel_disable_all(channel);
     platform_socket_close(channel->fd);
     _deallocate_io_buffers(&channel->rxbuf, &channel->txlist);
+    tls_destroy(channel->tls);
 
-    if (channel->type == SOCK_STREAM) {
-        tls_destroy(channel->tls);
-    }
-    if (channel->type == SOCK_DGRAM) {
-        
-    }
+    channel->handler->on_close(channel, reason);
+
     free(channel);
     channel = NULL;
 }

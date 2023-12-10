@@ -51,7 +51,6 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 
 static void handle_close(cdk_channel_t* channel, const char* error) {
 	printf("connection closed, reason: %s\n", error);
-	cdk_net_close(channel);
 }
 
 int main(void) {

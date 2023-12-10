@@ -26,7 +26,7 @@ _Pragma("once")
 #define DEFAULT_IOBUF_SIZE  16384
 
 extern cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler_t* handler);
-extern void channel_destroy(cdk_channel_t* channel);
+extern void channel_destroy(cdk_channel_t* channel, const char* reason);
 extern void channel_recv(cdk_channel_t* channel);
 extern void channel_send(cdk_channel_t* channel);
 extern void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size);

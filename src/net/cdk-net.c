@@ -99,7 +99,7 @@ static void _do_accept(void* param) {
 
 static void _do_connect(void* param) {
     cdk_channel_t* channel = param;
-    if (channel_is_connecting(channel)) {
+    if (!channel_is_connecting(channel)) {
         channel_enable_connect(channel);
     }
     if (channel->handler->connect_timeout) {
@@ -107,22 +107,13 @@ static void _do_connect(void* param) {
     }
 }
 
-static void _channel_destroy(cdk_channel_t* channel) {
-    channel_destroy(channel);
-}
-
-static void __async_channel_destroy_callback(void* param) {
+static void _async_channel_destroy_callback(void* param) {
     cdk_channel_t* channel = param;
-    _channel_destroy(channel);
+    channel_destroy(channel, NULL);
 }
 
 static void _async_channel_destroy(cdk_channel_t* channel) {
-    cdk_event_t* e = malloc(sizeof(cdk_event_t));
-    if (e) {
-        e->cb = __async_channel_destroy_callback;
-        e->arg = channel;
-        cdk_net_postevent(channel->poller, e, true);
-    }
+    cdk_net_postevent(channel->poller, _async_channel_destroy_callback, channel, true);
 }
 
 static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
@@ -283,7 +274,7 @@ void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, c
     if (protocol == PROTOCOL_UDP) {
         proto = SOCK_DGRAM;
     }
-    cdk_sock_t sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
+    cdk_sock_t sock = platform_socket_dial(host, port, proto, &connected);
     cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
     if (channel) {
         if (connected) {
@@ -316,7 +307,7 @@ void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
 
 void cdk_net_close(cdk_channel_t* channel) {
     if (thrd_equal(channel->poller->tid, thrd_current())) {
-        _channel_destroy(channel);
+        channel_destroy(channel, NULL);
     }
     else {
         _async_channel_destroy(channel);
