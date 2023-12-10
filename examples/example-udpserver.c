@@ -63,13 +63,13 @@ int routine(void* p) {
 	return 0;
 }
 
-static void on_write(cdk_channel_t* channel, void* buf, size_t len) {
+static void on_write(cdk_channel_t* channel) {
 
 }
 
 static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
 	cdk_addrinfo_t ai;
-	cdk_net_ntop(&channel->udp.peer.ss, &ai);
+	cdk_net_ntop(&channel->peer.ss, &ai);
 
 	msg_t* msg = malloc(sizeof(msg_t) + len);
 	if (!msg) {
@@ -81,12 +81,12 @@ static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
 	synchronized_queue_enqueue(&mq, &msg->node);
 }
 
-static void on_close(cdk_channel_t* channel, char* error) {
+static void on_close(cdk_channel_t* channel, const char* error) {
 	printf("channel closed, reason: %s\n", error);
 	cdk_net_close(channel);
 }
 
-static void on_ready(cdk_channel_t* channel) {
+static void on_accept(cdk_channel_t* channel) {
 	thrd_t tid;
 	thrd_create(&tid, routine, NULL);
 	thrd_detach(tid);
@@ -97,12 +97,12 @@ int main(void) {
 	synchronized_queue_create(&mq);
 
 	cdk_handler_t handler = {
-		.on_ready = on_ready,
+		.on_accept = on_accept,
 		.on_read = on_read,
 		.on_write = on_write,
 		.on_close = on_close
 	};
-	cdk_net_listen("udp", "0.0.0.0", "9999", &handler);
+	cdk_net_listen(PROTOCOL_UDP, "0.0.0.0", "9999", &handler);
 	
 	cdk_net_cleanup();
 	return 0;

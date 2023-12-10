@@ -22,6 +22,7 @@
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
 #include "cdk/net/cdk-net.h"
+#include "cdk/container/cdk-list.h"
 #include "channel.h"
 #include "txlist.h"
 #include "poller.h"
@@ -43,16 +44,16 @@ typedef struct async_channel_send_ctx_s{
     char data[];
 }async_channel_send_ctx_t;
 
-static void __async_channel_send_callback(void* param) {
+static void _async_channel_send_explicit_callback(void* param) {
     async_channel_send_ctx_t* ctx = param;
 
-    _channel_send(ctx->channel, ctx->data, ctx->size);
+    channel_send_explicit(ctx->channel, ctx->data, ctx->size);
 
     free(ctx);
     ctx = NULL;
 }
 
-static void _async_channel_send(cdk_channel_t* channel, void* data, size_t size) {
+static void _async_channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
     async_channel_send_ctx_t* ctx = malloc(sizeof(async_channel_send_ctx_t) + size);
     if (ctx) {
         memset(ctx, 0, sizeof(async_channel_send_ctx_t) + size);
@@ -60,11 +61,11 @@ static void _async_channel_send(cdk_channel_t* channel, void* data, size_t size)
         ctx->size = size;
         memcpy(ctx->data, data, size);
 
-        cdk_net_postevent(channel->poller, __async_channel_send_callback, ctx, true);
+        cdk_net_postevent(channel->poller, _async_channel_send_explicit_callback, ctx, true);
     }
 }
 
-static void _handle_tcp_tfo_connect(void* param) {
+static void _do_tfo_connect(void* param) {
     cdk_channel_t* channel = param;
     if (channel->tls) {
         channel_tls_cli_handshake(channel);
@@ -89,28 +90,20 @@ static void _connect_timeout_routine(void* param) {
     cdk_net_postevent(channel->poller, _connect_timeout_callback, channel, true);
 }
 
-static void _handle_tcp_connect(void* param) {
-    cdk_channel_t* channel = param;
-    if (channel_is_connecting(channel)) {
-        channel_enable_connect(channel);
-    }
-    if (channel->handler->connect_timeout) {
-        channel->tcp.ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, channel->handler->connect_timeout, false);
-    }
-}
-
-static void _handle_tcp_accept(void* param) {
+static void _do_accept(void* param) {
     cdk_channel_t* channel = param;
     if (!channel_is_accepting(channel)) {
         channel_enable_accept(channel);
     }
 }
 
-static void _handle_udp_ready(void* param) {
+static void _do_connect(void* param) {
     cdk_channel_t* channel = param;
-    channel->handler->on_ready(channel);
-    if (!channel_is_reading(channel)) {
-        channel_enable_read(channel);
+    if (channel_is_connecting(channel)) {
+        channel_enable_connect(channel);
+    }
+    if (channel->handler->connect_timeout) {
+        channel->ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, channel->handler->connect_timeout, false);
     }
 }
 
@@ -274,12 +267,7 @@ void cdk_net_listen(cdk_protocol_t protocol, const char* host, const char* port,
     cdk_sock_t sock = platform_socket_listen(host, port, proto);
     cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
     if (channel) {
-        if (protocol == PROTOCOL_TCP) {
-            cdk_net_postevent(channel->poller, _handle_tcp_accept, channel, true);
-        }
-        if (protocol == PROTOCOL_UDP) {
-            cdk_net_postevent(channel->poller, _handle_udp_ready, channel, true);
-        }
+        cdk_net_postevent(channel->poller, _do_accept, channel, true);
     }
 }
 
@@ -298,26 +286,21 @@ void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, c
     cdk_sock_t sock = platform_socket_dial(host, port, SOCK_STREAM, &connected);
     cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
     if (channel) {
-        if (protocol == PROTOCOL_TCP) {
-            if (connected) {
-                cdk_net_postevent(channel->poller, _handle_tcp_tfo_connect, channel, true);
-            } else {
-                cdk_net_postevent(channel->poller, _handle_tcp_connect, channel, true);
-            }
-        }
-        if (protocol == PROTOCOL_UDP) {
-            memcpy(ai.a, host, strlen(host));
-            ai.p = (uint16_t)strtoul(port, NULL, 10);
-            ai.f = cdk_net_af(sock);
-            cdk_net_pton(&ai, &ss);
-            channel->udp.peer.ss = ss;
+        if (connected) {
+            cdk_net_postevent(channel->poller, _do_tfo_connect, channel, true);
+        } else {
             /**
              * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage,
              * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
              */
-            channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+            memcpy(ai.a, host, strlen(host));
+            ai.p = (uint16_t)strtoul(port, NULL, 10);
+            ai.f = cdk_net_af(sock);
+            cdk_net_pton(&ai, &ss);
+            channel->peer.ss = ss;
+            channel->peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 
-            cdk_net_postevent(channel->poller, _handle_udp_ready, channel, true);
+            cdk_net_postevent(channel->poller, _do_connect, channel, true);
         }
     }
 }
@@ -327,9 +310,8 @@ void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
         channel_send_explicit(channel, data, size);
     }
     else {
-        _async_channel_send(channel, data, size);
+        _async_channel_send_explicit(channel, data, size);
     }
-    return true;
 }
 
 void cdk_net_close(cdk_channel_t* channel) {
@@ -342,7 +324,7 @@ void cdk_net_close(cdk_channel_t* channel) {
 }
 
 void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker) {
-    memcpy(&channel->tcp.unpacker, unpacker, sizeof(cdk_unpack_t));
+    memcpy(&channel->unpacker, unpacker, sizeof(cdk_unpack_t));
 }
 
 void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail) {

@@ -94,7 +94,7 @@ cdk_poller_t* poller_create(void)
 
         poller->wakeup = channel_create(poller, poller->evfds[1], &eventfd_handler);
         if (poller->wakeup) {
-            memcpy(&poller->wakeup->tcp.unpacker, &eventfd_unpacker, sizeof(cdk_unpack_t));
+            memcpy(&poller->wakeup->unpacker, &eventfd_unpacker, sizeof(cdk_unpack_t));
 
             platform_event_add(poller->pfd, poller->wakeup->fd, EVENT_TYPE_R, poller->wakeup);
             poller->wakeup->events |= EVENT_TYPE_R;

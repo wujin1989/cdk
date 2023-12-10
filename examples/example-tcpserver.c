@@ -32,9 +32,8 @@ static void handle_accept(cdk_channel_t* channel) {
 	cdk_net_unpacker_init(channel, &unpacker3);
 }
 
-static void handle_write(cdk_channel_t* channel, void* buf, size_t len) {
-	net_msg_t* msg = (net_msg_t*)buf;
-	printf("send complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(msg->h.p_s), ntohl(msg->h.p_t), msg->p);
+static void handle_write(cdk_channel_t* channel) {
+	
 }
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 	net_msg_t* rmsg = (net_msg_t*)buf;
@@ -50,7 +49,7 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 	}
 }
 
-static void handle_close(cdk_channel_t* channel, char* error) {
+static void handle_close(cdk_channel_t* channel, const char* error) {
 	printf("connection closed, reason: %s\n", error);
 	cdk_net_close(channel);
 }
@@ -73,7 +72,7 @@ int main(void) {
 		.connect_timeout = 0,
 		.tlsconf = &conf
 	};
-	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
+	cdk_net_listen(PROTOCOL_TCP, "0.0.0.0", "9999", &handler);
 	
 	cdk_net_cleanup();
 	return 0;

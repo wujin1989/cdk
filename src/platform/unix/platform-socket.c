@@ -392,7 +392,7 @@ int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t so
     return socketpair(AF_LOCAL, type, protocol, socks);
 }
 
-char* platform_socket_error2string(int error) {
+const char* platform_socket_error2string(int error) {
     return strerror(error);
 }
 
