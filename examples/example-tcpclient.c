@@ -59,6 +59,7 @@ static void handle_close(cdk_channel_t* channel, const char* error) {
 }
 
 int main(void) {
+	cdk_net_startup(4);
 	cdk_tlsconf_t conf = {
 		.cafile = "certs/ca.crt",
 		.capath = NULL,
@@ -66,8 +67,6 @@ int main(void) {
 		.keyfile = NULL,
 		.verifypeer = true
 	};
-	cdk_net_startup(4);
-
 	cdk_handler_t handler = {
 		.on_connect = handle_connect,
 		.on_read    = handle_read,

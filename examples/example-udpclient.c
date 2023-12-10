@@ -17,7 +17,7 @@ static int routine(void* p) {
 	cdk_channel_t* channel = p;
 	while (true) {
 		cdk_net_send(channel, "helloworld", strlen("helloworld") + 1);
-		//cdk_time_sleep(10);
+		cdk_time_sleep(10);
 	}
 	return 0;
 }
@@ -40,12 +40,19 @@ static void on_connect(cdk_channel_t* channel) {
 
 int main(void) {
 	cdk_net_startup(4);
-	
+	cdk_tlsconf_t conf = {
+		.cafile = "certs/ca.crt",
+		.capath = NULL,
+		.crtfile = NULL,
+		.keyfile = NULL,
+		.verifypeer = true
+	};
 	cdk_handler_t handler = {
 		.on_connect = on_connect,
 		.on_read = on_read,
 		.on_write = on_write,
-		.on_close = on_close
+		.on_close = on_close,
+		.tlsconf = &conf
 	};
 	cdk_net_dial(PROTOCOL_UDP, "127.0.0.1", "9999", &handler);
 

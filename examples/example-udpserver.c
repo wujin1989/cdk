@@ -94,12 +94,19 @@ static void on_accept(cdk_channel_t* channel) {
 int main(void) {
 	cdk_net_startup(4);
 	synchronized_queue_create(&mq);
-
+	cdk_tlsconf_t conf = {
+		.cafile = NULL,
+		.capath = NULL,
+		.crtfile = "certs/server.crt",
+		.keyfile = "certs/server.key",
+		.verifypeer = false
+	};
 	cdk_handler_t handler = {
 		.on_accept = on_accept,
 		.on_read = on_read,
 		.on_write = on_write,
-		.on_close = on_close
+		.on_close = on_close,
+		.tlsconf = &conf
 	};
 	cdk_net_listen(PROTOCOL_UDP, "0.0.0.0", "9999", &handler);
 	

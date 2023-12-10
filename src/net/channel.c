@@ -415,6 +415,7 @@ void channel_tls_cli_handshake(void* param) {
     cdk_channel_t* channel = param;
     int n = tls_connect(channel->tls, channel->fd, &err);
     if (n <= 0) {
+        printf("%s\n", platform_socket_error2string(platform_socket_lasterror()));
         if (n == 0) {
             cdk_net_postevent(channel->poller, channel_tls_cli_handshake, channel, true);
             return;
