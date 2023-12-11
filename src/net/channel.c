@@ -305,6 +305,9 @@ static void _channel_tcp_accept(cdk_channel_t* channel) {
 }
 
 static void _channel_udp_accept(cdk_channel_t* channel) {
+    if (channel_is_accepting(channel)) {
+        channel_disable_accept(channel);
+    }
     if (channel->tls) {
         channel_tls_srv_handshake(channel);
     }
@@ -313,6 +316,15 @@ static void _channel_udp_accept(cdk_channel_t* channel) {
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
         }
+    }
+}
+
+static void _async_channel_destroy(void* param) {
+    cdk_channel_t* channel = param;
+
+    if (channel) {
+        free(channel);
+        channel = NULL;
     }
 }
 
@@ -474,6 +486,9 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
 }
 
 void channel_destroy(cdk_channel_t* channel, const char* reason) {
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
     atomic_store(&channel->closing, true);
     channel_disable_all(channel);
     platform_socket_close(channel->fd);
@@ -482,8 +497,7 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
 
     channel->handler->on_close(channel, reason);
 
-    free(channel);
-    channel = NULL;
+    cdk_net_postevent(channel->poller, _async_channel_destroy, channel, true);
 }
 
 void channel_recv(cdk_channel_t* channel) {

@@ -109,7 +109,7 @@ static void _do_connect(void* param) {
 
 static void _async_channel_destroy_callback(void* param) {
     cdk_channel_t* channel = param;
-    channel_destroy(channel, NULL);
+    channel_destroy(channel, "");
 }
 
 static void _async_channel_destroy(cdk_channel_t* channel) {
@@ -323,18 +323,19 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
     if (event) {
         event->cb = cb;
         event->arg = arg;
-    }
-	mtx_lock(&poller->evmtx);
-    if (totail) {
-        cdk_list_insert_tail(&poller->evlist, &event->node);
-    }
-    else {
-        cdk_list_insert_head(&poller->evlist, &event->node);
-    }
-    mtx_unlock(&poller->evmtx);
 
-	int hardcode = 1;
-	platform_socket_send(poller->evfds[0], &hardcode, sizeof(int));
+        mtx_lock(&poller->evmtx);
+        if (totail) {
+            cdk_list_insert_tail(&poller->evlist, &event->node);
+        }
+        else {
+            cdk_list_insert_head(&poller->evlist, &event->node);
+        }
+        mtx_unlock(&poller->evmtx);
+
+        int hardcode = 1;
+        platform_socket_send(poller->evfds[0], &hardcode, sizeof(int));
+    }
 }
 
 void cdk_net_startup(int nworkers) {
