@@ -24,22 +24,19 @@
 #include "cdk/container/cdk-list.h"
 #include "net/channel.h"
 
-static void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len)
-{
+static void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len) {
     mtx_lock(&channel->poller->evmtx);
-    if (!cdk_list_empty(&channel->poller->evlist))
-    {
-        cdk_event_t* e = cdk_list_data(cdk_list_head(&channel->poller->evlist), cdk_event_t, node);
+    cdk_event_t* e = NULL;
+    if (!cdk_list_empty(&channel->poller->evlist)) {
+        e = cdk_list_data(cdk_list_head(&channel->poller->evlist), cdk_event_t, node);
         cdk_list_remove(&e->node);
-        mtx_unlock(&channel->poller->evmtx);
-
-        e->cb(e->arg);
-
-        free(e);
-        e = NULL;
-        return;
     }
     mtx_unlock(&channel->poller->evmtx);
+    if (e) {
+        e->cb(e->arg);
+        free(e);
+        e = NULL;
+    }
 }
 
 static void _eventfd_close(cdk_channel_t* channel, const char* error) {

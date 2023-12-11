@@ -95,6 +95,9 @@ static void _do_accept(void* param) {
     if (!channel_is_accepting(channel)) {
         channel_enable_accept(channel);
     }
+    if (channel->type == SOCK_DGRAM) {
+        channel_accept(channel);
+    }
 }
 
 static void _do_connect(void* param) {
@@ -104,6 +107,9 @@ static void _do_connect(void* param) {
     }
     if (channel->handler->connect_timeout) {
         channel->ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, channel->handler->connect_timeout, false);
+    }
+    if (channel->type == SOCK_DGRAM) {
+        channel_connect(channel);
     }
 }
 

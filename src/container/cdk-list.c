@@ -22,13 +22,11 @@
 #include "cdk/cdk-types.h"
 
 void cdk_list_init(cdk_list_t* l) {
-
 	(l)->n = (l);
 	(l)->p = (l);
 }
 
 void cdk_list_insert_head(cdk_list_t* l, cdk_list_node_t* x) {
-
 	/**
 	 * init node;
 	 */
@@ -44,7 +42,6 @@ void cdk_list_insert_head(cdk_list_t* l, cdk_list_node_t* x) {
 }
 
 void cdk_list_insert_tail(cdk_list_t* l, cdk_list_node_t* x) {
-
 	/**
 	 * init node;
 	 */
@@ -60,33 +57,27 @@ void cdk_list_insert_tail(cdk_list_t* l, cdk_list_node_t* x) {
 }
 
 bool cdk_list_empty(cdk_list_t* l) {
-
 	return (l) == (l)->p;
 }
 
 cdk_list_node_t* cdk_list_head(cdk_list_t* l) {
-
 	return (l)->n;
 }
 
 cdk_list_node_t* cdk_list_tail(cdk_list_t* l) {
-
 	return (l)->p;
 }
 
 cdk_list_node_t* cdk_list_sentinel(cdk_list_t* l) {
-
 	return (l);
 }
 
 void cdk_list_remove(cdk_list_node_t* x) {
-
 	(x)->n->p   = (x)->p;
 	(x)->p->n   = (x)->n;
 }
 
 cdk_list_node_t* cdk_list_next(cdk_list_node_t* x) {
-
 	return (x)->n;
 }
 

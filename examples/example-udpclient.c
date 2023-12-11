@@ -1,12 +1,10 @@
 #include "cdk.h"
 
 static void on_write(cdk_channel_t* channel) {
+	printf("complete callback\n");
 }
 
 static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
-	cdk_addrinfo_t ai;
-	cdk_net_ntop(&channel->peer.ss, &ai);
-	printf("%s from %s\n", (char*)buf, ai.a);
 }
 
 static void on_close(cdk_channel_t* channel, const char* error) {
@@ -22,6 +20,7 @@ static int routine(void* p) {
 }
 
 static void on_connect(cdk_channel_t* channel) {
+	printf("udp connected\n");
 	thrd_t tid;
 	thrd_create(&tid, routine, channel);
 	thrd_detach(tid);
