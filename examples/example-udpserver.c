@@ -1,8 +1,5 @@
 #include "cdk.h"
 
-static void on_write(cdk_channel_t* channel) {
-}
-
 static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
 	char msg[4096] = { 0 };
 	memcpy(msg, buf, len);
@@ -29,7 +26,6 @@ int main(void) {
 	cdk_handler_t handler = {
 		.on_accept = on_accept,
 		.on_read = on_read,
-		.on_write = on_write,
 		.on_close = on_close,
 		.tlsconf = NULL
 	};

@@ -153,7 +153,7 @@ static void _channel_encrypted_send_explicit(cdk_channel_t* channel, void* data,
             channel_enable_write(channel);
         }
     }
-    if (n > 0) {
+    if (n > 0 && channel->handler->on_write) {
         cdk_net_postevent(channel->poller, _write_complete_callback, channel, true);
     }
 }
@@ -187,7 +187,7 @@ static void _channel_unencrypted_send_explicit(cdk_channel_t* channel, void* dat
             channel_enable_write(channel);
         }
     }
-    if (n > 0) {
+    if (n > 0 && channel->handler->on_write) {
         /**
          * The use of cdk_net_postevent instead of directly invoking on_write is intended
          * to prevent stack overflow.

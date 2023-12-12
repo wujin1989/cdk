@@ -1,9 +1,5 @@
 #include "cdk.h"
 
-static void on_write(cdk_channel_t* channel) {
-	printf("complete callback\n");
-}
-
 static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
 }
 
@@ -15,6 +11,7 @@ static int routine(void* p) {
 	cdk_channel_t* channel = p;
 	while (!atomic_load(&channel->closing)) {
 		cdk_net_send(channel, "helloworld", strlen("helloworld") + 1);
+		printf("sending\n");
 	}
 	return 0;
 }
@@ -38,7 +35,6 @@ int main(void) {
 	cdk_handler_t handler = {
 		.on_connect = on_connect,
 		.on_read = on_read,
-		.on_write = on_write,
 		.on_close = on_close,
 		.tlsconf = NULL
 	};
