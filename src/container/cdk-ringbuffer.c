@@ -23,8 +23,7 @@
 #include <stdint.h>
 #include "cdk/cdk-types.h"
 
-static uint32_t __ringbuf_rounddown_pow_of_two(uint32_t n) {
-
+static uint32_t _ringbuf_rounddown_pow_of_two(uint32_t n) {
     n |= n >> 1;
     n |= n >> 2;
     n |= n >> 4;
@@ -33,8 +32,7 @@ static uint32_t __ringbuf_rounddown_pow_of_two(uint32_t n) {
     return (n + 1) >> 1;
 }
 
-static void __ringbuf_internal_write(cdk_ringbuf_t* ring, const void* src, uint32_t len, uint32_t off) {
-
+static void _ringbuf_internal_write(cdk_ringbuf_t* ring, const void* src, uint32_t len, uint32_t off) {
     uint32_t size  = ring->mask + 1;
     uint32_t esize = ring->esz;
     uint32_t l;
@@ -51,8 +49,7 @@ static void __ringbuf_internal_write(cdk_ringbuf_t* ring, const void* src, uint3
     memcpy(ring->buf, (uint8_t*)src + l, len - l);
 }
 
-static void __ringbuf_internal_read(cdk_ringbuf_t* ring, void* dst, uint32_t len, uint32_t off) {
-
+static void _ringbuf_internal_read(cdk_ringbuf_t* ring, void* dst, uint32_t len, uint32_t off) {
     uint32_t size  = ring->mask + 1;
     uint32_t esize = ring->esz;
     uint32_t l;
@@ -69,22 +66,20 @@ static void __ringbuf_internal_read(cdk_ringbuf_t* ring, void* dst, uint32_t len
     memcpy((uint8_t*)dst + l, ring->buf, len - l);
 }
 
-static uint32_t __ringbuf_internal_read_peek(cdk_ringbuf_t* ring, void* buf, uint32_t len) {
-
+static uint32_t _ringbuf_internal_read_peek(cdk_ringbuf_t* ring, void* buf, uint32_t len) {
     uint32_t l;
     l = ring->wpos - ring->rpos;
     if (len > l) {
         len = l;
     }
-    __ringbuf_internal_read(ring, buf, len, ring->rpos);
+    _ringbuf_internal_read(ring, buf, len, ring->rpos);
     return len;
 }
 
 void cdk_ringbuf_create(cdk_ringbuf_t* ring, uint32_t esize, uint32_t bufsize) {
-
     ring->buf  = malloc(bufsize);
     ring->esz  = esize;
-    ring->mask = __ringbuf_rounddown_pow_of_two(bufsize / esize) - 1;
+    ring->mask = _ringbuf_rounddown_pow_of_two(bufsize / esize) - 1;
     ring->wpos = 0;
     ring->rpos = 0;
 }
@@ -97,45 +92,38 @@ void cdk_ringbuf_destroy(cdk_ringbuf_t* ring) {
 }
 
 uint32_t cdk_ringbuf_len(cdk_ringbuf_t* ring) {
-
     return ring->wpos - ring->rpos;
 }
 
 uint32_t cdk_ringbuf_cap(cdk_ringbuf_t* ring) {
-
     return ring->mask + 1;
 }
 
 uint32_t cdk_ringbuf_avail(cdk_ringbuf_t* ring) {
-
     return cdk_ringbuf_cap(ring) - cdk_ringbuf_len(ring);
 }
 
 bool cdk_ringbuf_full(cdk_ringbuf_t* ring) {
-
     return cdk_ringbuf_len(ring) > ring->mask;
 }
 
 bool cdk_ringbuf_empty(cdk_ringbuf_t* ring) {
-
     return ring->wpos == ring->rpos;
 }
 
 uint32_t cdk_ringbuf_write(cdk_ringbuf_t* ring, const void* buf, uint32_t entry_count) {
-
     uint32_t avail = cdk_ringbuf_avail(ring);
     if (entry_count > avail) {
         entry_count = avail;
     }
-    __ringbuf_internal_write(ring, buf, entry_count, ring->wpos);
+    _ringbuf_internal_write(ring, buf, entry_count, ring->wpos);
 
     ring->wpos += entry_count;
     return entry_count;
 }
 
 uint32_t cdk_ringbuf_read(cdk_ringbuf_t* ring, void* buf, uint32_t entry_count) {
-
-    entry_count = __ringbuf_internal_read_peek(ring, buf, entry_count);
+    entry_count = _ringbuf_internal_read_peek(ring, buf, entry_count);
     ring->rpos += entry_count;
 
     return entry_count;

@@ -49,8 +49,7 @@
 
 static const unsigned short endian = 0x1;
 
-static void __sha1_transform(uint32_t state[5], const uint8_t buffer[64])
-{
+static void _sha1_transform(uint32_t state[5], const uint8_t buffer[64]) {
     uint32_t a, b, c, d, e;
     uint32_t block[16];
     memcpy(&block, buffer, 64);
@@ -87,16 +86,9 @@ static void __sha1_transform(uint32_t state[5], const uint8_t buffer[64])
     state[2] += c;
     state[3] += d;
     state[4] += e;
-    
-    /**
-     * fix security issue detected by CodeQL. 
-     */
-    /*a = b = c = d = e = 0;
-    memset(block, '\0', sizeof(block));*/
 }
 
-void cdk_sha1_init(cdk_sha1_t* ctx)
-{
+void cdk_sha1_init(cdk_sha1_t* ctx) {
     ctx->state[0] = 0x67452301;
     ctx->state[1] = 0xEFCDAB89;
     ctx->state[2] = 0x98BADCFE;
@@ -105,10 +97,8 @@ void cdk_sha1_init(cdk_sha1_t* ctx)
     ctx->count[0] = ctx->count[1] = 0;
 }
 
-void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, size_t len)
-{
+void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, size_t len) {
     size_t i, j;
-
     j = ctx->count[0];
     if ((ctx->count[0] += len << 3) < j)
         ctx->count[1]++;
@@ -116,18 +106,18 @@ void cdk_sha1_update(cdk_sha1_t* ctx, uint8_t* data, size_t len)
     j = (j >> 3) & 63;
     if ((j + len) > 63) {
         memcpy(&ctx->buffer[j], data, (i = 64 - j));
-        __sha1_transform(ctx->state, ctx->buffer);
+        _sha1_transform(ctx->state, ctx->buffer);
         for (; i + 63 < len; i += 64) {
-            __sha1_transform(ctx->state, &data[i]);
+            _sha1_transform(ctx->state, &data[i]);
         }
         j = 0;
+    } else {
+        i = 0;
     }
-    else i = 0;
     memcpy(&ctx->buffer[j], &data[i], len - i);
 }
 
-void cdk_sha1_final(cdk_sha1_t* ctx, uint8_t digest[])
-{
+void cdk_sha1_final(cdk_sha1_t* ctx, uint8_t digest[]) {
     unsigned i;
     uint8_t finalcount[8];
     uint8_t c;
@@ -147,9 +137,4 @@ void cdk_sha1_final(cdk_sha1_t* ctx, uint8_t digest[])
         digest[i] = (uint8_t)
             ((ctx->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
     }
-    /**
-     * fix security issue detected by CodeQL.
-     */
-   /* memset(ctx, '\0', sizeof(*ctx));
-    memset(&finalcount, '\0', sizeof(finalcount));*/
 }

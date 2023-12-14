@@ -22,6 +22,5 @@
 #include "platform/platform-process.h"
 
 cdk_pid_t cdk_process_getpid(void) {
-
 	return platform_process_getpid();
 }

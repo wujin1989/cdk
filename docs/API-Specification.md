@@ -765,65 +765,63 @@ extern void cdk_net_dial(const char* type, const char* host, const char* port, c
 ```
 ```c
 /**
- * @brief Post a receive operation for a channel
+ * @brief Send a buffer through the specified network channel.
  *
- * This function posts a receive operation for the specified channel. It indicates that the channel
- * is ready to receive data.
+ * This function is used to send a buffer through the specified network channel.
  *
- * @param channel Pointer to the channel to post the receive operation on
- * @return N/A
- */
-extern void cdk_net_postrecv(cdk_channel_t* channel);
-```
-```c
-/**
- * @brief Send buffer by channel
+ * The function is designed to be thread-safe, allowing multiple threads to safely
+ * invoke it simultaneously when sending data through the given channel.
  *
- * This function send buffer by the specified channel.
- *
- * @param channel Pointer to the channel
- * @param data    Pointer to the data to be sent
- * @param size    Size of the data to be sent
+ * @param channel Pointer to the network channel.
+ * @param data    Pointer to the data to be sent.
+ * @param size    Size of the data to be sent.
  * @return N/A
  */
 extern void cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
 ```
 ```c
 /**
- * @brief Post a event to a poller
+ * @brief Post an event to the specified network poller.
  *
- * This function posts a event to the specified poller. The event will be processed by the
- * corresponding event handler.
+ * This function is used to post an event to the network poller for asynchronous
+ * handling. The event is posted with a callback function (`cb`) and an associated
+ * argument (`arg`). The callback will be invoked when the event is processed by
+ * the poller. Additionally, the `totail` parameter determines whether the event
+ * should be added to the tail of the event queue (if `totail` is true) or the head
+ * of the event queue (if `totail` is false).
  *
- * @param poller Pointer to the poller to post the event to
- * @param event  Pointer to the network event to be posted
+ * The function is designed to be thread-safe, allowing multiple threads to safely
+ * post events to the network poller simultaneously.
+ *
+ * @param poller A pointer to the network poller structure.
+ * @param cb     The callback function to be invoked when the event is processed.
+ * @param arg    An argument to be passed to the callback function.
+ * @param totail A boolean flag indicating whether to add the event to the tail
+ *               or head of the event queue (true for tail, false for head).
  * @return N/A
  */
-extern void cdk_net_postevent(cdk_poller_t* poller, cdk_event_t* event);
+extern void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail)；
 ```
 ```c
 /**
- * @brief Close a network channel
+ * @brief Close a network channel.
  *
- * This function closes the specified network channel and releases associated resources.
+ * This function is used to actively close a network channel. It initiates the
+ * process of closing the specified network channel. The channel's associated
+ * resources will be released, and any remaining data in the send or receive
+ * buffers may be flushed or discarded. The function is designed to be thread-safe,
+ * allowing multiple threads to safely invoke it simultaneously.
  *
- * @param channel Pointer to the channel to be closed
+ * It's important to note that this function does not guarantee immediate closure,
+ * and the channel may continue to handle pending operations until the closure
+ * process completes. Users should rely on the on_close event callback, if available,
+ * to determine when the closure is finalized. If the on_close is registered,
+ * it will be invoked upon successful closure of the channel.
+ *
+ * @param channel A pointer to the network channel structure to be closed.
  * @return N/A
  */
 extern void cdk_net_close(cdk_channel_t* channel);
-```
-```c
-/**
- * @brief Initialize a network unpacker for a channel
- *
- * This function initializes a network unpacker for the specified channel. The unpacker is used
- * to unpack received data into meaningful messages or packets.
- *
- * @param channel  Pointer to the channel to initialize the unpacker for
- * @param unpacker Pointer to the unpacker structure to be initialized
- * @return N/A
- */
-extern void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker);
 ```
 ```c
 /**

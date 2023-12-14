@@ -25,7 +25,6 @@
 #define TCPv6_MSS       1220
 
 void platform_socket_nonblock(cdk_sock_t sock) {
-
     int flag = fcntl(sock, F_GETFL, 0);
     if (flag == -1) {
         abort();
@@ -36,14 +35,12 @@ void platform_socket_nonblock(cdk_sock_t sock) {
 }
 
 void platform_socket_set_recvbuf(cdk_sock_t sock, int val) {
-
     if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void*)&val, sizeof(int))) {
         abort();
     }
 }
 
 void platform_socket_set_sendbuf(cdk_sock_t sock, int val) {
-
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void*)&val, sizeof(int))) {
         abort();
     }
@@ -54,16 +51,12 @@ void platform_socket_close(cdk_sock_t sock) {
 }
 
 cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
-
     cdk_sock_t cli;
     do {
         cli = accept(sock, NULL, NULL);
     } while (cli == INVALID_SOCKET && errno == EINTR);
-
     if (cli == INVALID_SOCKET) {
-
         if (errno != EAGAIN || errno != EWOULDBLOCK) {
-
             platform_socket_close(sock);
             abort();
         }
@@ -76,7 +69,6 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
 }
 
 void platform_socket_nodelay(cdk_sock_t sock, bool on) {
-
     int val = on ? 1 : 0;
     if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const void*)&val, sizeof(val))) {
         abort();
@@ -84,7 +76,6 @@ void platform_socket_nodelay(cdk_sock_t sock, bool on) {
 }
 
 void platform_socket_reuse_addr(cdk_sock_t sock) {
-
     int on = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void*)&on, sizeof(on))) {
         abort();
@@ -93,10 +84,8 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
 
 #if defined(__linux__)
 int platform_socket_af(cdk_sock_t sock) {
-
     int af;
     socklen_t len;
-
     len = sizeof(int);
     if (getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &af, &len)) {
         abort();
@@ -107,7 +96,6 @@ int platform_socket_af(cdk_sock_t sock) {
 
 #if defined(__APPLE__)
 int platform_socket_af(cdk_sock_t sock) {
-
     struct sockaddr_storage ss;
     socklen_t len;
 
@@ -121,7 +109,6 @@ int platform_socket_af(cdk_sock_t sock) {
 #if defined(__linux__)
 
 void platform_socket_keepalive(cdk_sock_t sock) {
-
     int on = 1;
     int d = 60;
     int i = 1;  /** 1 second; same as default on win32 */
@@ -142,7 +129,6 @@ void platform_socket_keepalive(cdk_sock_t sock) {
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
-
     int af = platform_socket_af(sock);
     int mss = af == AF_INET ? TCPv4_MSS : TCPv6_MSS;
 
@@ -159,7 +145,6 @@ cdk_pollfd_t platform_socket_pollfd_create(void) {
 #if defined(__APPLE__)
 
 void platform_socket_keepalive(cdk_sock_t sock) {
-
     int on = 1;
     int d = 60;
     int i = 1;  /* 1 second; same as default on win32 */
@@ -180,7 +165,6 @@ void platform_socket_keepalive(cdk_sock_t sock) {
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
-
     /**
      * on macos, TCP_NOOPT seems to be the only way to restrict MSS to the minimum.
      * it strips all options out of the SYN packet which forces the remote party to fall back to the minimum MSS.
@@ -202,7 +186,6 @@ void platform_socket_pollfd_destroy(cdk_pollfd_t pfd) {
 }
 
 void platform_socket_reuse_port(cdk_sock_t sock) {
-
     int on = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const void*)&on, sizeof(on))) {
         abort();
@@ -210,7 +193,6 @@ void platform_socket_reuse_port(cdk_sock_t sock) {
 }
 
 cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol) {
-
     cdk_sock_t sock;
     struct addrinfo  hints;
     struct addrinfo* res;
@@ -270,15 +252,12 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
 }
 
 void platform_socket_startup(void) {
-
 }
 
 void platform_socket_cleanup(void) {
-
 }
 
 cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected) {
-
     int ret;
     cdk_sock_t sock;
     struct addrinfo  hints;
@@ -293,23 +272,19 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
     hints.ai_canonname = NULL;
     hints.ai_addr      = NULL;
     hints.ai_next      = NULL;
-
     if (getaddrinfo(host, port, &hints, &res)) {
         abort();
     }
     for (rp = res; rp != NULL; rp = rp->ai_next) {
-
         sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
         if (sock == INVALID_SOCKET) {
             continue;
         }
         platform_socket_nonblock(sock);
-
         if (protocol == SOCK_STREAM) {
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
-
             do {
                 ret = connect(sock, rp->ai_addr, rp->ai_addrlen);
             } while (ret == -1 && errno == EINTR);
@@ -321,8 +296,7 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
                 if (errno == EINPROGRESS) {
                     break;
                 }
-            }
-            else {
+            } else {
                 *connected = true;
             }
         }
@@ -336,7 +310,6 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
 }
 
 int platform_socket_socktype(cdk_sock_t sock) {
-
     int socktype;
     socklen_t len;
 
@@ -349,42 +322,34 @@ int platform_socket_socktype(cdk_sock_t sock) {
 }
 
 ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
-
     ssize_t n;
     do {
         n = recv(sock, buf, size, 0);
     } while (n == -1 && errno == EINTR);
-
     return n;
 }
 
 ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
-
     ssize_t n;
     do {
         n = send(sock, buf, size, 0);
     } while (n == -1 && errno == EINTR);
-
     return n;
 }
 
 ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* lenptr) {
-
     ssize_t n;
     do {
         n = recvfrom(sock, buf, size, 0, (struct sockaddr*)ss, lenptr);
     } while (n == -1 && errno == EINTR);
-
     return n;
 }
 
 ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len) {
-
     ssize_t n;
     do {
         n = sendto(sock, buf, size, 0, (struct sockaddr*)ss, len);
     } while (n == -1 && errno == EINTR);
-
     return n;
 }
 

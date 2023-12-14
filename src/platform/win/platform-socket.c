@@ -25,7 +25,6 @@
 static atomic_flag initialized = ATOMIC_FLAG_INIT;
 
 void platform_socket_nonblock(cdk_sock_t sock) {
-
     u_long on = 1;
     if (ioctlsocket(sock, FIONBIO, &on)) {
         abort();
@@ -33,14 +32,12 @@ void platform_socket_nonblock(cdk_sock_t sock) {
 }
 
 void platform_socket_set_recvbuf(cdk_sock_t sock, int val) {
-
     if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&val, sizeof(int))) {
         abort();
     }
 }
 
 void platform_socket_set_sendbuf(cdk_sock_t sock, int val) {
-
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&val, sizeof(int))) {
         abort();
     }
@@ -51,13 +48,9 @@ void platform_socket_close(cdk_sock_t sock) {
 }
 
 cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
-
     cdk_sock_t cli = accept(sock, NULL, NULL);
-
     if (cli == INVALID_SOCKET) {
-
         if (WSAGetLastError() != WSAEWOULDBLOCK) {
-            
             platform_socket_close(sock);
             abort();
         }
@@ -70,7 +63,6 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
 }
 
 void platform_socket_nodelay(cdk_sock_t sock, bool on) {
-
     int val = on ? 1 : 0;
     if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&val, sizeof(val))) {
         abort();
@@ -78,7 +70,6 @@ void platform_socket_nodelay(cdk_sock_t sock, bool on) {
 }
 
 void platform_socket_keepalive(cdk_sock_t sock) {
-
     int on = 1;
     int d = 60;
     int i = 1;  /* 1 second; same as default on win32 */
@@ -99,7 +90,6 @@ void platform_socket_keepalive(cdk_sock_t sock) {
 }
 
 int platform_socket_af(cdk_sock_t sock) {
-
     WSAPROTOCOL_INFOW info; /* using unicode name to avoiding ninja build warning */
     socklen_t len;
 
@@ -107,26 +97,22 @@ int platform_socket_af(cdk_sock_t sock) {
     if (getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len)) {
         abort();
     }
-
     return info.iAddressFamily;
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
-
     int af = platform_socket_af(sock);
     /**
      * windows doesn't support setting TCP_MAXSEG but IP_PMTUDISC_DONT forces the MSS to the protocol
      * minimum which is what we want here. linux doesn't do this (disabling PMTUD just avoids setting DF).
      */
     if (af == AF_INET) {
-
         int val = IP_PMTUDISC_DONT;
         if (setsockopt(sock, IPPROTO_IP, IP_MTU_DISCOVER, (const char*)&val, sizeof(int))) {
             abort();
         }
     }
     if (af == AF_INET6) {
-
         int val = IP_PMTUDISC_DONT;
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (const char*)&val, sizeof(int))) {
             abort();
@@ -135,7 +121,6 @@ void platform_socket_maxseg(cdk_sock_t sock) {
 }
 
 void platform_socket_reuse_addr(cdk_sock_t sock) {
-
     int on = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on))) {
         abort();
@@ -190,10 +175,8 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
     return sock;
 }
 
-void platform_socket_startup(void)
-{
-    if (!atomic_flag_test_and_set(&initialized))
-    {
+void platform_socket_startup(void) {
+    if (!atomic_flag_test_and_set(&initialized)) {
         WSADATA  d;
         if (WSAStartup(MAKEWORD(2, 2), &d)) {
             abort();
@@ -201,8 +184,7 @@ void platform_socket_startup(void)
     }
 }
 
-void platform_socket_cleanup(void)
-{
+void platform_socket_cleanup(void) {
     if (atomic_flag_test_and_set(&initialized)) {
         atomic_flag_clear(&initialized);
         WSACleanup();
@@ -210,7 +192,6 @@ void platform_socket_cleanup(void)
 }
 
 cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected) {
-
     cdk_sock_t sock;
     struct addrinfo  hints;
     struct addrinfo* res;
@@ -224,12 +205,10 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
     hints.ai_canonname = NULL;
     hints.ai_addr      = NULL;
     hints.ai_next      = NULL;
-
     if (getaddrinfo(host, port, &hints, &res)) {
         abort();
     }
     for (rp = res; rp != NULL; rp = rp->ai_next) {
-
         sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
         if (sock == INVALID_SOCKET) {
             continue;
@@ -240,9 +219,7 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
-
             if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
-
                 if (WSAGetLastError() != WSAEWOULDBLOCK) {
                     platform_socket_close(sock);
                     continue;
@@ -250,8 +227,7 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
                 if (WSAGetLastError() == WSAEWOULDBLOCK) {
                     break;
                 }
-            }
-            else {
+            } else {
                 *connected = true;
             }
         }
@@ -265,10 +241,8 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
 }
 
 int platform_socket_socktype(cdk_sock_t sock) {
-
     int socktype;
     int len = sizeof(int);
-
     if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&socktype, &len)) {
         abort();
     }
@@ -276,27 +250,22 @@ int platform_socket_socktype(cdk_sock_t sock) {
 }
 
 ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
-
     return recv(sock, buf, size, 0);
 }
 
 ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
-
     return send(sock, buf, size, 0);
 }
 
 ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* lenptr) {
-
     return recvfrom(sock, buf, size, 0, (struct sockaddr*)ss, lenptr);
 }
 
 ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len) {
-
     return sendto(sock, buf, size, 0, (struct sockaddr*)ss, len);
 }
 
-int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2])
-{
+int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]) {
     SOCKADDR_IN addr;
     SOCKET srv;
     SOCKET cli;

@@ -23,14 +23,10 @@
 #include <stdint.h>
 
 void cdk_base64_encode(uint8_t* src, size_t srclen, uint8_t* dst, size_t* dstlen) {
-
 	static const char b64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	size_t i, j;
-
 	for (i = 0, j = 0; i < srclen; i += 3, j += 4) {
-
 		uint32_t n = ((uint32_t)src[i]) << 16;
-
 		if (i + 1 < srclen) {
 			n |= ((uint32_t)src[i + 1]) << 8;
 		}
@@ -46,7 +42,6 @@ void cdk_base64_encode(uint8_t* src, size_t srclen, uint8_t* dst, size_t* dstlen
 }
 
 void cdk_base64_decode(uint8_t* src, size_t srclen, uint8_t* dst, size_t* dstlen) {
-
     static const uint8_t b64[128] = {
         64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
         64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -58,14 +53,11 @@ void cdk_base64_decode(uint8_t* src, size_t srclen, uint8_t* dst, size_t* dstlen
         41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64
     };
     size_t i, j;
-
     for (i = 0, j = 0; i < srclen; i += 4, j += 3) {
-
         uint32_t n = (b64[src[i]] << 18)
                    | (b64[src[i + 1]] << 12)
                    | (b64[src[i + 2]] << 6)
                    | (b64[src[i + 3]]);
-
         dst[j] = (n >> 16) & 0xff;
         if (src[i + 2] != '=') {
             dst[j + 1] = (n >> 8) & 0xff;

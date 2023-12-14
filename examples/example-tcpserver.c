@@ -12,24 +12,6 @@ typedef struct _net_msg_t {
 
 static void handle_accept(cdk_channel_t* channel) {
 	printf("tid[%d], [%d]new connection coming...\n", (int)cdk_utils_systemtid(), (int)channel->fd);
-
-	cdk_unpack_t unpacker1 = {
-		.type = UNPACK_TYPE_FIXEDLEN,
-		.fixedlen.len = 6
-	};
-	cdk_unpack_t unpacker2 = {
-		.type = UNPACK_TYPE_DELIMITER,
-		.delimiter.delimiter = "\r\n\r\n"
-	};
-	cdk_unpack_t unpacker3 = {
-		.type = UNPACK_TYPE_LENGTHFIELD,
-		.lengthfield.adj = 0,
-		.lengthfield.coding = LEN_FIELD_FIXEDINT,
-		.lengthfield.offset = 0,
-		.lengthfield.payload = 8,
-		.lengthfield.size = 4
-	};
-	cdk_net_unpacker_init(channel, &unpacker3);
 }
 
 static void handle_write(cdk_channel_t* channel) {
@@ -63,13 +45,22 @@ int main(void) {
 		.keyfile = "certs/server.key",
 		.verifypeer = false
 	};
+	cdk_unpack_t unpacker3 = {
+		.type = UNPACK_TYPE_LENGTHFIELD,
+		.lengthfield.adj = 0,
+		.lengthfield.coding = LEN_FIELD_FIXEDINT,
+		.lengthfield.offset = 0,
+		.lengthfield.payload = 8,
+		.lengthfield.size = 4
+	};
 	cdk_handler_t handler = {
 		.on_accept  = handle_accept,
 		.on_read    = handle_read,
 		.on_write   = handle_write,
 		.on_close   = handle_close,
 		.connect_timeout = 0,
-		.tlsconf = &conf
+		.tlsconf = &conf,
+		.unpacker = &unpacker3
 	};
 	cdk_net_listen(PROTOCOL_TCP, "0.0.0.0", "9999", &handler);
 	

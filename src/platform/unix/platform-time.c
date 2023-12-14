@@ -24,13 +24,11 @@
 #define USEC   (1000000UL)
 
 void platform_time_localtime(const time_t* t, struct tm* r) {
-
 	tzset();
 	localtime_r(t, r);
 }
 
 void platform_time_sleep(const uint32_t ms) {
-
 	int ret;
 	struct timespec req;
 	struct timespec rem;

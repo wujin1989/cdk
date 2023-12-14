@@ -22,7 +22,6 @@
 #include "cdk/cdk-types.h"
 
 void* platform_loader_create(char* m) {
-
 	for (int i = 0; i < strlen(m); i++) {
 		if (m[i] == '/') {
 			m[i] = '\\';
@@ -32,14 +31,11 @@ void* platform_loader_create(char* m) {
 }
 
 void platform_loader_destroy(void* m) {
-
 	FreeLibrary((HMODULE)m);
 }
 
 void* platform_loader_load(void* m, const char* restrict f) {
-
 	void* r = (void*)GetProcAddress((HMODULE)m, f);
-
 	if (r == NULL) {
 		platform_loader_destroy(m);
 	}

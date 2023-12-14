@@ -293,7 +293,7 @@ struct cdk_channel_s {
 	cdk_offset_buf_t rxbuf;
 	cdk_list_t       txlist;
 	cdk_tls_t*       tls;
-	cdk_unpack_t     unpacker;
+	cdk_unpack_t*    unpacker;
 	cdk_timer_job_t* ctimer;
 	struct {
 		struct sockaddr_storage ss;
@@ -307,8 +307,11 @@ struct cdk_handler_s {
 	void (*on_close)  (cdk_channel_t*, const char* error);
 	void (*on_accept) (cdk_channel_t*);
 	void (*on_connect)(cdk_channel_t*);
-	int connect_timeout;
 	cdk_tlsconf_t* tlsconf;
+
+	/** used by tcp */
+	int connect_timeout;
+	cdk_unpack_t* unpacker;
 };
 
 struct cdk_sha256_s {

@@ -25,19 +25,15 @@
 #define MSEC                        (1000UL)
 
 uint64_t cdk_time_now(void) {
-
 	struct timespec tsc;
 	if (!timespec_get(&tsc, TIME_UTC)) { return 0; }
-
 	return (tsc.tv_sec * MSEC + tsc.tv_nsec / USEC);
 }
 
 void cdk_time_localtime(const time_t* t, struct tm* r) {
-
 	platform_time_localtime(t, r);
 }
 
 void cdk_time_sleep(const uint32_t ms) {
-
 	platform_time_sleep(ms);
 }

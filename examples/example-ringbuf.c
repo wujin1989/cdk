@@ -11,8 +11,6 @@ int main(void) {
     cdk_ringbuf_t ring;
     cdk_ringbuf_create(&ring, sizeof(people_t), BUFFERSIZE);
 
-    printf("%zu\n", sizeof(people_t));
-
     uint32_t len = cdk_ringbuf_len(&ring);
     printf("ringbuffer len: %u\n", len);
 
@@ -31,22 +29,24 @@ int main(void) {
     people_t obj1 = { .name = "John", .age = 25 };
     people_t obj2 = { .name = "Alice", .age = 30 };
     people_t obj3 = { .name = "Bob", .age = 35 };
-    people_t obj4 = { .name = "aaa", .age = 35 };
-    people_t obj5 = { .name = "bbb", .age = 35 };
+    people_t obj4 = { .name = "Han", .age = 35 };
+    people_t obj5 = { .name = "Jun", .age = 35 };
 
     cdk_ringbuf_write(&ring, &obj1, 1);
     cdk_ringbuf_write(&ring, &obj2, 1);
     cdk_ringbuf_write(&ring, &obj3, 1);
     cdk_ringbuf_write(&ring, &obj4, 1);
-    uint32_t n = cdk_ringbuf_write(&ring, &obj5, 1);
-    printf("write %d element\n", n);
+
+    if (cdk_ringbuf_write(&ring, &obj5, 1) == 0) {
+        printf("write failed, because ringbuf is full\n");
+    }
     printf("ringbuffer len: %u\n", cdk_ringbuf_len(&ring));
 
-    people_t arr[2];
-    cdk_ringbuf_read(&ring, arr, 2);
+    people_t peoples[2];
+    cdk_ringbuf_read(&ring, peoples, 2);
 
     for (int i = 0; i < 2; i++) {
-        printf("name: %s, age: %d\n", arr[i].name, arr[i].age);
+        printf("name: %s, age: %d\n", peoples[i].name, peoples[i].age);
     }
     printf("ringbuffer avail: %u\n", cdk_ringbuf_avail(&ring));
     cdk_ringbuf_destroy(&ring);

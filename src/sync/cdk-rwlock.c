@@ -22,13 +22,11 @@
 #include "cdk/cdk-types.h"
 
 void cdk_rwlock_init(cdk_rwlock_t* rwlock) {
-
     atomic_init(&rwlock->rdcnt, 0);
     atomic_init(&rwlock->wrlock, false);
 }
 
 void cdk_rwlock_rdlock(cdk_rwlock_t* rwlock) {
-
     while (true) {
         while (atomic_load(&rwlock->wrlock)) {}
         atomic_fetch_add(&rwlock->rdcnt, 1);
@@ -40,17 +38,14 @@ void cdk_rwlock_rdlock(cdk_rwlock_t* rwlock) {
 }
 
 void cdk_rwlock_wrlock(cdk_rwlock_t* rwlock) {
-
     while (atomic_exchange(&rwlock->wrlock, true)) {}
     while (atomic_load(&rwlock->rdcnt)) {}
 }
 
 void cdk_rwlock_wrunlock(cdk_rwlock_t* rwlock) {
-
     atomic_exchange(&rwlock->wrlock, false);
 }
 
 void cdk_rwlock_rdunlock(cdk_rwlock_t* rwlock) {
-
     atomic_fetch_sub(&rwlock->rdcnt, 1);
 }

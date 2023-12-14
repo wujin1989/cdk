@@ -22,6 +22,5 @@
 #include "cdk/cdk-types.h"
 
 cdk_pid_t platform_process_getpid(void) {
-
 	return getpid();
 }

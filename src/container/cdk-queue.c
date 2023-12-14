@@ -22,27 +22,22 @@
 #include "cdk/container/cdk-list.h"
 
 void cdk_queue_init(cdk_queue_t* q) {
-
 	cdk_list_init(q);
 }
 
 void cdk_queue_enqueue(cdk_queue_t* q, cdk_queue_node_t* x) {
-
 	cdk_list_insert_tail(q, x);
 }
 
 bool cdk_queue_empty(cdk_queue_t* q) {
-
 	return cdk_list_empty(q);
 }
 
 cdk_queue_node_t* cdk_queue_dequeue(cdk_queue_t* q) {
-
 	if (cdk_queue_empty(q)) {
 		return NULL;
 	}
 	cdk_queue_node_t* n = cdk_list_head(q);
-
 	cdk_list_remove(n);
 	return n;
 }

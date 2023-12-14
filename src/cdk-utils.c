@@ -24,24 +24,19 @@
 #include <stdlib.h>
 
 int cdk_utils_cpus(void) {
-	
 	return (int)platform_utils_cpus();
 }
 
 cdk_tid_t cdk_utils_systemtid(void) {
-
     return platform_utils_systemtid();
 }
 
 int cdk_utils_byteorder(void) {
-	
 	return (*((unsigned char*)(&(unsigned short){ 0x01 })));
 }
 
 int cdk_utils_rand(int min, int max) {
-
     static unsigned int s = 0;
-
     if (s == 0) {
         s = (unsigned int)time(NULL);
         srand(s);

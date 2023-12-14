@@ -22,15 +22,12 @@
 #include "cdk/cdk-types.h"
 
 int platform_utils_cpus(void) {
-
 	SYSTEM_INFO si;
 	GetSystemInfo(&si);
-
 	return (int)si.dwNumberOfProcessors;
 }
 
 cdk_tid_t platform_utils_systemtid(void) {
-
 	return GetCurrentThreadId();
 }
 

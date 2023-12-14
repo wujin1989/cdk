@@ -16,6 +16,5 @@ int main(void) {
         printf("%02x", digest[i]);
     }
     printf("\n");
-
     return 0;
 }

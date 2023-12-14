@@ -78,7 +78,9 @@ static void _channel_encrypted_send(cdk_channel_t* channel) {
     if (n < e->len) {
         txlist_insert(&channel->txlist, e->buf + n, (e->len - n), false);
     }
-    channel->handler->on_write(channel);
+    if (channel->handler->on_write) {
+        channel->handler->on_write(channel);
+    }
     txlist_remove(e);
 }
 
@@ -108,7 +110,7 @@ static void _channel_unencrypted_send(cdk_channel_t* channel) {
     if (n < e->len) {
         txlist_insert(&channel->txlist, e->buf + n, (e->len - n), false);
     }
-    if (n > 0) {
+    if (n > 0 && channel->handler->on_write) {
         channel->handler->on_write(channel);
     }
     txlist_remove(e);
@@ -219,10 +221,12 @@ static void _channel_udp_encrypted_recv(cdk_channel_t* channel) {
         if (n == 0) {
             return;
         }
-        channel->handler->on_close(channel, tls_error2string(err));
+        channel_destroy(channel, tls_error2string(err));
         return;
     }
-    channel->handler->on_read(channel, channel->rxbuf.buf, n);
+    if (channel->handler->on_read) {
+        channel->handler->on_read(channel, channel->rxbuf.buf, n);
+    }
 }
 
 static void _channel_udp_unencrypted_recv(cdk_channel_t* channel) {
@@ -240,7 +244,9 @@ static void _channel_udp_unencrypted_recv(cdk_channel_t* channel) {
         channel_destroy(channel, platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
-    channel->handler->on_read(channel, channel->rxbuf.buf, n);
+    if (channel->handler->on_read) {
+        channel->handler->on_read(channel, channel->rxbuf.buf, n);
+    }
 }
 
 static void _channel_tcp_encrypted_recv(cdk_channel_t* channel) {
@@ -296,7 +302,9 @@ static void _channel_tcp_accept(cdk_channel_t* channel) {
             channel_tls_srv_handshake(newchannel);
         }
         else {
-            newchannel->handler->on_accept(newchannel);
+            if (newchannel->handler->on_accept) {
+                newchannel->handler->on_accept(newchannel);
+            }
             if (!channel_is_reading(newchannel)) {
                 channel_enable_read(newchannel);
             }
@@ -312,7 +320,9 @@ static void _channel_udp_accept(cdk_channel_t* channel) {
         channel_tls_srv_handshake(channel);
     }
     else {
-        channel->handler->on_accept(channel);
+        if (channel->handler->on_accept) {
+            channel->handler->on_accept(channel);
+        }
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
         }
@@ -346,7 +356,9 @@ static void _channel_tcp_connect(cdk_channel_t* channel) {
         if (channel->tls) {
             channel_tls_cli_handshake(channel);
         } else {
-            channel->handler->on_connect(channel);
+            if (channel->handler->on_connect) {
+                channel->handler->on_connect(channel);
+            }
             if (!channel_is_reading(channel)) {
                 channel_enable_read(channel);
             }
@@ -361,7 +373,9 @@ static void _channel_udp_connect(cdk_channel_t* channel) {
     if (channel->tls) {
         channel_tls_cli_handshake(channel);
     } else {
-        channel->handler->on_connect(channel);
+        if (channel->handler->on_connect) {
+            channel->handler->on_connect(channel);
+        }
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
         }
@@ -435,7 +449,9 @@ void channel_tls_cli_handshake(void* param) {
         channel_destroy(channel, tls_error2string(err));
         return;
     }
-    channel->handler->on_connect(channel);
+    if (channel->handler->on_connect) {
+        channel->handler->on_connect(channel);
+    }
     if (!channel_is_reading(channel)) {
         channel_enable_read(channel);
     }
@@ -453,7 +469,9 @@ void channel_tls_srv_handshake(void* param) {
         channel_destroy(channel, tls_error2string(err));
         return;
     }
-    channel->handler->on_accept(channel);
+    if (channel->handler->on_accept) {
+        channel->handler->on_accept(channel);
+    }
     if (!channel_is_reading(channel)) {
         channel_enable_read(channel);
     }
@@ -480,6 +498,9 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
                 channel->tls = tls_create(channel->handler->tlsconf, ENABLE_DTLS);
             }
         }
+        if (channel->handler->unpacker) {
+            channel->unpacker = handler->unpacker;
+        }
         return channel;
     }
     return NULL;
@@ -495,8 +516,9 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
     _deallocate_io_buffers(&channel->rxbuf, &channel->txlist);
     tls_destroy(channel->tls);
 
-    channel->handler->on_close(channel, reason);
-
+    if (channel->handler->on_close) {
+        channel->handler->on_close(channel, reason);
+    }
     cdk_net_postevent(channel->poller, _async_channel_destroy, channel, true);
 }
 

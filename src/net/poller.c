@@ -24,7 +24,7 @@
 #include "cdk/container/cdk-list.h"
 #include "net/channel.h"
 
-static void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len) {
+static inline void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len) {
     mtx_lock(&channel->poller->evmtx);
     cdk_event_t* e = NULL;
     if (!cdk_list_empty(&channel->poller->evlist)) {
@@ -39,21 +39,22 @@ static void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len) {
     }
 }
 
-static void _eventfd_close(cdk_channel_t* channel, const char* error) {
+static inline void _eventfd_close(cdk_channel_t* channel, const char* error) {
 }
 
-static cdk_handler_t eventfd_handler = {
-    .on_read = _eventfd_read,
-    .on_close = _eventfd_close
-};
 static cdk_unpack_t eventfd_unpacker = {
     .type = UNPACK_TYPE_FIXEDLEN,
     .fixedlen.len = sizeof(int)
 };
 
+static cdk_handler_t eventfd_handler = {
+    .on_read = _eventfd_read,
+    .on_close = _eventfd_close,
+    .unpacker = &eventfd_unpacker
+};
+
 void poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS];
-
     while (poller->active) {
         int nevents = platform_event_wait(poller->pfd, events);
         for (int i = 0; i < nevents; i++) {
@@ -76,8 +77,7 @@ void poller_poll(cdk_poller_t* poller) {
     }
 }
 
-cdk_poller_t* poller_create(void)
-{
+cdk_poller_t* poller_create(void) {
     cdk_poller_t* poller = malloc(sizeof(cdk_poller_t));
 
     if (poller) {
@@ -91,8 +91,6 @@ cdk_poller_t* poller_create(void)
 
         poller->wakeup = channel_create(poller, poller->evfds[1], &eventfd_handler);
         if (poller->wakeup) {
-            memcpy(&poller->wakeup->unpacker, &eventfd_unpacker, sizeof(cdk_unpack_t));
-
             platform_event_add(poller->pfd, poller->wakeup->fd, EVENT_TYPE_R, poller->wakeup);
             poller->wakeup->events |= EVENT_TYPE_R;
         }
@@ -100,16 +98,14 @@ cdk_poller_t* poller_create(void)
     return poller;
 }
 
-void poller_destroy(cdk_poller_t* poller)
-{
+void poller_destroy(cdk_poller_t* poller) {
     poller->active = false;
     platform_socket_pollfd_destroy(poller->pfd);
 
     platform_socket_close(poller->evfds[0]);
     platform_socket_close(poller->evfds[1]);
 
-    while (!cdk_list_empty(&poller->evlist))
-    {
+    while (!cdk_list_empty(&poller->evlist)) {
         cdk_event_t* e = cdk_list_data(cdk_list_head(&poller->evlist), cdk_event_t, node);
         cdk_list_remove(&e->node);
 

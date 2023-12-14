@@ -30,12 +30,9 @@ typedef struct thrdpool_job_s {
 	cdk_queue_node_t n;
 }thrdpool_job_t;
 
-static int __thrdpool_thrdfunc(void* arg) {
-	
+static int _thrdpool_thrdfunc(void* arg) {
 	cdk_thrdpool_t* pool = arg;
-
 	while (pool->status) {
-
 		mtx_lock(&pool->qmtx);
 		thrdpool_job_t* job;
 
@@ -57,10 +54,8 @@ static int __thrdpool_thrdfunc(void* arg) {
 	return 0;
 }
 
-static void __thrdpool_createthread(cdk_thrdpool_t* pool) {
-
+static void _thrdpool_createthread(cdk_thrdpool_t* pool) {
 	void* thrds;
-
 	mtx_lock(&pool->tmtx);
 	thrds = realloc(pool->thrds, (pool->thrdcnt + 1) * sizeof(thrd_t));
 	if (!thrds) {
@@ -68,17 +63,15 @@ static void __thrdpool_createthread(cdk_thrdpool_t* pool) {
 		return;
 	}
 	pool->thrds = thrds;
-	thrd_create(pool->thrds + pool->thrdcnt, __thrdpool_thrdfunc, pool);
+	thrd_create(pool->thrds + pool->thrdcnt, _thrdpool_thrdfunc, pool);
 
 	pool->thrdcnt++;
 	mtx_unlock(&pool->tmtx);
 }
 
 void cdk_thrdpool_create(cdk_thrdpool_t* pool, int nthrds) {
-
 	if (pool) {
 		cdk_queue_init(&pool->queue);
-
 		mtx_init(&pool->tmtx, mtx_plain);
 		mtx_init(&pool->qmtx, mtx_plain);
 		cnd_init(&pool->qcnd);
@@ -86,19 +79,15 @@ void cdk_thrdpool_create(cdk_thrdpool_t* pool, int nthrds) {
 		pool->thrdcnt = 0;
 		pool->status = true;
 		pool->thrds = NULL;
-
 		for (int i = 0; i < nthrds; i++) {
-			__thrdpool_createthread(pool);
+			_thrdpool_createthread(pool);
 		}
 	}
 }
 
 void cdk_thrdpool_destroy(cdk_thrdpool_t* pool) {
-	
 	pool->status = false;
-
 	cnd_broadcast(&pool->qcnd);
-
 	for (int i = 0; i < pool->thrdcnt; i++) {
 		thrd_join(pool->thrds[i], NULL);
 	}
@@ -111,7 +100,6 @@ void cdk_thrdpool_destroy(cdk_thrdpool_t* pool) {
 }
 
 void cdk_thrdpool_post(cdk_thrdpool_t* pool, void (*routine)(void*), void* arg) {
-
 	thrdpool_job_t* job = malloc(sizeof(thrdpool_job_t));
 	if (job) {
 		job->routine = routine;

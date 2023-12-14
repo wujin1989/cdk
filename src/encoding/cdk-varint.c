@@ -25,11 +25,8 @@
 #include <stddef.h>
 
 int cdk_varint_encode(uint64_t value, char* buf) {
-
     int pos = 0;
-
     while (value > 0x7f) {
-
         buf[pos++] = (char)((value & 0x7f) | 0x80);
         value >>= 7;
     }
@@ -38,12 +35,10 @@ int cdk_varint_encode(uint64_t value, char* buf) {
 }
 
 uint64_t cdk_varint_decode(char* buf, int* pos) {
-
     uint64_t value = 0;
     int shift = 0;
 
     while (buf[*pos] & 0x80) {
-
         value |= (uint64_t)(buf[*pos] & 0x7f) << shift;
         shift += 7;
         (*pos)++;

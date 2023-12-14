@@ -32,6 +32,7 @@ void cdk_list_insert_head(cdk_list_t* l, cdk_list_node_t* x) {
 	 */
 	(x)->n     = (x);
 	(x)->p     = (x);
+
 	/**
 	 * insert node;
 	 */
@@ -47,6 +48,7 @@ void cdk_list_insert_tail(cdk_list_t* l, cdk_list_node_t* x) {
 	 */
 	(x)->n = (x);
 	(x)->p = (x);
+
 	/**
 	 * insert node;
 	 */
@@ -82,6 +84,5 @@ cdk_list_node_t* cdk_list_next(cdk_list_node_t* x) {
 }
 
 cdk_list_node_t* cdk_list_prev(cdk_list_node_t* x) {
-
 	return (x)->p;
 }

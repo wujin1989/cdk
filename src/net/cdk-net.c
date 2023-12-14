@@ -73,7 +73,9 @@ static void _do_tfo_connect(void* param) {
         if (channel_is_connecting(channel)) {
             channel_disable_connect(channel);
         }
-        channel->handler->on_connect(channel);
+        if (channel->handler->on_connect) {
+            channel->handler->on_connect(channel);
+        }
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
         }
@@ -82,7 +84,9 @@ static void _do_tfo_connect(void* param) {
 
 static void _connect_timeout_callback(void* param) {
     cdk_channel_t* channel = param;
-    channel->handler->on_close(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ETIMEDOUT));
+    if (channel->handler->on_close) {
+        channel->handler->on_close(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ETIMEDOUT));
+    }
 }
 
 static void _connect_timeout_routine(void* param) {
@@ -122,7 +126,7 @@ static void _async_channel_destroy(cdk_channel_t* channel) {
     cdk_net_postevent(channel->poller, _async_channel_destroy_callback, channel, true);
 }
 
-static void __inet_ntop(int af, const void* restrict src, char* restrict dst) {
+static void _inet_ntop(int af, const void* restrict src, char* restrict dst) {
     if (af == AF_INET) {
         inet_ntop(af, src, dst, INET_ADDRSTRLEN);
     }
@@ -153,7 +157,7 @@ cdk_poller_t* _poller_roundrobin(void) {
     return currpoller;
 }
 
-static int __workerthread(void* param) {
+static int _workerthread(void* param) {
     cdk_poller_t* poller = poller_create();
     if (poller == NULL) {
         return -1;
@@ -183,7 +187,7 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai) {
     {
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
-        __inet_ntop(AF_INET, &si->sin_addr, d);
+        _inet_ntop(AF_INET, &si->sin_addr, d);
         ai->p = ntohs(si->sin_port);
         ai->f = AF_INET;
         break;
@@ -192,7 +196,7 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai) {
     {
         struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
 
-        __inet_ntop(AF_INET6, &si6->sin6_addr, d);
+        _inet_ntop(AF_INET6, &si6->sin6_addr, d);
         ai->p = ntohs(si6->sin6_port);
         ai->f = AF_INET6;
         break;
@@ -320,10 +324,6 @@ void cdk_net_close(cdk_channel_t* channel) {
     }
 }
 
-void cdk_net_unpacker_init(cdk_channel_t* channel, cdk_unpack_t* unpacker) {
-    memcpy(&channel->unpacker, unpacker, sizeof(cdk_unpack_t));
-}
-
 void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail) {
     cdk_event_t* event = malloc(sizeof(cdk_event_t));
     if (event) {
@@ -360,7 +360,7 @@ void cdk_net_startup(int nworkers) {
 
     workers = malloc(cnt * sizeof(thrd_t));
     for (int i = 0; i < cnt; i++) {
-        thrd_create(workers + i, __workerthread, NULL);
+        thrd_create(workers + i, _workerthread, NULL);
     }
 }
 

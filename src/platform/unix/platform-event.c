@@ -59,10 +59,8 @@ void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channe
 }
 
 int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
-
 	struct epoll_event __events[MAX_PROCESS_EVENTS];
 	int n;
-
 	memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
 	do {
 		n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, -1);
@@ -104,7 +102,6 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channe
 
 void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
 	(void)ud;
-
 	struct kevent ke;
 	if ((events & EVENT_TYPE_A) || (events & EVENT_TYPE_R)) {
 		EV_SET(&ke, sfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);

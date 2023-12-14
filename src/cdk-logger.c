@@ -51,19 +51,16 @@ static logger_t logger;
 static atomic_flag once_create  = ATOMIC_FLAG_INIT;
 static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
 
-static inline void __logger_printer(void* arg) {
-
+static inline void _logger_printer(void* arg) {
 	fprintf(logger.file, "%s", (char*)arg);
 	fflush(logger.file);
 	free(arg);
 	arg = NULL;
 }
 
-static inline void __logger_syncbase(int level, const char* restrict file, int line) {
-
+static inline void _logger_syncbase(int level, const char* restrict file, int line) {
 	struct timespec tsc;
 	struct tm       tm;
-
 	if (!timespec_get(&tsc, TIME_UTC)) { return; }
 	cdk_time_localtime(&tsc.tv_sec, &tm);
 
@@ -80,18 +77,15 @@ static inline void __logger_syncbase(int level, const char* restrict file, int l
 	);
 }
 
-static inline void __logger_asyncbase(int level, const char* restrict file, int line, const char* restrict fmt, va_list v) {
-
+static inline void _logger_asyncbase(int level, const char* restrict file, int line, const char* restrict fmt, va_list v) {
 	struct timespec tsc;
 	struct tm       tm;
 	char            buf[BUFSIZE];
 	int             ret;
-
 	if (!timespec_get(&tsc, TIME_UTC)) {
 		return;
 	}
 	cdk_time_localtime(&tsc.tv_sec, &tm);
-
 	memset(buf, 0, sizeof(buf));
 	ret = sprintf(buf,                                                 \
 		"%04d-%02d-%02d %02d:%02d:%02d.%03d %5s %s:%d ",               \
@@ -107,16 +101,14 @@ static inline void __logger_asyncbase(int level, const char* restrict file, int 
 	);
 	ret += vsprintf(buf + ret, fmt, v);
 	ret++;
-
 	char* arg = malloc(ret);
 	if (arg) {
 		memcpy(arg, buf, ret);
-		cdk_thrdpool_post(&logger.pool, __logger_printer, arg);
+		cdk_thrdpool_post(&logger.pool, _logger_printer, arg);
 	}
 }
 
 void cdk_logger_create(const char* restrict out, int nthrds) {
-
 	if (atomic_flag_test_and_set(&once_create)) {
 		return;
 	}
@@ -132,7 +124,6 @@ void cdk_logger_create(const char* restrict out, int nthrds) {
 }
 
 void cdk_logger_destroy(void) {
-
 	if (atomic_flag_test_and_set(&once_destroy)) {
 		return;
 	}
@@ -145,16 +136,13 @@ void cdk_logger_destroy(void) {
 }
 
 void cdk_logger_log(int level, const char* restrict file, int line, const char* restrict fmt, ...) {
-	
 	char* p = strrchr(file, S);
-
 	if (!logger.async) {
-		
 		if (!p) {
-			__logger_syncbase(level, file, line);
+			_logger_syncbase(level, file, line);
 		}
 		if (p) {
-			__logger_syncbase(level, ++p, line);
+			_logger_syncbase(level, ++p, line);
 		}
 		va_list v;
 		va_start(v, fmt);
@@ -164,15 +152,13 @@ void cdk_logger_log(int level, const char* restrict file, int line, const char* 
 		fflush(logger.file);
 	}
 	if (logger.async) {
-
 		va_list v;
 		va_start(v, fmt);
-
 		if (!p) {
-			__logger_asyncbase(level, file, line, fmt, v);
+			_logger_asyncbase(level, file, line, fmt, v);
 		}
 		if (p) {
-			__logger_asyncbase(level, ++p, line, fmt, v);
+			_logger_asyncbase(level, ++p, line, fmt, v);
 		}
 		va_end(v);
 	}
