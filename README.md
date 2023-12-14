@@ -1,7 +1,6 @@
 ![image](https://github.com/wujin1989/cdk/blob/main/docs/images/logo.png)
 [![Platform](https://img.shields.io/badge/platform-linux%7Cmacosx%7Cwindows-ff69b4)](https://github.com/wujin1989/cdk/actions/workflows/main.yml)
 [![Build](https://github.com/wujin1989/cdk/actions/workflows/main.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/main.yml)
-[![AddressSanitizer](https://img.shields.io/badge/AddressSanitizer-checked-yellowgreen)](https://github.com/google/sanitizers/wiki/AddressSanitizer)
 [![License](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 [![CodeQL](https://github.com/wujin1989/cdk/actions/workflows/codeql.yml/badge.svg)](https://github.com/wujin1989/cdk/actions/workflows/codeql.yml)
 [![CodeFactor](https://www.codefactor.io/repository/github/wujin1989/cdk/badge)](https://www.codefactor.io/repository/github/wujin1989/cdk)
