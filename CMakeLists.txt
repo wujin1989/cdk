@@ -8,9 +8,6 @@ if (CMAKE_SIZEOF_VOID_P LESS 8)
 	message(FATAL_ERROR "only 64bit supported")
 endif()
 
-if(WIN32)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -18,8 +15,10 @@ set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 11)
 
 if(WIN32)
-add_compile_options("/experimental:c11atomics")
-add_compile_options("/D_CRT_SECURE_NO_WARNINGS")
+	if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+		add_compile_options("/experimental:c11atomics")
+		add_compile_options("/D_CRT_SECURE_NO_WARNINGS")
+	endif()
 endif()
 
 if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "AMD64" OR CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
@@ -63,7 +62,6 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(include)
 include_directories(src)
-
 
 set(SRCS
 	src/crypto/cdk-sha1.c

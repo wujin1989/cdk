@@ -14,7 +14,7 @@ The compiler needs to support C11.
 
 
 # Compile
-    cmake -G "Ninja Multi-Config" -B build
+    cmake -B build
     cmake --build build --config Release -j 8
 
 # Documentation
