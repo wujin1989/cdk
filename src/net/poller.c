@@ -91,8 +91,9 @@ cdk_poller_t* poller_create(void) {
 
         poller->wakeup = channel_create(poller, poller->evfds[1], &eventfd_handler);
         if (poller->wakeup) {
-            platform_event_add(poller->pfd, poller->wakeup->fd, EVENT_TYPE_R, poller->wakeup);
-            poller->wakeup->events |= EVENT_TYPE_R;
+            if (!channel_is_reading(poller->wakeup)) {
+                channel_enable_read(poller->wakeup);
+            }
         }
     }
     return poller;

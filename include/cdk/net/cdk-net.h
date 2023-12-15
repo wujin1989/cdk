@@ -35,5 +35,6 @@ extern void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* 
 extern void cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
 extern void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail);
 extern void cdk_net_close(cdk_channel_t* channel);
+extern void cdk_net_stop(void);
 extern void cdk_net_startup(int nworkers);
 extern void cdk_net_cleanup(void);

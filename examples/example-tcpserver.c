@@ -14,9 +14,6 @@ static void handle_accept(cdk_channel_t* channel) {
 	printf("tid[%d], [%d]new connection coming...\n", (int)cdk_utils_systemtid(), (int)channel->fd);
 }
 
-static void handle_write(cdk_channel_t* channel) {
-	
-}
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 	net_msg_t* rmsg = (net_msg_t*)buf;
 	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
@@ -56,7 +53,6 @@ int main(void) {
 	cdk_handler_t handler = {
 		.on_accept  = handle_accept,
 		.on_read    = handle_read,
-		.on_write   = handle_write,
 		.on_close   = handle_close,
 		.connect_timeout = 0,
 		.tlsconf = &conf,

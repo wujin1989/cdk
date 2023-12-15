@@ -25,10 +25,6 @@ static void handle_connect(cdk_channel_t* channel) {
 	cdk_net_send(channel, smsg, sizeof(net_msg_t) + strlen("hello") + 1);
 }
 
-static void handle_write(cdk_channel_t* channel) {
-	
-}
-
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 	net_msg_t* rmsg = (net_msg_t*)buf;
 	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
@@ -66,14 +62,13 @@ int main(void) {
 	cdk_handler_t handler = {
 		.on_connect = handle_connect,
 		.on_read    = handle_read,
-		.on_write   = handle_write,
 		.on_close   = handle_close,
 		.connect_timeout = 5000,
 		.tlsconf = &conf,
 		.unpacker = &unpacker3
 	};
 	cdk_net_dial(PROTOCOL_TCP, "127.0.0.1", "9999", &handler);
-
+	
 	cdk_net_cleanup();
 	return 0;
 }

@@ -135,6 +135,11 @@ static void _inet_ntop(int af, const void* restrict src, char* restrict dst) {
     }
 }
 
+static void _inactive_poller(void* param) {
+    cdk_poller_t* poller = param;
+    poller->active = false;
+}
+
 cdk_poller_t* _poller_roundrobin(void) {
     mtx_lock(&pollers_mtx);
     while (cdk_list_empty(&pollers)) {
@@ -342,6 +347,15 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
         int hardcode = 1;
         platform_socket_send(poller->evfds[0], &hardcode, sizeof(int));
     }
+}
+
+void cdk_net_stop(void) {
+    mtx_lock(&pollers_mtx);
+    for (cdk_list_node_t* n = cdk_list_head(&pollers); n != cdk_list_sentinel(&pollers); n = cdk_list_next(n)) {
+        cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
+        cdk_net_postevent(poller, _inactive_poller, poller, true);
+    }
+    mtx_unlock(&pollers_mtx);
 }
 
 void cdk_net_startup(int nworkers) {

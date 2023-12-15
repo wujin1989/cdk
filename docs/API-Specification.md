@@ -825,6 +825,17 @@ extern void cdk_net_close(cdk_channel_t* channel);
 ```
 ```c
 /**
+ * @brief Stops the event loop.
+ *
+ * This function is responsible for terminating the event loop.
+ * 
+ * @param N/A
+ * @return N/A
+ */
+extern void cdk_net_stop(void);
+```
+```c
+/**
  * @brief Start up the network system with worker threads and TLS configuration
  *
  * This function starts up the network system with the specified number of worker threads and
