@@ -22,15 +22,18 @@ int main(void) {
 	userdata_t* ud = cdk_rbtree_data(cdk_rbtree_find(&tree, key), userdata_t, node);
 	if (ud) {
 		printf("key: %d, value: %d\n", ud->node.rb_key.i32, ud->value);
+		cdk_rbtree_erase(&tree, &ud->node);
+		free(ud);
+		ud = NULL;
 	}
-	cdk_rbtree_erase(&tree, &ud->node);
-
 	while(!cdk_rbtree_empty(&tree)) {
 		userdata_t* ud = cdk_rbtree_data(cdk_rbtree_first(&tree), userdata_t, node);
 		if (ud) {
 			printf("key: %d, value: %d\n", ud->node.rb_key.i32, ud->value);
+			cdk_rbtree_erase(&tree, &ud->node);
+			free(ud);
+			ud = NULL;
 		}
-		cdk_rbtree_erase(&tree, &ud->node);
 	}
 	return 0;
 }

@@ -35,20 +35,18 @@ static int _thrdpool_thrdfunc(void* arg) {
 	while (pool->status) {
 		mtx_lock(&pool->qmtx);
 		thrdpool_job_t* job;
-
 		while (pool->status && cdk_queue_empty(&pool->queue)) {
 			cnd_wait(&pool->qcnd, &pool->qmtx);
 		}
 		cdk_queue_node_t* node = cdk_queue_dequeue(&pool->queue);
-		if (!node) {
-			mtx_unlock(&pool->qmtx);
-			return -1;
+		if (node) {
+			job = cdk_queue_data(node, thrdpool_job_t, n);
+			job->routine(job->arg);
+			if (job) {
+				free(job);
+				job = NULL;
+			}
 		}
-		job = cdk_queue_data(node, thrdpool_job_t, n);
-		job->routine(job->arg);
-
-		free(job);
-		job = NULL;
 		mtx_unlock(&pool->qmtx);
 	}
 	return 0;
