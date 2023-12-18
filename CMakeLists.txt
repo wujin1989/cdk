@@ -63,6 +63,10 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(include)
 include_directories(src)
 
+if(WIN32)
+	list(APPEND OPENSSL_LIBRARIES Crypt32.lib)
+endif()
+
 set(SRCS
 	src/crypto/cdk-sha1.c
 	src/crypto/cdk-sha256.c
