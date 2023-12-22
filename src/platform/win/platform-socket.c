@@ -219,17 +219,17 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
-            if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
-                if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                    platform_socket_close(sock);
-                    continue;
-                }
-                if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                    break;
-                }
-            } else {
-                *connected = true;
+        }
+        if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                platform_socket_close(sock);
+                continue;
             }
+            if (WSAGetLastError() == WSAEWOULDBLOCK) {
+                break;
+            }
+        } else {
+            *connected = true;
         }
         break;
     }

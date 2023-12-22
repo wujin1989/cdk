@@ -86,6 +86,14 @@ typedef enum cdk_protocol_e {
 	PROTOCOL_UDP = 2,
 }cdk_protocol_t;
 
+typedef enum cdk_tls_status_e {
+	STATUS_TLS_NONE,
+	STATUS_TLS_CONNECTING,
+	STATUS_TLS_ACCEPTING,
+	STATUS_TLS_CONNECTED,
+	STATUS_TLS_ACCEPTED,
+}cdk_tls_status_t;
+
 #define cdk_tls_t void
 
 typedef struct cdk_channel_s             cdk_channel_t;
@@ -293,23 +301,28 @@ struct cdk_channel_s {
 	cdk_offset_buf_t rxbuf;
 	cdk_list_t       txlist;
 	cdk_tls_t*       tls;
-	cdk_unpack_t*    unpacker;
-	cdk_timer_job_t* ctimer;
-	struct {
-		struct sockaddr_storage ss;
-		socklen_t sslen;
-	}peer;
+	cdk_tls_status_t tls_status;
+	union {
+		struct {
+			cdk_unpack_t* unpacker;
+			cdk_timer_job_t* ctimer;
+		}tcp;
+		struct {
+			struct sockaddr_storage peeraddr;
+			socklen_t peerlen;
+		}udp;
+	};
 };
 
 struct cdk_handler_s {
-	void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
-	void (*on_write)  (cdk_channel_t*);
-	void (*on_close)  (cdk_channel_t*, const char* error);
-	void (*on_accept) (cdk_channel_t*);
+	void (*on_read)(cdk_channel_t*, void* buf, size_t len);
+	void (*on_write)(cdk_channel_t*);
+	void (*on_close)(cdk_channel_t*, const char* error);
+	void (*on_accept)(cdk_channel_t*);
 	void (*on_connect)(cdk_channel_t*);
 	cdk_tlsconf_t* tlsconf;
 
-	/** used by tcp */
+	/** used only by tcp */
 	int connect_timeout;
 	cdk_unpack_t* unpacker;
 };

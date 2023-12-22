@@ -285,20 +285,20 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
-            do {
-                ret = connect(sock, rp->ai_addr, rp->ai_addrlen);
-            } while (ret == -1 && errno == EINTR);
-            if (ret == -1) {
-                if (errno != EINPROGRESS) {
-                    platform_socket_close(sock);
-                    continue;
-                }
-                if (errno == EINPROGRESS) {
-                    break;
-                }
-            } else {
-                *connected = true;
+        }
+        do {
+            ret = connect(sock, rp->ai_addr, rp->ai_addrlen);
+        } while (ret == -1 && errno == EINTR);
+        if (ret == -1) {
+            if (errno != EINPROGRESS) {
+                platform_socket_close(sock);
+                continue;
             }
+            if (errno == EINPROGRESS) {
+                break;
+            }
+        } else {
+            *connected = true;
         }
         break;
     }

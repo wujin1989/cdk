@@ -61,7 +61,6 @@ static SSL_CTX* _tls_ctx_create(cdk_tlsconf_t* tlsconf, int toggle) {
 	}
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, NULL);
-	
 	return ctx;
 }
 
@@ -106,12 +105,15 @@ int tls_connect(cdk_tls_t* tls, int fd, int* error) {
 	if (ret <= 0) {
 		int err = SSL_get_error((SSL*)tls, ret);
 		*error = err;
-		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
-			return 0;
+		if (err == SSL_ERROR_WANT_READ) {
+			return TLS_READING;
 		}
-		return -1;
+		if (err == SSL_ERROR_WANT_READ) {
+			return TLS_READING;
+		}
+		return TLS_ERROR;
 	}
-	return ret;
+	return TLS_SUCCESS;
 }
 
 int tls_accept(cdk_tls_t* tls, int fd, int* error) {
@@ -121,12 +123,15 @@ int tls_accept(cdk_tls_t* tls, int fd, int* error) {
 	if (ret <= 0) {
 		int err = SSL_get_error((SSL*)tls, ret);
 		*error = err;
-		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
-			return 0;
+		if (err == SSL_ERROR_WANT_READ) {
+			return TLS_READING;
 		}
-		return -1;
+		if (err == SSL_ERROR_WANT_READ) {
+			return TLS_READING;
+		}
+		return TLS_ERROR;
 	}
-	return ret;
+	return TLS_SUCCESS;
 }
 
 int tls_read(cdk_tls_t* tls, void* buf, int size, int* error) {
@@ -134,10 +139,13 @@ int tls_read(cdk_tls_t* tls, void* buf, int size, int* error) {
 	if (n <= 0) {
 		int err = SSL_get_error((SSL*)tls, n);
 		*error = err;
-		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
-			return 0;
+		if (err == SSL_ERROR_WANT_READ) {
+			return TLS_READING;
 		}
-		return -1;
+		if (err == SSL_ERROR_WANT_READ) {
+			return TLS_READING;
+		}
+		return TLS_ERROR;
 	}
 	return n;
 }
@@ -147,10 +155,13 @@ int tls_write(cdk_tls_t* tls, void* buf, int size, int* error) {
 	if (n <= 0) {
 		int err = SSL_get_error((SSL*)tls, n);
 		*error = err;
-		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
-			return 0;
+		if (err == SSL_ERROR_WANT_READ) {
+			return TLS_READING;
 		}
-		return -1;
+		if (err == SSL_ERROR_WANT_READ) {
+			return TLS_READING;
+		}
+		return TLS_ERROR;
 	}
 	return n;
 }
