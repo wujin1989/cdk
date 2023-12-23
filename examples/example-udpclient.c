@@ -36,7 +36,7 @@ int main(void) {
 		.on_connect = on_connect,
 		.on_read = on_read,
 		.on_close = on_close,
-		.tlsconf = &conf
+		.tlsconf = NULL
 	};
 	cdk_net_dial(PROTOCOL_UDP, "127.0.0.1", "9999", &handler);
 

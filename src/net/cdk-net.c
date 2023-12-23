@@ -96,10 +96,8 @@ static void _connect_timeout_routine(void* param) {
 
 static void _do_accept(void* param) {
     cdk_channel_t* channel = param;
-    if (channel->type == SOCK_STREAM) {
-        if (!channel_is_accepting(channel)) {
-            channel_enable_accept(channel);
-        }
+    if (!channel_is_accepting(channel)) {
+        channel_enable_accept(channel);
     }
     if (channel->type == SOCK_DGRAM) {
         channel_accept(channel);
@@ -108,13 +106,11 @@ static void _do_accept(void* param) {
 
 static void _do_connect(void* param) {
     cdk_channel_t* channel = param;
-    if (channel->type == SOCK_STREAM) {
-        if (!channel_is_connecting(channel)) {
-            channel_enable_connect(channel);
-        }
-        if (channel->handler->connect_timeout) {
-            channel->tcp.ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, channel->handler->connect_timeout, false);
-        }
+    if (!channel_is_connecting(channel)) {
+        channel_enable_connect(channel);
+    }
+    if (channel->handler->connect_timeout) {
+        channel->ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, channel->handler->connect_timeout, false);
     }
     if (channel->type == SOCK_DGRAM) {
         channel_connect(channel);
@@ -284,7 +280,9 @@ void cdk_net_listen(cdk_protocol_t protocol, const char* host, const char* port,
 void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, cdk_handler_t* handler) {
     int proto = 0;
     bool connected = false;
-    
+    cdk_addrinfo_t ai = {0};
+    struct sockaddr_storage ss = {0};
+
     if (protocol == PROTOCOL_TCP) {
         proto = SOCK_STREAM;
     }
@@ -294,15 +292,20 @@ void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, c
     cdk_sock_t sock = platform_socket_dial(host, port, proto, &connected);
     cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
     if (channel) {
-        if (channel->type == SOCK_STREAM) {
-            if (connected) {
-                cdk_net_postevent(channel->poller, _do_tfo_connect, channel, true);
-            } else {
-                cdk_net_postevent(channel->poller, _do_connect, channel, true);
-            }
-        }
-        if (channel->type == SOCK_DGRAM) {
-            getpeername(sock, (struct sockaddr*)&channel->udp.peeraddr, &channel->udp.peerlen);
+        if (connected) {
+            cdk_net_postevent(channel->poller, _do_tfo_connect, channel, true);
+        } else {
+            /**
+             * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage,
+             * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
+             */
+            memcpy(ai.a, host, strlen(host));
+            ai.p = (uint16_t)strtoul(port, NULL, 10);
+            ai.f = cdk_net_af(sock);
+            cdk_net_pton(&ai, &ss);
+            channel->peer.ss = ss;
+            channel->peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+
             cdk_net_postevent(channel->poller, _do_connect, channel, true);
         }
     }
