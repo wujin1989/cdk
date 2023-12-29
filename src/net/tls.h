@@ -26,7 +26,7 @@ _Pragma("once")
 #define ENABLE_TLS 1
 #define ENABLE_DTLS 2
 
-extern cdk_tls_t* tls_create(cdk_tlsconf_t* conf, int toggle);
+extern cdk_tls_t* tls_create(cdk_tlsconf_t* conf);
 extern void tls_destroy(cdk_tls_t* tls);
 extern int tls_connect(cdk_tls_t* tls, int fd, int* error);
 extern int tls_accept(cdk_tls_t* tls, int fd, int* error);

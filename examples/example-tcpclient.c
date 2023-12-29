@@ -60,14 +60,14 @@ int main(void) {
 		.lengthfield.size = 4
 	};
 	cdk_handler_t handler = {
-		.on_connect = handle_connect,
-		.on_read    = handle_read,
-		.on_close   = handle_close,
-		.connect_timeout = 5000,
-		.tlsconf = &conf,
-		.unpacker = &unpacker3
+		.tcp.on_connect = handle_connect,
+		.tcp.on_read    = handle_read,
+		.tcp.on_close   = handle_close,
+		.tcp.connect_timeout = 5000,
+		.tcp.tlsconf = &conf,
+		.tcp.unpacker = &unpacker3
 	};
-	cdk_net_dial(PROTOCOL_TCP, "127.0.0.1", "9999", &handler);
+	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 	
 	cdk_net_cleanup();
 	return 0;

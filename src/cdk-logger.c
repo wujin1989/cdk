@@ -136,6 +136,9 @@ void cdk_logger_destroy(void) {
 }
 
 void cdk_logger_log(int level, const char* restrict file, int line, const char* restrict fmt, ...) {
+	if (logger.file == NULL) {
+		return;
+	}
 	char* p = strrchr(file, S);
 	if (!logger.async) {
 		if (!p) {

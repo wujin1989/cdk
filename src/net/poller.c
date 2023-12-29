@@ -23,6 +23,7 @@
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
 #include "net/channel.h"
+#include "net/txlist.h"
 
 static inline void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len) {
     mtx_lock(&channel->poller->evmtx);
@@ -48,9 +49,9 @@ static cdk_unpack_t eventfd_unpacker = {
 };
 
 static cdk_handler_t eventfd_handler = {
-    .on_read = _eventfd_read,
-    .on_close = _eventfd_close,
-    .unpacker = &eventfd_unpacker
+    .tcp.on_read = _eventfd_read,
+    .tcp.on_close = _eventfd_close,
+    .tcp.unpacker = &eventfd_unpacker
 };
 
 void poller_poll(cdk_poller_t* poller) {
@@ -59,19 +60,13 @@ void poller_poll(cdk_poller_t* poller) {
         int nevents = platform_event_wait(poller->pfd, events);
         for (int i = 0; i < nevents; i++) {
             cdk_channel_t* channel = events[i].ptr;
-            uint32_t tevents = events[i].events;
+            uint32_t mask = events[i].events;
 
-            if ((channel->events & EVENT_TYPE_A) && (tevents & EVENT_TYPE_R)) {
-                channel_accept(channel);
+            if (mask & EVENT_TYPE_R) {
+                (channel->tcp.accepting) ? channel_accept(channel) : channel_recv(channel);
             }
-            if ((channel->events & EVENT_TYPE_R) && (tevents & EVENT_TYPE_R)) {
-                channel_recv(channel);
-            }
-            if ((channel->events & EVENT_TYPE_C) && (tevents & EVENT_TYPE_W)) {
-                channel_connect(channel);
-            }
-            if ((channel->events & EVENT_TYPE_W) && (tevents & EVENT_TYPE_W)) {
-                channel_send(channel);
+            if (mask & EVENT_TYPE_W) {
+                (channel->tcp.connecting) ? channel_connect(channel) : channel_send(channel);
             }
         }
     }
@@ -86,13 +81,14 @@ cdk_poller_t* poller_create(void) {
         poller->active = true;
 
         cdk_list_init(&poller->evlist);
+        cdk_list_init(&poller->chlist);
         mtx_init(&poller->evmtx, mtx_plain);
         platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
 
-        poller->wakeup = channel_create(poller, poller->evfds[1], &eventfd_handler);
-        if (poller->wakeup) {
-            if (!channel_is_reading(poller->wakeup)) {
-                channel_enable_read(poller->wakeup);
+        cdk_channel_t* wakeup = channel_create(poller, poller->evfds[1], &eventfd_handler);
+        if (wakeup) {
+            if (!channel_is_reading(wakeup)) {
+                channel_enable_read(wakeup);
             }
         }
     }
@@ -102,22 +98,20 @@ cdk_poller_t* poller_create(void) {
 void poller_destroy(cdk_poller_t* poller) {
     poller->active = false;
     platform_socket_pollfd_destroy(poller->pfd);
-
     platform_socket_close(poller->evfds[0]);
-    platform_socket_close(poller->evfds[1]);
 
     while (!cdk_list_empty(&poller->evlist)) {
-        cdk_event_t* e = cdk_list_data(cdk_list_head(&poller->evlist), cdk_event_t, node);
-        cdk_list_remove(&e->node);
+        cdk_event_t* ev = cdk_list_data(cdk_list_head(&poller->evlist), cdk_event_t, node);
+        cdk_list_remove(&ev->node);
 
-        free(e);
-        e = NULL;
+        free(ev);
+        ev = NULL;
+    }
+    while (!cdk_list_empty(&poller->chlist)) {
+        cdk_channel_t* ch = cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);
+        channel_destroy(ch, "");
     }
     mtx_destroy(&poller->evmtx);
-
-    free(poller->wakeup);
-    poller->wakeup = NULL;
-
     free(poller);
     poller = NULL;
 }

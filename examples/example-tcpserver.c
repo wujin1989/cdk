@@ -51,14 +51,14 @@ int main(void) {
 		.lengthfield.size = 4
 	};
 	cdk_handler_t handler = {
-		.on_accept  = handle_accept,
-		.on_read    = handle_read,
-		.on_close   = handle_close,
-		.connect_timeout = 0,
-		.tlsconf = &conf,
-		.unpacker = &unpacker3
+		.tcp.on_accept  = handle_accept,
+		.tcp.on_read    = handle_read,
+		.tcp.on_close   = handle_close,
+		.tcp.connect_timeout = 0,
+		.tcp.tlsconf = &conf,
+		.tcp.unpacker = &unpacker3
 	};
-	cdk_net_listen(PROTOCOL_TCP, "0.0.0.0", "9999", &handler);
+	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 	
 	cdk_net_cleanup();
 	return 0;

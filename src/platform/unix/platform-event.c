@@ -29,10 +29,10 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channe
 
 	int op = ud->events == 0 ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
 	events |= ud->events;
-	if ((events & EVENT_TYPE_A) || (events & EVENT_TYPE_R)) {
+	if (events & EVENT_TYPE_R) {
 		ee.events |= EPOLLIN;
 	}
-	if ((events & EVENT_TYPE_C) || (events & EVENT_TYPE_W)) {
+	if (events & EVENT_TYPE_W) {
 		ee.events |= EPOLLOUT;
 	}
 	ee.data.ptr = ud;
@@ -47,10 +47,10 @@ void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channe
 	int mask = ud->events & (~events);
 	int op = mask == 0 ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
 
-	if ((mask & EVENT_TYPE_A) || (mask & EVENT_TYPE_R)) {
+	if (mask & EVENT_TYPE_R) {
 		ee.events |= EPOLLIN;
 	}
-	if ((mask & EVENT_TYPE_C) || (mask & EVENT_TYPE_W)) {
+	if (mask & EVENT_TYPE_W) {
 		ee.events |= EPOLLOUT;
 	}
 	ee.data.ptr = ud;
@@ -86,13 +86,13 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
 void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
 	struct kevent ke;
 	
-	if ((events & EVENT_TYPE_A) || (events & EVENT_TYPE_R)) {
+	if (events & EVENT_TYPE_R) {
 		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, ud);
 		kevent(pfd, &ke, 1, NULL, 0, NULL);
 		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, ud);
 		kevent(pfd, &ke, 1, NULL, 0, NULL);
 	}
-	if ((events & EVENT_TYPE_C) || (events & EVENT_TYPE_W)) {
+	if (events & EVENT_TYPE_W) {
 		EV_SET(&ke, sfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, ud);
 		kevent(pfd, &ke, 1, NULL, 0, NULL);
 		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD | EV_DISABLE, 0, 0, ud);
@@ -103,11 +103,11 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channe
 void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
 	(void)ud;
 	struct kevent ke;
-	if ((events & EVENT_TYPE_A) || (events & EVENT_TYPE_R)) {
+	if (events & EVENT_TYPE_R) {
 		EV_SET(&ke, sfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 		kevent(pfd, &ke, 1, NULL, 0, NULL);
 	}
-	if ((events & EVENT_TYPE_C) || (events & EVENT_TYPE_W)) {
+	if (events & EVENT_TYPE_W) {
 		EV_SET(&ke, sfd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		kevent(pfd, &ke, 1, NULL, 0, NULL);
 	}

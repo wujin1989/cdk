@@ -23,16 +23,11 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-static SSL_CTX* _tls_ctx_create(cdk_tlsconf_t* tlsconf, int toggle) {
+static SSL_CTX* _tls_ctx_create(cdk_tlsconf_t* tlsconf) {
 	SSL_CTX* ctx = NULL;
 
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
-	if (toggle == ENABLE_TLS) {
-		ctx = SSL_CTX_new(TLS_method());
-	}
-	if (toggle == ENABLE_DTLS) {
-		ctx = SSL_CTX_new(DTLS_method());
-	}
+	ctx = SSL_CTX_new(TLS_method());
 	if (!ctx) {
 		return NULL;
 	}
@@ -41,8 +36,7 @@ static SSL_CTX* _tls_ctx_create(cdk_tlsconf_t* tlsconf, int toggle) {
 			SSL_CTX_free(ctx);
 			return NULL;
 		}
-	}
-	else {
+	} else {
 		SSL_CTX_set_default_verify_paths(ctx);
 	}
 	if (tlsconf->crtfile && tlsconf->keyfile) {
@@ -61,7 +55,6 @@ static SSL_CTX* _tls_ctx_create(cdk_tlsconf_t* tlsconf, int toggle) {
 	}
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, NULL);
-	
 	return ctx;
 }
 
@@ -77,8 +70,8 @@ const char* tls_error2string(int err) {
 	return buffer;
 }
 
-cdk_tls_t* tls_create(cdk_tlsconf_t* conf, int toggle) {
-	SSL_CTX* ctx = _tls_ctx_create(conf, toggle);
+cdk_tls_t* tls_create(cdk_tlsconf_t* conf) {
+	SSL_CTX* ctx = _tls_ctx_create(conf);
 	if (!ctx) {
 		return NULL;	
 	}

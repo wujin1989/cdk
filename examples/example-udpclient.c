@@ -16,8 +16,8 @@ static int routine(void* p) {
 	return 0;
 }
 
-static void on_connect(cdk_channel_t* channel) {
-	printf("udp connected\n");
+static void on_ready(cdk_channel_t* channel) {
+	printf("udp ready\n");
 	thrd_t tid;
 	thrd_create(&tid, routine, channel);
 	thrd_detach(tid);
@@ -25,20 +25,12 @@ static void on_connect(cdk_channel_t* channel) {
 
 int main(void) {
 	cdk_net_startup(4);
-	cdk_tlsconf_t conf = {
-		.cafile = "certs/ca.crt",
-		.capath = NULL,
-		.crtfile = NULL,
-		.keyfile = NULL,
-		.verifypeer = true
-	};
 	cdk_handler_t handler = {
-		.on_connect = on_connect,
-		.on_read = on_read,
-		.on_close = on_close,
-		.tlsconf = NULL
+		.udp.on_ready = on_ready,
+		.udp.on_read = on_read,
+		.udp.on_close = on_close,
 	};
-	cdk_net_dial(PROTOCOL_UDP, "127.0.0.1", "9999", &handler);
+	cdk_net_dial("udp", "127.0.0.1", "9999", &handler);
 
 	cdk_net_cleanup();
 	return 0;
