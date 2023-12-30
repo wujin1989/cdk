@@ -41,9 +41,12 @@ _Pragma("once")
 #include <ws2ipdef.h>
 #include <WS2tcpip.h>
 #include <process.h>
+#include <mstcpip.h>
 
 #pragma comment(lib,"ws2_32.lib")
 #pragma comment(lib,"winmm.lib")
+
+#define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR, 12)
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -56,6 +59,7 @@ _Pragma("once")
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <fcntl.h>
+#include <linux/filter.h>
 
 #if defined(__linux__)
 #include <sys/epoll.h>
@@ -324,7 +328,7 @@ struct cdk_handler_s {
 			cdk_tlsconf_t* tlsconf;
 		}tcp;
 		struct {
-			void (*on_ready) (cdk_channel_t*);
+			void (*on_connect) (cdk_channel_t*);
 			void (*on_read)  (cdk_channel_t*, void* buf, size_t len);
 			void (*on_write) (cdk_channel_t*);
 			void (*on_close) (cdk_channel_t*, const char* error);

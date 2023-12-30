@@ -41,10 +41,10 @@ extern bool channel_is_writing(cdk_channel_t* channel);
 extern bool channel_is_reading(cdk_channel_t* channel);
 extern void channel_tls_srv_handshake(void* param);
 extern void channel_tls_cli_handshake(void* param);
-extern void channel_connect_finish(cdk_channel_t* channel);
-extern void channel_connect_connecting(cdk_channel_t* channel);
-extern void channel_accept_finish(cdk_channel_t* channel);
-extern void channel_accept_accepting(cdk_channel_t* channel);
+extern void channel_connected(cdk_channel_t* channel);
+extern void channel_connecting(cdk_channel_t* channel);
+extern void channel_accepted(cdk_channel_t* channel);
+extern void channel_accepting(cdk_channel_t* channel);
 
 
 

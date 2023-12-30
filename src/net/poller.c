@@ -63,10 +63,10 @@ void poller_poll(cdk_poller_t* poller) {
             uint32_t mask = events[i].events;
 
             if (mask & EVENT_TYPE_R) {
-                (channel->tcp.accepting) ? channel_accept(channel) : channel_recv(channel);
+                (channel->type == SOCK_STREAM) ? ((channel->tcp.accepting) ? channel_accept(channel) : channel_recv(channel)) : channel_recv(channel);
             }
             if (mask & EVENT_TYPE_W) {
-                (channel->tcp.connecting) ? channel_connect(channel) : channel_send(channel);
+                (channel->type == SOCK_STREAM) ? ((channel->tcp.connecting) ? channel_connect(channel) : channel_send(channel)) : channel_send(channel);
             }
         }
     }

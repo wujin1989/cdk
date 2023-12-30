@@ -1,6 +1,9 @@
 #include "cdk.h"
 
 static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
+	cdk_addrinfo_t addrinfo;
+	cdk_net_ntop(&channel->udp.peer.ss, &addrinfo);
+	printf("recv %s from %s:%d\n", (char*)buf, addrinfo.a, addrinfo.p);
 }
 
 static void on_close(cdk_channel_t* channel, const char* error) {
@@ -8,16 +11,19 @@ static void on_close(cdk_channel_t* channel, const char* error) {
 }
 
 static int routine(void* p) {
+	static int num;
 	cdk_channel_t* channel = p;
+
 	while (!atomic_load(&channel->closing)) {
-		cdk_net_send(channel, "helloworld", strlen("helloworld") + 1);
-		printf("sending\n");
+		char buffer[64] = { 0 };
+		sprintf(buffer, "%d", num++);
+		cdk_net_send(channel, buffer, sizeof(buffer));
 	}
 	return 0;
 }
 
-static void on_ready(cdk_channel_t* channel) {
-	printf("udp ready\n");
+static void on_connect(cdk_channel_t* channel) {
+	printf("udp connected\n");
 	thrd_t tid;
 	thrd_create(&tid, routine, channel);
 	thrd_detach(tid);
@@ -26,12 +32,11 @@ static void on_ready(cdk_channel_t* channel) {
 int main(void) {
 	cdk_net_startup(4);
 	cdk_handler_t handler = {
-		.udp.on_ready = on_ready,
+		.udp.on_connect = on_connect,
 		.udp.on_read = on_read,
 		.udp.on_close = on_close,
 	};
 	cdk_net_dial("udp", "127.0.0.1", "9999", &handler);
-
 	cdk_net_cleanup();
 	return 0;
 }

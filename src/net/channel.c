@@ -33,7 +33,7 @@
 
 extern cdk_poller_manager_t manager;
 
-static void _write_complete_callback(void* param) {
+static void _write_complete_cb(void* param) {
     cdk_channel_t* channel = param;
     channel->handler->tcp.on_write(channel);
     if (channel->type == SOCK_STREAM) {
@@ -51,8 +51,8 @@ static void _channel_unencrypted_send(cdk_channel_t* channel) {
         }
         return;
     }
-    txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->txlist)), txlist_node_t, n);
     ssize_t n = 0;
+    txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->txlist)), txlist_node_t, n);
     if (channel->type == SOCK_STREAM) {
         n = platform_socket_send(channel->fd, e->buf, (int)e->len);
     }
@@ -137,7 +137,7 @@ static void _channel_encrypted_send_explicit(cdk_channel_t* channel, void* data,
         }
     }
     if (n > 0 && channel->handler->tcp.on_write) {
-        cdk_net_postevent(channel->poller, _write_complete_callback, channel, true);
+        cdk_net_postevent(channel->poller, _write_complete_cb, channel, true);
     }
 }
 
@@ -172,12 +172,12 @@ static void _channel_unencrypted_send_explicit(cdk_channel_t* channel, void* dat
     }
     if (channel->type == SOCK_STREAM) {
         if (n > 0 && channel->handler->tcp.on_write) {
-            cdk_net_postevent(channel->poller, _write_complete_callback, channel, true);
+            cdk_net_postevent(channel->poller, _write_complete_cb, channel, true);
         }
     }
     if (channel->type == SOCK_DGRAM) {
         if (n > 0 && channel->handler->udp.on_write) {
-            cdk_net_postevent(channel->poller, _write_complete_callback, channel, true);
+            cdk_net_postevent(channel->poller, _write_complete_cb, channel, true);
         }
     }
 }
@@ -213,11 +213,11 @@ static void _channel_unencrypted_recv(cdk_channel_t* channel) {
         channel_destroy(channel, platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
+    if (n == 0) {
+        channel_destroy(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ECONNRESET));
+        return;
+    }
     if (channel->type == SOCK_STREAM) {
-        if (n == 0) {
-            channel_destroy(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ECONNRESET));
-            return;
-        }
         channel->rxbuf.off += n;
         unpack(channel);
     }
@@ -228,7 +228,7 @@ static void _channel_unencrypted_recv(cdk_channel_t* channel) {
     }
 }
 
-static void _async_channel_destroy(void* param) {
+static void _async_channel_destroy_cb(void* param) {
     cdk_channel_t* channel = param;
     if (channel) {
         free(channel);
@@ -236,7 +236,7 @@ static void _async_channel_destroy(void* param) {
     }
 }
 
-static void _channel_connect_timeout_finish(void* param) {
+static void _channel_connect_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
     if (channel->handler->tcp.on_close) {
         channel->handler->tcp.on_close(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ETIMEDOUT));
@@ -245,10 +245,10 @@ static void _channel_connect_timeout_finish(void* param) {
 
 static void _channel_connect_timeout_routine(void* param) {
     cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _channel_connect_timeout_finish, channel, true);
+    cdk_net_postevent(channel->poller, _channel_connect_timeout_cb, channel, true);
 }
 
-void channel_connect_connecting(cdk_channel_t* channel) {
+void channel_connecting(cdk_channel_t* channel) {
     channel->tcp.connecting = true;
     if (!channel_is_writing(channel)) {
         channel_enable_write(channel);
@@ -258,17 +258,27 @@ void channel_connect_connecting(cdk_channel_t* channel) {
     }
 }
 
-void channel_connect_finish(cdk_channel_t* channel) {
-    channel->tcp.connecting = false;
-    if (channel->handler->tcp.on_connect) {
-        channel->handler->tcp.on_connect(channel);
+void channel_connected(cdk_channel_t* channel) {
+    if (channel->type == SOCK_STREAM) {
+        channel->tcp.connecting = false;
+        if (channel->handler->tcp.on_connect) {
+            channel->handler->tcp.on_connect(channel);
+        }
+        if (!channel_is_reading(channel)) {
+            channel_enable_read(channel);
+        }
     }
-    if (!channel_is_reading(channel)) {
-        channel_enable_read(channel);
+    if (channel->type == SOCK_DGRAM) {
+        if (channel->handler->udp.on_connect) {
+            channel->handler->udp.on_connect(channel);
+        }
+        if (!channel_is_reading(channel)) {
+            channel_enable_read(channel);
+        }
     }
 }
 
-void channel_accept_finish(cdk_channel_t* channel) {
+void channel_accepted(cdk_channel_t* channel) {
     if (channel->handler->tcp.on_accept) {
         channel->handler->tcp.on_accept(channel);
     }
@@ -277,7 +287,7 @@ void channel_accept_finish(cdk_channel_t* channel) {
     }
 }
 
-void channel_accept_accepting(cdk_channel_t* channel) {
+void channel_accepting(cdk_channel_t* channel) {
     channel->tcp.accepting = true;
     if (!channel_is_reading(channel)) {
         channel_enable_read(channel);
@@ -296,7 +306,7 @@ void channel_tls_cli_handshake(void* param) {
         channel_destroy(channel, tls_error2string(err));
         return;
     }
-    channel_connect_finish(channel);
+    channel_connected(channel);
 }
 
 void channel_tls_srv_handshake(void* param) {
@@ -311,7 +321,7 @@ void channel_tls_srv_handshake(void* param) {
         channel_destroy(channel, tls_error2string(err));
         return;
     }
-    channel_accept_finish(channel);
+    channel_accepted(channel);
 }
 
 cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler_t* handler)
@@ -371,7 +381,7 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
         }
     }
     if (channel->poller->active) {
-        cdk_net_postevent(channel->poller, _async_channel_destroy, channel, true);
+        cdk_net_postevent(channel->poller, _async_channel_destroy_cb, channel, true);
     } else {
         if (channel) {
             free(channel);
@@ -421,7 +431,7 @@ void channel_accept(cdk_channel_t* channel) {
         if (nchannel->tcp.tls) {
             channel_tls_srv_handshake(nchannel);
         } else {
-            channel_accept_finish(nchannel);
+            channel_accepted(nchannel);
         }
     }
 }
@@ -439,7 +449,7 @@ void channel_connect(cdk_channel_t* channel) {
         if (channel->tcp.tls) {
             channel_tls_cli_handshake(channel);
         } else {
-            channel_connect_finish(channel);
+            channel_connected(channel);
         }
     }
 }

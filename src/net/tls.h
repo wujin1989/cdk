@@ -23,9 +23,6 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-#define ENABLE_TLS 1
-#define ENABLE_DTLS 2
-
 extern cdk_tls_t* tls_create(cdk_tlsconf_t* conf);
 extern void tls_destroy(cdk_tls_t* tls);
 extern int tls_connect(cdk_tls_t* tls, int fd, int* error);
