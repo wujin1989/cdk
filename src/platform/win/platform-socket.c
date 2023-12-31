@@ -24,6 +24,14 @@
 
 static atomic_flag initialized = ATOMIC_FLAG_INIT;
 
+static void _disable_udp_connreset(cdk_sock_t sock) {
+    int on = 0;
+    DWORD nouse;
+    if (WSAIoctl(sock, SIO_UDP_CONNRESET, &on, sizeof(int), NULL, 0, &nouse, NULL, NULL)) {
+        abort();
+    }
+}
+
 void platform_socket_nonblock(cdk_sock_t sock) {
     u_long on = 1;
     if (ioctlsocket(sock, FIONBIO, &on)) {
@@ -120,6 +128,21 @@ void platform_socket_maxseg(cdk_sock_t sock) {
     }
 }
 
+void platform_socket_v6only(cdk_sock_t sock, bool on) {
+    int val = on ? 1 : 0;
+    if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof(int))) {
+        abort();
+    }
+}
+
+void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
+    (void)(cores);
+    DWORD nouse;
+    if (WSAIoctl(sock, SIO_CPU_AFFINITY, &idx, sizeof(uint16_t), NULL, 0, &nouse, NULL, NULL)) {
+        abort();
+    }
+}
+
 void platform_socket_reuse_addr(cdk_sock_t sock) {
     int on = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on))) {
@@ -127,7 +150,7 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
     }
 }
 
-cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol) {
+cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores) {
     cdk_sock_t sock;
     struct addrinfo  hints;
     struct addrinfo* res;
@@ -150,8 +173,15 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         if (sock == INVALID_SOCKET) {
             continue;
         }
-        platform_socket_reuse_addr(sock);
-
+        platform_socket_v6only(sock, false);
+        if (protocol == SOCK_STREAM) {
+            platform_socket_reuse_addr(sock);
+        }
+        if (protocol == SOCK_DGRAM) {
+            _disable_udp_connreset(sock);
+            platform_socket_set_recvbuf(sock, INT32_MAX);
+            platform_socket_rss(sock, (uint16_t)idx, cores);
+        }
         if (bind(sock, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) {
             platform_socket_close(sock);
             continue;
@@ -219,17 +249,20 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
-            if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
-                if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                    platform_socket_close(sock);
-                    continue;
-                }
-                if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                    break;
-                }
-            } else {
-                *connected = true;
+        }
+        if (protocol == SOCK_DGRAM) {
+            _disable_udp_connreset(sock);
+        }
+        if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                platform_socket_close(sock);
+                continue;
             }
+            if (WSAGetLastError() == WSAEWOULDBLOCK) {
+                break;
+            }
+        } else {
+            *connected = true;
         }
         break;
     }

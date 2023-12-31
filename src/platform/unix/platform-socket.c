@@ -82,7 +82,31 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
     }
 }
 
+void platform_socket_v6only(cdk_sock_t sock, bool on) {
+    int val = on ? 1 : 0;
+    if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const void*)&val, sizeof(int))) {
+        perror("error");
+        abort();
+    }
+}
+
 #if defined(__linux__)
+void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
+    (void)(idx);
+    struct sock_filter bpf_code[] = {
+        {BPF_LD | BPF_W | BPF_ABS, 0, 0, SKF_AD_OFF | SKF_AD_CPU},
+        {BPF_ALU | BPF_MOD, 0, 0, cores},
+        {BPF_RET | BPF_A, 0, 0, 0}
+    };
+    struct sock_fprog bpf_config = { 0 };
+    bpf_config.len = (sizeof(bpf_code) / sizeof(bpf_code[0]));
+    bpf_config.filter = bpf_code;
+
+    if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (const void*)&bpf_config, sizeof(bpf_config))) {
+        abort();
+    }
+}
+
 int platform_socket_af(cdk_sock_t sock) {
     int af;
     socklen_t len;
@@ -92,21 +116,6 @@ int platform_socket_af(cdk_sock_t sock) {
     }
     return af;
 }
-#endif
-
-#if defined(__APPLE__)
-int platform_socket_af(cdk_sock_t sock) {
-    struct sockaddr_storage ss;
-    socklen_t len;
-
-    len = sizeof(struct sockaddr_storage);
-    getsockname(sock, (struct sockaddr*)&ss, &len);
-
-    return ss.ss_family;
-}
-#endif
-
-#if defined(__linux__)
 
 void platform_socket_keepalive(cdk_sock_t sock) {
     int on = 1;
@@ -143,6 +152,21 @@ cdk_pollfd_t platform_socket_pollfd_create(void) {
 #endif
 
 #if defined(__APPLE__)
+void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
+    (void)(sock);
+    (void)(idx);
+    (void)(cores);
+}
+
+int platform_socket_af(cdk_sock_t sock) {
+    struct sockaddr_storage ss;
+    socklen_t len;
+
+    len = sizeof(struct sockaddr_storage);
+    getsockname(sock, (struct sockaddr*)&ss, &len);
+
+    return ss.ss_family;
+}
 
 void platform_socket_keepalive(cdk_sock_t sock) {
     int on = 1;
@@ -192,7 +216,7 @@ void platform_socket_reuse_port(cdk_sock_t sock) {
     }
 }
 
-cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol) {
+cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores) {
     cdk_sock_t sock;
     struct addrinfo  hints;
     struct addrinfo* res;
@@ -216,9 +240,15 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         if (sock == INVALID_SOCKET) {
             continue;
         }
+        if (rp->ai_family == AF_INET6) {
+            platform_socket_v6only(sock, false);
+        }
         platform_socket_reuse_addr(sock);
         platform_socket_reuse_port(sock);
-
+        if (protocol == SOCK_DGRAM) {
+            platform_socket_set_recvbuf(sock, INT32_MAX);
+            platform_socket_rss(sock, idx, cores);
+        }
         if (bind(sock, rp->ai_addr, rp->ai_addrlen) == -1) {
             platform_socket_close(sock);
             continue;
@@ -285,20 +315,20 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
-            do {
-                ret = connect(sock, rp->ai_addr, rp->ai_addrlen);
-            } while (ret == -1 && errno == EINTR);
-            if (ret == -1) {
-                if (errno != EINPROGRESS) {
-                    platform_socket_close(sock);
-                    continue;
-                }
-                if (errno == EINPROGRESS) {
-                    break;
-                }
-            } else {
-                *connected = true;
+        }
+        do {
+            ret = connect(sock, rp->ai_addr, rp->ai_addrlen);
+        } while (ret == -1 && errno == EINTR);
+        if (ret == -1) {
+            if (errno != EINPROGRESS) {
+                platform_socket_close(sock);
+                continue;
             }
+            if (errno == EINPROGRESS) {
+                break;
+            }
+        } else {
+            *connected = true;
         }
         break;
     }
@@ -322,6 +352,7 @@ int platform_socket_socktype(cdk_sock_t sock) {
 }
 
 ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
+    errno = 0;
     ssize_t n;
     do {
         n = recv(sock, buf, size, 0);

@@ -30,13 +30,9 @@
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
+#include "cdk/cdk-logger.h"
 
-cdk_timer_t timer;
-static cdk_list_t pollers;
-static mtx_t pollers_mtx;
-static cnd_t pollers_cnd;
-static thrd_t* workers;
-static int cnt;
+cdk_poller_manager_t manager = {.initialized = ATOMIC_FLAG_INIT };
 
 typedef struct async_channel_send_ctx_s{
     cdk_channel_t* channel;
@@ -44,11 +40,175 @@ typedef struct async_channel_send_ctx_s{
     char data[];
 }async_channel_send_ctx_t;
 
-static void _async_channel_send_explicit_callback(void* param) {
+typedef struct async_socket_ctx_s {
+    char host[INET6_ADDRSTRLEN];
+    char port[6];
+    int protocol;
+    int idx;
+    int cores;
+    cdk_poller_t* poller;
+    cdk_handler_t* handler;
+}async_socket_ctx_t;
+
+static void _poller_inactive_cb(void* param) {
+    cdk_poller_t* poller = param;
+    poller->active = false;
+}
+
+static cdk_poller_t* _poller_roundrobin(void) {
+    mtx_lock(&manager.poller_mtx);
+    while (cdk_list_empty(&manager.poller_lst)) {
+        cnd_wait(&manager.poller_cnd, &manager.poller_mtx);
+    }
+    static cdk_poller_t* curr;
+    if (curr == NULL) {
+        curr = cdk_list_data(cdk_list_head(&manager.poller_lst), cdk_poller_t, node);
+    } else {
+        cdk_list_node_t* n = cdk_list_next(&curr->node);
+        if (n != cdk_list_sentinel(&manager.poller_lst)) {
+            curr = cdk_list_data(n, cdk_poller_t, node);
+        } else {
+            curr = cdk_list_data(cdk_list_next(n), cdk_poller_t, node);
+        }
+    }
+    mtx_unlock(&manager.poller_mtx);
+    return curr;
+}
+
+static void _poller_manager_add(cdk_poller_t* poller) {
+    mtx_lock(&manager.poller_mtx);
+    cdk_list_insert_tail(&manager.poller_lst, &poller->node);
+    cnd_signal(&manager.poller_cnd);
+    mtx_unlock(&manager.poller_mtx);
+}
+
+static void _poller_manager_del(cdk_poller_t* poller) {
+    mtx_lock(&manager.poller_mtx);
+    cdk_list_remove(&poller->node);
+    mtx_unlock(&manager.poller_mtx);
+}
+
+static int _poller_routine(void* param) {
+    cdk_poller_t* poller = poller_create();
+    if (poller) {
+        _poller_manager_add(poller);
+        poller_poll(poller);
+        _poller_manager_del(poller);
+
+        poller_destroy(poller);
+    }
+    return 0;
+}
+
+static void _poller_manager_create(int parallel) {
+    platform_socket_startup();
+    if (parallel <= 0) {
+        abort();
+    }
+    cdk_timer_create(&manager.timer, 1);
+    cdk_list_init(&manager.poller_lst);
+    mtx_init(&manager.poller_mtx, mtx_plain);
+    cnd_init(&manager.poller_cnd);
+
+    manager.poller_roundrobin = _poller_roundrobin;
+    manager.thrdcnt = parallel;
+    manager.thrdids = malloc(manager.thrdcnt * sizeof(thrd_t));
+    for (int i = 0; i < manager.thrdcnt; i++) {
+        thrd_create((manager.thrdids + i), _poller_routine, NULL);
+    }
+}
+
+static void _poller_manager_destroy(void) {
+    for (int i = 0; i < manager.thrdcnt; i++) {
+        thrd_join(manager.thrdids[i], NULL);
+    }
+    free(manager.thrdids);
+    manager.thrdids = NULL;
+    
+    cdk_timer_destroy(&manager.timer);
+    mtx_destroy(&manager.poller_mtx);
+    cnd_destroy(&manager.poller_cnd);
+    platform_socket_cleanup();
+}
+
+static async_socket_ctx_t* _allocate_async_socket_ctx(const char* protocol, const char* host, const char* port, int idx, int cores, cdk_handler_t* handler) {
+    async_socket_ctx_t* ctx = malloc(sizeof(async_socket_ctx_t));
+    if (ctx) {
+        memset(ctx, 0, sizeof(async_socket_ctx_t));
+        memcpy(ctx->host, host, strlen(host));
+        memcpy(ctx->port, port, strlen(port));
+        if (!strcmp(protocol, "tcp")) {
+            ctx->protocol = SOCK_STREAM;
+        }
+        if (!strcmp(protocol, "udp")) {
+            ctx->protocol = SOCK_DGRAM;
+        }
+        ctx->idx = idx;
+        ctx->cores = cores;
+        ctx->handler = handler;
+        ctx->poller = manager.poller_roundrobin();
+    }
+    return ctx;
+}
+
+static void _async_listen_cb(void* param) {
+    async_socket_ctx_t* ctx = param;
+
+    cdk_sock_t sock = platform_socket_listen(ctx->host, ctx->port, ctx->protocol, ctx->idx, ctx->cores);
+    cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
+    if (channel) {
+        if (channel->type == SOCK_STREAM) {
+            channel_accepting(channel);
+        }
+        if (channel->type == SOCK_DGRAM) {
+            if (!channel_is_reading(channel)) {
+                channel_enable_read(channel);
+            }
+        }
+    }
+    free(ctx);
+    ctx = NULL;
+}
+
+static void _async_dial_cb(void* param) {
+    async_socket_ctx_t* ctx = param;
+    bool connected = false;
+
+    cdk_sock_t sock = platform_socket_dial(ctx->host, ctx->port, ctx->protocol, &connected);
+    cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
+    if (channel) {
+        if (channel->type == SOCK_STREAM) {
+            if (connected) {
+                if (channel->tcp.tls) {
+                    channel_tls_cli_handshake(channel);
+                } else {
+                    channel_connected(channel);
+                }
+            } else {
+                channel_connecting(channel);
+            }
+        }
+        if (channel->type == SOCK_DGRAM) {
+            cdk_addrinfo_t ai = { 0 };
+            struct sockaddr_storage ss = { 0 };
+
+            memcpy(ai.a, ctx->host, strlen(ctx->host));
+            ai.p = (uint16_t)strtoul(ctx->port, NULL, 10);
+            ai.f = cdk_net_af(sock);
+            cdk_net_pton(&ai, &ss);
+            channel->udp.peer.ss = ss;
+            channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+
+            channel_connected(channel);
+        }
+    }
+    free(ctx);
+    ctx = NULL;
+}
+
+static void _async_channel_send_explicit_cb(void* param) {
     async_channel_send_ctx_t* ctx = param;
-
     channel_send_explicit(ctx->channel, ctx->data, ctx->size);
-
     free(ctx);
     ctx = NULL;
 }
@@ -61,69 +221,17 @@ static void _async_channel_send_explicit(cdk_channel_t* channel, void* data, siz
         ctx->size = size;
         memcpy(ctx->data, data, size);
 
-        cdk_net_postevent(channel->poller, _async_channel_send_explicit_callback, ctx, true);
+        cdk_net_postevent(channel->poller, _async_channel_send_explicit_cb, ctx, true);
     }
 }
 
-static void _do_tfo_connect(void* param) {
-    cdk_channel_t* channel = param;
-    if (channel->tls) {
-        channel_tls_cli_handshake(channel);
-    } else {
-        if (channel_is_connecting(channel)) {
-            channel_disable_connect(channel);
-        }
-        if (channel->handler->on_connect) {
-            channel->handler->on_connect(channel);
-        }
-        if (!channel_is_reading(channel)) {
-            channel_enable_read(channel);
-        }
-    }
-}
-
-static void _connect_timeout_callback(void* param) {
-    cdk_channel_t* channel = param;
-    if (channel->handler->on_close) {
-        channel->handler->on_close(channel, platform_socket_error2string(PLATFORM_SO_ERROR_ETIMEDOUT));
-    }
-}
-
-static void _connect_timeout_routine(void* param) {
-    cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _connect_timeout_callback, channel, true);
-}
-
-static void _do_accept(void* param) {
-    cdk_channel_t* channel = param;
-    if (!channel_is_accepting(channel)) {
-        channel_enable_accept(channel);
-    }
-    if (channel->type == SOCK_DGRAM) {
-        channel_accept(channel);
-    }
-}
-
-static void _do_connect(void* param) {
-    cdk_channel_t* channel = param;
-    if (!channel_is_connecting(channel)) {
-        channel_enable_connect(channel);
-    }
-    if (channel->handler->connect_timeout) {
-        channel->ctimer = cdk_timer_add(&timer, _connect_timeout_routine, channel, channel->handler->connect_timeout, false);
-    }
-    if (channel->type == SOCK_DGRAM) {
-        channel_connect(channel);
-    }
-}
-
-static void _async_channel_destroy_callback(void* param) {
+static void _async_channel_destroy_cb(void* param) {
     cdk_channel_t* channel = param;
     channel_destroy(channel, "");
 }
 
 static void _async_channel_destroy(cdk_channel_t* channel) {
-    cdk_net_postevent(channel->poller, _async_channel_destroy_callback, channel, true);
+    cdk_net_postevent(channel->poller, _async_channel_destroy_cb, channel, true);
 }
 
 static void _inet_ntop(int af, const void* restrict src, char* restrict dst) {
@@ -133,53 +241,6 @@ static void _inet_ntop(int af, const void* restrict src, char* restrict dst) {
     if (af == AF_INET6) {
         inet_ntop(af, src, dst, INET6_ADDRSTRLEN);
     }
-}
-
-static void _inactive_poller(void* param) {
-    cdk_poller_t* poller = param;
-    poller->active = false;
-}
-
-cdk_poller_t* _poller_roundrobin(void) {
-    mtx_lock(&pollers_mtx);
-    while (cdk_list_empty(&pollers)) {
-        cnd_wait(&pollers_cnd, &pollers_mtx);
-    }
-    static cdk_poller_t* currpoller;
-    if (currpoller == NULL) {
-        currpoller = cdk_list_data(cdk_list_head(&pollers), cdk_poller_t, node);
-    }
-    else {
-        cdk_list_node_t* n = cdk_list_next(&currpoller->node);
-        if (n != cdk_list_sentinel(&pollers)) {
-            currpoller = cdk_list_data(n, cdk_poller_t, node);
-        }
-        if (n == cdk_list_sentinel(&pollers)) {
-            currpoller = cdk_list_data(cdk_list_next(n), cdk_poller_t, node);
-        }
-    }
-    mtx_unlock(&pollers_mtx);
-    return currpoller;
-}
-
-static int _workerthread(void* param) {
-    cdk_poller_t* poller = poller_create();
-    if (poller == NULL) {
-        return -1;
-    }
-    mtx_lock(&pollers_mtx);
-    cdk_list_insert_tail(&pollers, &poller->node);
-    cnd_signal(&pollers_cnd);
-    mtx_unlock(&pollers_mtx);
-
-    poller_poll(poller);
-
-    mtx_lock(&pollers_mtx);
-    cdk_list_remove(&poller->node);
-    mtx_unlock(&pollers_mtx);
-
-    poller_destroy(poller);
-    return 0;
 }
 
 void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai) {
@@ -262,52 +323,19 @@ void cdk_net_set_sendbuf(cdk_sock_t sock, int val) {
     platform_socket_set_sendbuf(sock, val);
 }
 
-void cdk_net_listen(cdk_protocol_t protocol, const char* host, const char* port, cdk_handler_t* handler) {
-    int proto = 0;
-    if (protocol == PROTOCOL_TCP) {
-        proto = SOCK_STREAM;
-    }
-    if (protocol == PROTOCOL_UDP) {
-        proto = SOCK_DGRAM;
-    }
-    cdk_sock_t sock = platform_socket_listen(host, port, proto);
-    cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
-    if (channel) {
-        cdk_net_postevent(channel->poller, _do_accept, channel, true);
+void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler) {
+    for (int i = 0; i < manager.thrdcnt; i++) {
+        async_socket_ctx_t* ctx = _allocate_async_socket_ctx(protocol, host, port, i, manager.thrdcnt, handler);
+        if (ctx) {
+            cdk_net_postevent(ctx->poller, _async_listen_cb, ctx, true);
+        }
     }
 }
 
-void cdk_net_dial(cdk_protocol_t protocol, const char* host, const char* port, cdk_handler_t* handler) {
-    int proto = 0;
-    bool connected = false;
-    cdk_addrinfo_t ai = {0};
-    struct sockaddr_storage ss = {0};
-
-    if (protocol == PROTOCOL_TCP) {
-        proto = SOCK_STREAM;
-    }
-    if (protocol == PROTOCOL_UDP) {
-        proto = SOCK_DGRAM;
-    }
-    cdk_sock_t sock = platform_socket_dial(host, port, proto, &connected);
-    cdk_channel_t* channel = channel_create(_poller_roundrobin(), sock, handler);
-    if (channel) {
-        if (connected) {
-            cdk_net_postevent(channel->poller, _do_tfo_connect, channel, true);
-        } else {
-            /**
-             * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage,
-             * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
-             */
-            memcpy(ai.a, host, strlen(host));
-            ai.p = (uint16_t)strtoul(port, NULL, 10);
-            ai.f = cdk_net_af(sock);
-            cdk_net_pton(&ai, &ss);
-            channel->peer.ss = ss;
-            channel->peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
-
-            cdk_net_postevent(channel->poller, _do_connect, channel, true);
-        }
+void cdk_net_dial(const char* protocol, const char* host, const char* port, cdk_handler_t* handler) {
+    async_socket_ctx_t* ctx = _allocate_async_socket_ctx(protocol, host, port, 0, 0, handler);
+    if (ctx) {
+        cdk_net_postevent(ctx->poller, _async_dial_cb, ctx, true);
     }
 }
 
@@ -338,8 +366,7 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
         mtx_lock(&poller->evmtx);
         if (totail) {
             cdk_list_insert_tail(&poller->evlist, &event->node);
-        }
-        else {
+        } else {
             cdk_list_insert_head(&poller->evlist, &event->node);
         }
         mtx_unlock(&poller->evmtx);
@@ -350,43 +377,21 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
 }
 
 void cdk_net_stop(void) {
-    mtx_lock(&pollers_mtx);
-    for (cdk_list_node_t* n = cdk_list_head(&pollers); n != cdk_list_sentinel(&pollers); n = cdk_list_next(n)) {
+    mtx_lock(&manager.poller_mtx);
+    for (cdk_list_node_t* n = cdk_list_head(&manager.poller_lst); n != cdk_list_sentinel(&manager.poller_lst); n = cdk_list_next(n)) {
         cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
-        cdk_net_postevent(poller, _inactive_poller, poller, true);
+        cdk_net_postevent(poller, _poller_inactive_cb, poller, true);
     }
-    mtx_unlock(&pollers_mtx);
+    mtx_unlock(&manager.poller_mtx);
 }
 
-void cdk_net_startup(int nworkers) {
-    platform_socket_startup();
-
-    if (!nworkers) {
-        cnt = 1;
+void cdk_net_startup(int nthrds) {
+    if (atomic_flag_test_and_set(&manager.initialized)) {
+        return;
     }
-    else {
-        cnt = nworkers;
-    }
-    cdk_timer_create(&timer, 1);
-    cdk_list_init(&pollers);
-    mtx_init(&pollers_mtx, mtx_plain);
-    cnd_init(&pollers_cnd);
-
-    workers = malloc(cnt * sizeof(thrd_t));
-    for (int i = 0; i < cnt; i++) {
-        thrd_create(workers + i, _workerthread, NULL);
-    }
+    _poller_manager_create(nthrds);
 }
 
 void cdk_net_cleanup(void) {
-    for(int i = 0; i < cnt; i++) {
-        thrd_join(workers[i], NULL);
-    }
-    free(workers);
-    workers = NULL;
-    
-    platform_socket_cleanup();
-    cdk_timer_destroy(&timer);
-    mtx_destroy(&pollers_mtx);
-    cnd_destroy(&pollers_cnd);
+    _poller_manager_destroy();
 }

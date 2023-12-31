@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 
 project(examples LANGUAGES C)
 
-add_executable(example-tcpserver "example-tcpserver.c")
-target_link_libraries(example-tcpserver PUBLIC cdk)
+add_executable(example-tcp-server "example-tcp-server.c")
+target_link_libraries(example-tcp-server PUBLIC cdk)
 
 add_executable(example-rwlock "example-rwlock.c")
 target_link_libraries(example-rwlock PUBLIC cdk)
@@ -11,14 +11,14 @@ target_link_libraries(example-rwlock PUBLIC cdk)
 add_executable(example-spinlock "example-spinlock.c")
 target_link_libraries(example-spinlock PUBLIC cdk)
 
-add_executable(example-tcpclient "example-tcpclient.c")
-target_link_libraries(example-tcpclient PUBLIC cdk)
+add_executable(example-tcp-client "example-tcp-client.c")
+target_link_libraries(example-tcp-client PUBLIC cdk)
 
-add_executable(example-udpclient "example-udpclient.c")
-target_link_libraries(example-udpclient PUBLIC cdk)
+add_executable(example-udp-client "example-udp-client.c")
+target_link_libraries(example-udp-client PUBLIC cdk)
 
-add_executable(example-udpserver "example-udpserver.c")
-target_link_libraries(example-udpserver PUBLIC cdk)
+add_executable(example-udp-server "example-udp-server.c")
+target_link_libraries(example-udp-server PUBLIC cdk)
 
 add_executable(example-rbtree "example-rbtree.c")
 target_link_libraries(example-rbtree PUBLIC cdk)

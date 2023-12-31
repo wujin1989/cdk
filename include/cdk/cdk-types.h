@@ -41,9 +41,12 @@ _Pragma("once")
 #include <ws2ipdef.h>
 #include <WS2tcpip.h>
 #include <process.h>
+#include <mstcpip.h>
 
 #pragma comment(lib,"ws2_32.lib")
 #pragma comment(lib,"winmm.lib")
+
+#define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR, 12)
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -60,6 +63,7 @@ _Pragma("once")
 #if defined(__linux__)
 #include <sys/epoll.h>
 #include <sys/syscall.h>
+#include <linux/filter.h>
 #endif
 
 #if defined(__APPLE__)
@@ -77,14 +81,7 @@ typedef enum cdk_unpack_type_e {
 typedef enum cdk_event_type_e{
 	EVENT_TYPE_R = 1,
 	EVENT_TYPE_W = 2,
-	EVENT_TYPE_A = 4,
-	EVENT_TYPE_C = 8,
 }cdk_event_type_t;
-
-typedef enum cdk_protocol_e {
-	PROTOCOL_TCP = 1,
-	PROTOCOL_UDP = 2,
-}cdk_protocol_t;
 
 #define cdk_tls_t void
 
@@ -105,9 +102,9 @@ typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
 typedef struct cdk_unpack_s              cdk_unpack_t;
-typedef struct cdk_offset_buf_s          cdk_offset_buf_t;
 typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
 typedef struct cdk_poller_s              cdk_poller_t;
+typedef struct cdk_poller_manager_s      cdk_poller_manager_t;
 typedef struct cdk_event_s               cdk_event_t;
 typedef struct cdk_tlsconf_s             cdk_tlsconf_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
@@ -246,12 +243,6 @@ struct cdk_unpack_s {
 	};
 };
 
-struct cdk_offset_buf_s {
-	void* buf;
-	ssize_t len;
-	ssize_t off;
-};
-
 struct cdk_addrinfo_s {
 	uint16_t    f;
 	char        a[INET6_ADDRSTRLEN];
@@ -265,8 +256,19 @@ struct cdk_poller_s {
 	cdk_list_t evlist;
 	bool active;
 	mtx_t evmtx;
-	cdk_channel_t* wakeup;
+	cdk_list_t chlist;
 	cdk_list_node_t node;
+};
+
+struct cdk_poller_manager_s {
+	thrd_t* thrdids;
+	int thrdcnt;
+	cdk_timer_t timer;
+	atomic_flag initialized;
+	cdk_list_t poller_lst;
+	mtx_t poller_mtx;
+	cnd_t poller_cnd;
+	cdk_poller_t* (*poller_roundrobin)(void);
 };
 
 struct cdk_event_s {
@@ -284,34 +286,65 @@ struct cdk_tlsconf_s {
 };
 
 struct cdk_channel_s {
-	cdk_poller_t*    poller;
-	cdk_sock_t       fd;
-	int              events;
-	cdk_handler_t*   handler;
-	int              type;
-	atomic_bool      closing;
-	cdk_offset_buf_t rxbuf;
-	cdk_list_t       txlist;
-	cdk_tls_t*       tls;
-	cdk_unpack_t*    unpacker;
-	cdk_timer_job_t* ctimer;
+	cdk_poller_t*  poller;
+	cdk_sock_t     fd;
+	int            events;
+	cdk_handler_t* handler;
+	int            type;
+	atomic_bool    closing;
+	cdk_list_t     txlist;
 	struct {
-		struct sockaddr_storage ss;
-		socklen_t sslen;
-	}peer;
+		void* buf;
+		ssize_t len;
+		ssize_t off;
+	} rxbuf;
+	cdk_list_node_t node;
+	union {
+		struct {
+			bool accepting;
+			bool connecting;
+			cdk_tls_t* tls;
+			uint64_t latest_rd_time;
+			uint64_t latest_wr_time;
+			cdk_timer_job_t* conn_timer;
+			cdk_timer_job_t* wr_timer;
+			cdk_timer_job_t* rd_timer;
+			cdk_timer_job_t* hb_timer;
+		}tcp;
+		struct {
+			struct {
+				struct sockaddr_storage ss;
+				socklen_t sslen;
+			}peer;
+		}udp;
+	};
 };
 
 struct cdk_handler_s {
-	void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
-	void (*on_write)  (cdk_channel_t*);
-	void (*on_close)  (cdk_channel_t*, const char* error);
-	void (*on_accept) (cdk_channel_t*);
-	void (*on_connect)(cdk_channel_t*);
-	cdk_tlsconf_t* tlsconf;
-
-	/** used by tcp */
-	int connect_timeout;
-	cdk_unpack_t* unpacker;
+	union {
+		struct {
+			void (*on_accept) (cdk_channel_t*);
+			void (*on_connect)(cdk_channel_t*);
+			void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
+			void (*on_write)  (cdk_channel_t*);
+			void (*on_close)  (cdk_channel_t*, const char* error);
+			/** on_timeout function requires the user to manually invoke the cdk_net_close function to close the channel. */
+			void (*on_timeout)(cdk_channel_t*);
+			void (*on_heartbeat)(cdk_channel_t*);
+			int conn_timeout;
+			int wr_timeout;
+			int rd_timeout;
+			int hb_interval;
+			cdk_unpack_t* unpacker;
+			cdk_tlsconf_t* tlsconf;
+		}tcp;
+		struct {
+			void (*on_connect) (cdk_channel_t*);
+			void (*on_read)  (cdk_channel_t*, void* buf, size_t len);
+			void (*on_write) (cdk_channel_t*);
+			void (*on_close) (cdk_channel_t*, const char* error);
+		}udp;
+	};
 };
 
 struct cdk_sha256_s {

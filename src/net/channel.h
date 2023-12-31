@@ -32,21 +32,19 @@ extern void channel_send(cdk_channel_t* channel);
 extern void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size);
 extern void channel_accept(cdk_channel_t* channel);
 extern void channel_connect(cdk_channel_t* channel);
-extern void channel_enable_accept(cdk_channel_t* channel);
-extern void channel_enable_connect(cdk_channel_t* channel);
 extern void channel_enable_write(cdk_channel_t* channel);
 extern void channel_enable_read(cdk_channel_t* channel);
-extern void channel_disable_accept(cdk_channel_t* channel);
-extern void channel_disable_connect(cdk_channel_t* channel);
 extern void channel_disable_write(cdk_channel_t* channel);
 extern void channel_disable_read(cdk_channel_t* channel);
 extern void channel_disable_all(cdk_channel_t* channel);
-extern bool channel_is_accepting(cdk_channel_t* channel);
-extern bool channel_is_connecting(cdk_channel_t* channel);
 extern bool channel_is_writing(cdk_channel_t* channel);
 extern bool channel_is_reading(cdk_channel_t* channel);
 extern void channel_tls_srv_handshake(void* param);
 extern void channel_tls_cli_handshake(void* param);
+extern void channel_connected(cdk_channel_t* channel);
+extern void channel_connecting(cdk_channel_t* channel);
+extern void channel_accepted(cdk_channel_t* channel);
+extern void channel_accepting(cdk_channel_t* channel);
 
 
 

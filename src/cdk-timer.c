@@ -35,11 +35,10 @@ typedef struct timer_entry_s {
 }timer_entry_t;
 
 static inline void _timer_add(cdk_timer_t* timer, timer_entry_t* entry) {
-	if (!entry) {
-		return;
+	if (entry) {
+		cdk_rbtree_insert(&timer->rbtree, &entry->n);
+		cnd_signal(&timer->rbcnd);
 	}
-	cdk_rbtree_insert(&timer->rbtree, &entry->n);
-	cnd_signal(&timer->rbcnd);
 }
 
 cdk_timer_job_t* cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat) {
@@ -90,10 +89,53 @@ void cdk_timer_del(cdk_timer_t* timer, cdk_timer_job_t* job) {
 			cdk_list_remove(&job->n);
 			free(job);
 			job = NULL;
-		} else {
+		} 
+		if(cdk_list_empty(&entry->joblst)){
 			cdk_rbtree_erase(&timer->rbtree, &entry->n);
 			free(entry);
 			entry = NULL;
+		}
+	}
+	mtx_unlock(&timer->rbmtx);
+}
+
+void cdk_timer_reset(cdk_timer_t* timer, cdk_timer_job_t* job, uint32_t expire) {
+	timer_entry_t* entry = NULL;
+	cdk_rbtree_node_key_t okey = { 0 };
+	cdk_rbtree_node_key_t nkey = { 0 };
+	cdk_rbtree_node_t* onode = NULL;
+	cdk_rbtree_node_t* nnode = NULL;
+
+	mtx_lock(&timer->rbmtx);
+	okey.u64 = job->birthtime + job->expire;
+
+	job->expire = expire;
+	job->birthtime = cdk_time_now();
+	nkey.u64 = job->birthtime + job->expire;
+	
+	onode = cdk_rbtree_find(&timer->rbtree, okey);
+	if (onode) {
+		entry = cdk_rbtree_data(onode, timer_entry_t, n);
+		if (!cdk_list_empty(&entry->joblst)) {
+			cdk_list_remove(&job->n);
+		} 
+		if(cdk_list_empty(&entry->joblst)){
+			cdk_rbtree_erase(&timer->rbtree, &entry->n);
+			free(entry);
+			entry = NULL;
+		}
+	}
+	nnode = cdk_rbtree_find(&timer->rbtree, nkey);
+	if (nnode) {
+		entry = cdk_rbtree_data(nnode, timer_entry_t, n);
+		cdk_list_insert_tail(&entry->joblst, &job->n);
+	} else {
+		entry = malloc(sizeof(timer_entry_t));
+		if (entry) {
+			entry->n.rb_key = nkey;
+			cdk_list_init(&entry->joblst);
+			cdk_list_insert_tail(&entry->joblst, &job->n);
+			_timer_add(timer, entry);
 		}
 	}
 	mtx_unlock(&timer->rbmtx);
@@ -124,7 +166,7 @@ static inline int _timer_thrdfunc(void* arg) {
 			if (timer->status) {
 				job->routine(job->arg);
 				if (job->repeat) {
-					cdk_timer_add(timer, job->routine, job->arg, job->expire, job->repeat);
+					cdk_timer_reset(timer, job, job->expire);
 					continue;
 				}
 			}
