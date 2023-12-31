@@ -149,6 +149,9 @@ static inline int _timer_thrdfunc(void* arg) {
 		while (timer->status && cdk_rbtree_empty(&timer->rbtree)) {
 			cnd_wait(&timer->rbcnd, &timer->rbmtx);
 		}
+		if (!timer->status) {
+			return -1;
+		}
 		entry = cdk_rbtree_data(cdk_rbtree_first(&timer->rbtree), timer_entry_t, n);
 		uint64_t now = cdk_time_now();
 		if (entry->n.rb_key.u64 > now) {

@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.0)
 
 project(examples LANGUAGES C)
 
+add_executable(example-tcp-perf-client "example-tcp-perf-client.c")
+target_link_libraries(example-tcp-perf-client PUBLIC cdk)
+
+add_executable(example-tcp-perf-server "example-tcp-perf-server.c")
+target_link_libraries(example-tcp-perf-server PUBLIC cdk)
+
 add_executable(example-tcp-server "example-tcp-server.c")
 target_link_libraries(example-tcp-server PUBLIC cdk)
 
