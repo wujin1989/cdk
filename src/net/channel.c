@@ -516,7 +516,9 @@ void channel_connect(cdk_channel_t* channel) {
     socklen_t len = sizeof(int);
 
     channel_disable_all(channel);
-    cdk_timer_del(&manager.timer, channel->tcp.conn_timer);
+    if (channel->handler->tcp.conn_timeout) {
+        cdk_timer_del(&manager.timer, channel->tcp.conn_timer);
+    }
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
         channel_destroy(channel, platform_socket_error2string(err));
