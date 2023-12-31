@@ -59,11 +59,11 @@ _Pragma("once")
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <fcntl.h>
-#include <linux/filter.h>
 
 #if defined(__linux__)
 #include <sys/epoll.h>
 #include <sys/syscall.h>
+#include <linux/filter.h>
 #endif
 
 #if defined(__APPLE__)
