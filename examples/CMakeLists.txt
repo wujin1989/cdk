@@ -14,11 +14,11 @@ target_link_libraries(example-spinlock PUBLIC cdk)
 add_executable(example-tcp-client "example-tcp-client.c")
 target_link_libraries(example-tcp-client PUBLIC cdk)
 
-add_executable(example-udp-echo-client "example-udp-echo-client.c")
-target_link_libraries(example-udp-echo-client PUBLIC cdk)
+add_executable(example-udp-client "example-udp-client.c")
+target_link_libraries(example-udp-client PUBLIC cdk)
 
-add_executable(example-udp-echo-server "example-udp-echo-server.c")
-target_link_libraries(example-udp-echo-server PUBLIC cdk)
+add_executable(example-udp-server "example-udp-server.c")
+target_link_libraries(example-udp-server PUBLIC cdk)
 
 add_executable(example-rbtree "example-rbtree.c")
 target_link_libraries(example-rbtree PUBLIC cdk)

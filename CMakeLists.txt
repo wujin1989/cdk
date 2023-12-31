@@ -120,7 +120,7 @@ endif()
 
 if(BUILD_DYNAMIC_LIBRARY)
     add_library(cdk SHARED ${SRCS})
-	target_link_libraries(cdk PUBLIC ${OPENSSL_LIBRARIES})
+	target_link_libraries(cdk PUBLIC ${OPENSSL_LIBRARIES} ${CMAKE_DL_LIBS})
 	set_target_properties(cdk PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
 else()
     add_library(cdk STATIC ${SRCS})

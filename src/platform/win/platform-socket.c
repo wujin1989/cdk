@@ -179,6 +179,7 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         }
         if (protocol == SOCK_DGRAM) {
             _disable_udp_connreset(sock);
+            platform_socket_set_recvbuf(sock, INT32_MAX);
             platform_socket_rss(sock, (uint16_t)idx, cores);
         }
         if (bind(sock, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) {

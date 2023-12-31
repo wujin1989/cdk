@@ -1,40 +1,66 @@
 #include "cdk.h"
 #include <string.h>
 
-typedef struct _net_msg_hdr_t {
-	uint32_t p_s;
-	uint32_t p_t;
+typedef enum net_msg_type_e{
+	KEEPALIVE_MSG_TYPE,
+	PING_MSG_TYPE,
+	PONG_MSG_TYPE,
+}net_msg_type_t;
+
+typedef struct net_msg_hdr_s {
+	uint32_t size;
+	net_msg_type_t type;
 }net_msg_hdr_t;
 
-typedef struct _net_msg_t {
-	net_msg_hdr_t h;
-	char p[];
+typedef struct net_msg_s {
+	net_msg_hdr_t hdr;
+	char data[];
 }net_msg_t;
 
+char ping[16] = "PING";
+char keepalive[16] = "KEEPALIVE";
+
 static void handle_connect(cdk_channel_t* channel) {
-	printf("[%d]has connected to remote...\n", (int)channel->fd);
-
-	net_msg_t* msg = malloc(sizeof(net_msg_t) + strlen("hello") + 1);
+	cdk_logi("[%d]has connected to remote...\n", (int)channel->fd);
+	net_msg_t* msg = malloc(sizeof(net_msg_t) + sizeof(ping));
 	if (msg) {
-		msg->h.p_s = htonl((uint32_t)(strlen("hello") + 1));
-		msg->h.p_t = htonl(1);
-		memcpy(msg->p, "hello", strlen("hello") + 1);
-
-		cdk_net_send(channel, msg, sizeof(net_msg_t) + strlen("hello") + 1);
+		msg->hdr.size = htonl((uint32_t)(sizeof(ping)));
+		msg->hdr.type = htonl(PING_MSG_TYPE);
+		memcpy(msg->data, ping, sizeof(ping));
+		cdk_net_send(channel, msg, sizeof(net_msg_t) + sizeof(ping));
 	}
 }
 
 static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
-	net_msg_t* rmsg = (net_msg_t*)buf;
-	printf("recv complete. msg payload len: %d, msg payload type: %d, %s\n", ntohl(rmsg->h.p_s), ntohl(rmsg->h.p_t), rmsg->p);
+	net_msg_t* rmsg = buf;
+	cdk_addrinfo_t addrinfo;
+	cdk_net_obtain_addr(channel->fd, &addrinfo, true);
+	cdk_logi("recv %s from %s:%d. type: %d, len: %d.\n", rmsg->data, addrinfo.a, addrinfo.p, ntohl(rmsg->hdr.type), ntohl(rmsg->hdr.size));
 }
 
 static void handle_close(cdk_channel_t* channel, const char* error) {
-	printf("connection closed, reason: %s\n", error);
+	cdk_loge("connection closed, reason: %s\n", error);
+}
+
+static void handle_timeout(cdk_channel_t* channel) {
+	cdk_loge("connection timeout\n");
+	cdk_net_close(channel);
+}
+
+static void handle_heartbeat(cdk_channel_t* channel) {
+	net_msg_t* msg = malloc(sizeof(net_msg_t) + sizeof(keepalive));
+	if (msg) {
+		msg->hdr.size = htonl((uint32_t)(sizeof(keepalive)));
+		msg->hdr.type = htonl(KEEPALIVE_MSG_TYPE);
+		memcpy(msg->data, keepalive, sizeof(keepalive));
+		cdk_net_send(channel, msg, sizeof(net_msg_t) + sizeof(keepalive));
+	}
 }
 
 int main(void) {
 	cdk_net_startup(4);
+	cdk_logger_create(NULL, 0);
+
 	cdk_tlsconf_t conf = {
 		.cafile = "certs/ca.crt",
 		.capath = NULL,
@@ -52,14 +78,18 @@ int main(void) {
 	};
 	cdk_handler_t handler = {
 		.tcp.on_connect = handle_connect,
-		.tcp.on_read    = handle_read,
-		.tcp.on_close   = handle_close,
-		.tcp.connect_timeout = 5000,
+		.tcp.on_read = handle_read,
+		.tcp.on_close = handle_close,
+		.tcp.on_heartbeat = handle_heartbeat,
+		.tcp.on_timeout = handle_timeout,
+		.tcp.wr_timeout = 10000,
+		.tcp.conn_timeout = 5000,
+		.tcp.hb_interval = 5000,
 		.tcp.tlsconf = &conf,
 		.tcp.unpacker = &unpacker
 	};
 	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
-	
 	cdk_net_cleanup();
+	cdk_logger_destroy();
 	return 0;
 }

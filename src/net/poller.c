@@ -55,20 +55,24 @@ static cdk_handler_t eventfd_handler = {
 };
 
 void poller_poll(cdk_poller_t* poller) {
-    cdk_pollevent_t events[MAX_PROCESS_EVENTS];
-    while (poller->active) {
-        int nevents = platform_event_wait(poller->pfd, events);
-        for (int i = 0; i < nevents; i++) {
-            cdk_channel_t* channel = events[i].ptr;
-            uint32_t mask = events[i].events;
+    cdk_pollevent_t* events = malloc(sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
+    if (events) {
+        while (poller->active) {
+            int nevents = platform_event_wait(poller->pfd, events);
+            for (int i = 0; i < nevents; i++) {
+                cdk_channel_t* channel = events[i].ptr;
+                uint32_t mask = events[i].events;
 
-            if (mask & EVENT_TYPE_R) {
-                (channel->type == SOCK_STREAM) ? ((channel->tcp.accepting) ? channel_accept(channel) : channel_recv(channel)) : channel_recv(channel);
-            }
-            if (mask & EVENT_TYPE_W) {
-                (channel->type == SOCK_STREAM) ? ((channel->tcp.connecting) ? channel_connect(channel) : channel_send(channel)) : channel_send(channel);
+                if (mask & EVENT_TYPE_R) {
+                    (channel->type == SOCK_STREAM) ? ((channel->tcp.accepting) ? channel_accept(channel) : channel_recv(channel)) : channel_recv(channel);
+                }
+                if (mask & EVENT_TYPE_W) {
+                    (channel->type == SOCK_STREAM) ? ((channel->tcp.connecting) ? channel_connect(channel) : channel_send(channel)) : channel_send(channel);
+                }
             }
         }
+        free(events);
+        events = NULL;
     }
 }
 

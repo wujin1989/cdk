@@ -304,7 +304,12 @@ struct cdk_channel_s {
 			bool accepting;
 			bool connecting;
 			cdk_tls_t* tls;
-			cdk_timer_job_t* ctimer;
+			uint64_t latest_rd_time;
+			uint64_t latest_wr_time;
+			cdk_timer_job_t* conn_timer;
+			cdk_timer_job_t* wr_timer;
+			cdk_timer_job_t* rd_timer;
+			cdk_timer_job_t* hb_timer;
 		}tcp;
 		struct {
 			struct {
@@ -323,7 +328,13 @@ struct cdk_handler_s {
 			void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
 			void (*on_write)  (cdk_channel_t*);
 			void (*on_close)  (cdk_channel_t*, const char* error);
-			int connect_timeout;
+			/** on_timeout function requires the user to manually invoke the cdk_net_close function to close the channel. */
+			void (*on_timeout)(cdk_channel_t*);
+			void (*on_heartbeat)(cdk_channel_t*);
+			int conn_timeout;
+			int wr_timeout;
+			int rd_timeout;
+			int hb_interval;
 			cdk_unpack_t* unpacker;
 			cdk_tlsconf_t* tlsconf;
 		}tcp;

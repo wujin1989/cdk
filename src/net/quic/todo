@@ -1,0 +1,3 @@
+Currently, the cdk's network framework has been adjusted to allow integration with QUIC. 
+However, the decision has not been made yet on whether to implement it ourselves or integrate a third-party QUIC solution. 
+Additionally, OpenSSL has not fully supported QUIC at the moment. So, please allow some time for observation.

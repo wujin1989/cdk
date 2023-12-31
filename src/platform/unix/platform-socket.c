@@ -153,7 +153,9 @@ cdk_pollfd_t platform_socket_pollfd_create(void) {
 
 #if defined(__APPLE__)
 void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
-    //apple not support
+    (void)(sock);
+    (void)(idx);
+    (void)(cores);
 }
 
 int platform_socket_af(cdk_sock_t sock) {
@@ -244,6 +246,7 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         platform_socket_reuse_addr(sock);
         platform_socket_reuse_port(sock);
         if (protocol == SOCK_DGRAM) {
+            platform_socket_set_recvbuf(sock, INT32_MAX);
             platform_socket_rss(sock, idx, cores);
         }
         if (bind(sock, rp->ai_addr, rp->ai_addrlen) == -1) {
