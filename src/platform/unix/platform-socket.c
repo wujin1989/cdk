@@ -409,7 +409,7 @@ ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size, bool nonblock
         ssize_t tmp;
         do {
             tmp = send(sock, buf + off, size - off, 0);
-        } while (n == -1 && errno == EINTR);
+        } while (tmp == -1 && errno == EINTR);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;
         }
