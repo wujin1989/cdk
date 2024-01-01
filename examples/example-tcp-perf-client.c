@@ -35,7 +35,7 @@ static inline void _test_finished(void* param) {
 }
 
 static void _printf_statistic_info() {
-	cdk_logi("qps:\t %d/qps\n", total_readcnt / RUNTIME);
+	cdk_logi("qps:\t %d Q/s\n", total_readcnt / RUNTIME);
 	cdk_logi("throughput:\t %zu MB/s\n", (total_readbytes / (RUNTIME * 1024 * 1024)));
 }
 

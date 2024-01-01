@@ -190,13 +190,9 @@ static void _async_dial_cb(void* param) {
         }
         if (channel->type == SOCK_DGRAM) {
             cdk_addrinfo_t ai = { 0 };
-            struct sockaddr_storage ss = { 0 };
-
-            memcpy(ai.a, ctx->host, strlen(ctx->host));
-            ai.p = (uint16_t)strtoul(ctx->port, NULL, 10);
-            ai.f = cdk_net_af(sock);
-            cdk_net_pton(&ai, &ss);
-            channel->udp.peer.ss = ss;
+            
+            cdk_net_getaddrinfo(sock, &ai, true);
+            cdk_net_pton(&ai, &channel->udp.peer.ss);
             channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 
             channel_connected(channel);
@@ -292,7 +288,7 @@ void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss) {
     }
 }
 
-void cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer) {
+void cdk_net_getaddrinfo(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer) {
     struct sockaddr_storage ss;
     socklen_t len;
 
@@ -307,20 +303,8 @@ void cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer) {
     cdk_net_ntop(&ss, ai);
 }
 
-int cdk_net_af(cdk_sock_t sock) {
-    return platform_socket_af(sock);
-}
-
-int cdk_net_socktype(cdk_sock_t sock) {
-    return platform_socket_socktype(sock);
-}
-
-void cdk_net_set_recvbuf(cdk_sock_t sock, int val) {
-    platform_socket_set_recvbuf(sock, val);
-}
-
-void cdk_net_set_sendbuf(cdk_sock_t sock, int val) {
-    platform_socket_set_sendbuf(sock, val);
+int cdk_net_getsocktype(cdk_sock_t sock) {
+    return platform_socket_getsocktype(sock);
 }
 
 void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler) {
@@ -376,7 +360,7 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
     }
 }
 
-void cdk_net_stop(void) {
+void cdk_net_exit(void) {
     mtx_lock(&manager.poller_mtx);
     for (cdk_list_node_t* n = cdk_list_head(&manager.poller_lst); n != cdk_list_sentinel(&manager.poller_lst); n = cdk_list_next(n)) {
         cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
@@ -394,4 +378,36 @@ void cdk_net_startup(int nthrds) {
 
 void cdk_net_cleanup(void) {
     _poller_manager_destroy();
+}
+
+cdk_sock_t cdk_net_listen2(const char* protocol, const char* host, const char* port){
+    platform_socket_listen();
+}
+
+cdk_sock_t cdk_net_accept2(cdk_sock_t sock){
+
+}
+
+cdk_sock_t cdk_net_dial2(const char* protocol, const char* host, const char* port){
+
+}
+
+ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size){
+
+}
+
+ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size){
+
+}
+
+ssize_t cdk_net_recvfrom2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen){
+
+}
+
+ssize_t cdk_net_sendto2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len){
+
+}
+
+void cdk_net_close2(cdk_sock_t sock){
+    platform_socket_close(sock);
 }

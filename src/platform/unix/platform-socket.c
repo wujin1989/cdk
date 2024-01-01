@@ -34,13 +34,13 @@ void platform_socket_nonblock(cdk_sock_t sock) {
     }
 }
 
-void platform_socket_set_recvbuf(cdk_sock_t sock, int val) {
+void platform_socket_setrecvbuf(cdk_sock_t sock, int val) {
     if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void*)&val, sizeof(int))) {
         abort();
     }
 }
 
-void platform_socket_set_sendbuf(cdk_sock_t sock, int val) {
+void platform_socket_setsendbuf(cdk_sock_t sock, int val) {
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void*)&val, sizeof(int))) {
         abort();
     }
@@ -50,7 +50,7 @@ void platform_socket_close(cdk_sock_t sock) {
     close(sock);
 }
 
-cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
+cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
     cdk_sock_t cli;
     do {
         cli = accept(sock, NULL, NULL);
@@ -64,7 +64,9 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
             return INVALID_SOCKET;
         }
     }
-    platform_socket_nonblock(cli);
+    if(nonblocking){
+        platform_socket_nonblock(cli);
+    }
     return cli;
 }
 
@@ -107,7 +109,7 @@ void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
     }
 }
 
-int platform_socket_af(cdk_sock_t sock) {
+int platform_socket_getaddrfamily(cdk_sock_t sock) {
     int af;
     socklen_t len;
     len = sizeof(int);
@@ -138,7 +140,7 @@ void platform_socket_keepalive(cdk_sock_t sock) {
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
-    int af = platform_socket_af(sock);
+    int af = platform_socket_getaddrfamily(sock);
     int mss = af == AF_INET ? TCPv4_MSS : TCPv6_MSS;
 
     if (setsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, (const void*)&mss, sizeof(int))) {
@@ -158,7 +160,7 @@ void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
     (void)(cores);
 }
 
-int platform_socket_af(cdk_sock_t sock) {
+int platform_socket_getaddrfamily(cdk_sock_t sock) {
     struct sockaddr_storage ss;
     socklen_t len;
 
@@ -216,7 +218,7 @@ void platform_socket_reuse_port(cdk_sock_t sock) {
     }
 }
 
-cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores) {
+cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores, bool nonblocking) {
     cdk_sock_t sock;
     struct addrinfo  hints;
     struct addrinfo* res;
@@ -246,7 +248,7 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         platform_socket_reuse_addr(sock);
         platform_socket_reuse_port(sock);
         if (protocol == SOCK_DGRAM) {
-            platform_socket_set_recvbuf(sock, INT32_MAX);
+            platform_socket_setrecvbuf(sock, INT32_MAX);
             platform_socket_rss(sock, idx, cores);
         }
         if (bind(sock, rp->ai_addr, rp->ai_addrlen) == -1) {
@@ -271,7 +273,9 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         /**
          * this option not inherited by connection-socket.
          */
-        platform_socket_nonblock(sock);
+        if(nonblocking){
+            platform_socket_nonblock(sock);
+        }
         break;
     }
     if (rp == NULL) {
@@ -287,7 +291,7 @@ void platform_socket_startup(void) {
 void platform_socket_cleanup(void) {
 }
 
-cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected) {
+cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected, bool nonblocking) {
     int ret;
     cdk_sock_t sock;
     struct addrinfo  hints;
@@ -310,7 +314,9 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
         if (sock == INVALID_SOCKET) {
             continue;
         }
-        platform_socket_nonblock(sock);
+        if(nonblocking){
+            platform_socket_nonblock(sock);
+        }
         if (protocol == SOCK_STREAM) {
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
@@ -339,7 +345,7 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
     return sock;
 }
 
-int platform_socket_socktype(cdk_sock_t sock) {
+int platform_socket_getsocktype(cdk_sock_t sock) {
     int socktype;
     socklen_t len;
 

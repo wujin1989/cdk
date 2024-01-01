@@ -39,13 +39,13 @@ void platform_socket_nonblock(cdk_sock_t sock) {
     }
 }
 
-void platform_socket_set_recvbuf(cdk_sock_t sock, int val) {
+void platform_socket_setrecvbuf(cdk_sock_t sock, int val) {
     if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&val, sizeof(int))) {
         abort();
     }
 }
 
-void platform_socket_set_sendbuf(cdk_sock_t sock, int val) {
+void platform_socket_setsendbuf(cdk_sock_t sock, int val) {
     if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&val, sizeof(int))) {
         abort();
     }
@@ -55,7 +55,7 @@ void platform_socket_close(cdk_sock_t sock) {
     closesocket(sock);
 }
 
-cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
+cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
     cdk_sock_t cli = accept(sock, NULL, NULL);
     if (cli == INVALID_SOCKET) {
         if (WSAGetLastError() != WSAEWOULDBLOCK) {
@@ -66,7 +66,9 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock) {
             return INVALID_SOCKET;
         }
     }
-    platform_socket_nonblock(cli);
+    if(nonblocking) {
+        platform_socket_nonblock(cli);
+    }
     return cli;
 }
 
@@ -97,7 +99,7 @@ void platform_socket_keepalive(cdk_sock_t sock) {
     }
 }
 
-int platform_socket_af(cdk_sock_t sock) {
+int platform_socket_getaddrfamily(cdk_sock_t sock) {
     WSAPROTOCOL_INFOW info; /* using unicode name to avoiding ninja build warning */
     socklen_t len;
 
@@ -150,7 +152,7 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
     }
 }
 
-cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores) {
+cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores, bool nonblocking) {
     cdk_sock_t sock;
     struct addrinfo  hints;
     struct addrinfo* res;
@@ -179,7 +181,7 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         }
         if (protocol == SOCK_DGRAM) {
             _disable_udp_connreset(sock);
-            platform_socket_set_recvbuf(sock, INT32_MAX);
+            platform_socket_setrecvbuf(sock, INT32_MAX);
             platform_socket_rss(sock, (uint16_t)idx, cores);
         }
         if (bind(sock, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) {
@@ -195,7 +197,9 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
         }
-        platform_socket_nonblock(sock);
+        if(nonblocking){
+            platform_socket_nonblock(sock);
+        }
         break;
     }
     if (rp == NULL) {
@@ -221,7 +225,7 @@ void platform_socket_cleanup(void) {
     }
 }
 
-cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected) {
+cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected, bool nonblocking) {
     cdk_sock_t sock;
     struct addrinfo  hints;
     struct addrinfo* res;
@@ -243,8 +247,9 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
         if (sock == INVALID_SOCKET) {
             continue;
         }
-        platform_socket_nonblock(sock);
-
+        if(nonblocking){
+            platform_socket_nonblock(sock);
+        }
         if (protocol == SOCK_STREAM) {
             platform_socket_maxseg(sock);
             platform_socket_nodelay(sock, true);
@@ -273,7 +278,7 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
     return sock;
 }
 
-int platform_socket_socktype(cdk_sock_t sock) {
+int platform_socket_getsocktype(cdk_sock_t sock) {
     int socktype;
     int len = sizeof(int);
     if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&socktype, &len)) {
