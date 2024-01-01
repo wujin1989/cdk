@@ -31,11 +31,11 @@ static void handle_close(cdk_channel_t* channel, const char* error) {
 }
 
 static inline void _test_finished(void* param) {
-	cdk_net_stop();
+	cdk_net_exit();
 }
 
 static void _printf_statistic_info() {
-	cdk_logi("qps:\t %d Q/s\n", total_readcnt / RUNTIME);
+	cdk_logi("tps:\t %d Q/s\n", total_readcnt / RUNTIME);
 	cdk_logi("throughput:\t %zu MB/s\n", (total_readbytes / (RUNTIME * 1024 * 1024)));
 }
 

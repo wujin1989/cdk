@@ -28,6 +28,8 @@ _Pragma("once")
 #define PLATFORM_SO_ERROR_EWOULDBLOCK	    EWOULDBLOCK
 #define PLATFORM_SO_ERROR_ECONNRESET		ECONNRESET
 #define PLATFORM_SO_ERROR_ETIMEDOUT         ETIMEDOUT
+#define PLATFORM_SO_ERROR_INVALID_SOCKET    -1
+#define PLATFORM_SO_ERROR_SOCKET_ERROR      -1
 #endif
 
 #if defined(_WIN32)
@@ -35,8 +37,12 @@ _Pragma("once")
 #define PLATFORM_SO_ERROR_EWOULDBLOCK	    WSAEWOULDBLOCK
 #define PLATFORM_SO_ERROR_ECONNRESET		WSAECONNRESET
 #define PLATFORM_SO_ERROR_ETIMEDOUT         WSAETIMEDOUT
+#define PLATFORM_SO_ERROR_INVALID_SOCKET    INVALID_SOCKET
+#define PLATFORM_SO_ERROR_SOCKET_ERROR      SOCKET_ERROR
 #endif
 
+extern void         platform_socket_recvtimeo(cdk_sock_t sock, int timeout_ms);
+extern void         platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms);
 extern void         platform_socket_setrecvbuf(cdk_sock_t sock, int val);
 extern void         platform_socket_setsendbuf(cdk_sock_t sock, int val);
 extern void         platform_socket_nodelay(cdk_sock_t sock, bool on);
@@ -55,8 +61,8 @@ extern cdk_sock_t   platform_socket_dial(const char* restrict host, const char* 
 extern void         platform_socket_close(cdk_sock_t sock);
 extern int          platform_socket_getaddrfamily(cdk_sock_t sock);
 extern int          platform_socket_getsocktype(cdk_sock_t sock);
-extern ssize_t      platform_socket_recv(cdk_sock_t sock, void* buf, int size);
-extern ssize_t      platform_socket_send(cdk_sock_t sock, void* buf, int size);
+extern ssize_t      platform_socket_recv(cdk_sock_t sock, void* buf, int size, bool nonblocking);
+extern ssize_t      platform_socket_send(cdk_sock_t sock, void* buf, int size, bool nonblocking);
 extern ssize_t      platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* lenptr);
 extern ssize_t      platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len);
 extern int          platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]);
@@ -64,4 +70,5 @@ extern const char*  platform_socket_error2string(int error);
 extern int          platform_socket_lasterror(void);
 extern cdk_pollfd_t platform_socket_pollfd_create(void);
 extern void         platform_socket_pollfd_destroy(cdk_pollfd_t pfd);
+
 
