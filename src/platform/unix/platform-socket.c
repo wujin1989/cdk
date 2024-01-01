@@ -54,15 +54,9 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
     cdk_sock_t cli;
     do {
         cli = accept(sock, NULL, NULL);
-    } while (cli == INVALID_SOCKET && errno == EINTR);
-    if (cli == INVALID_SOCKET) {
-        if (errno != EAGAIN || errno != EWOULDBLOCK) {
-            platform_socket_close(sock);
-            abort();
-        }
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            return INVALID_SOCKET;
-        }
+    } while (cli == -1 && errno == EINTR);
+    if (cli == -1) {
+        return -1;
     }
     if(nonblocking){
         platform_socket_nonblock(cli);
@@ -87,7 +81,26 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
 void platform_socket_v6only(cdk_sock_t sock, bool on) {
     int val = on ? 1 : 0;
     if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const void*)&val, sizeof(int))) {
-        perror("error");
+        abort();
+    }
+}
+
+void platform_socket_recvtimeo(cdk_sock_t sock, int timeout_ms) {
+    struct timeval tv = {
+        .tv_sec = timeout_ms / 1000,
+        .tv_usec = (timeout_ms % 1000) * 1000
+    };
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const void*)&tv, sizeof(struct timeval))) {
+        abort();
+    }
+}
+
+void platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms) {
+    struct timeval tv = {
+        .tv_sec = timeout_ms / 1000,
+        .tv_usec = (timeout_ms % 1000) * 1000
+    };
+    if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const void*)&tv, sizeof(struct timeval))) {
         abort();
     }
 }
@@ -239,7 +252,7 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
     for (rp = res; rp != NULL; rp = rp->ai_next) {
 
         sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (sock == INVALID_SOCKET) {
+        if (sock == -1) {
             continue;
         }
         if (rp->ai_family == AF_INET6) {
@@ -249,7 +262,9 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         platform_socket_reuse_port(sock);
         if (protocol == SOCK_DGRAM) {
             platform_socket_setrecvbuf(sock, INT32_MAX);
-            platform_socket_rss(sock, idx, cores);
+            if (nonblocking) {
+                platform_socket_rss(sock, idx, cores);
+            }
         }
         if (bind(sock, rp->ai_addr, rp->ai_addrlen) == -1) {
             platform_socket_close(sock);
@@ -311,7 +326,7 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
     }
     for (rp = res; rp != NULL; rp = rp->ai_next) {
         sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (sock == INVALID_SOCKET) {
+        if (sock == -1) {
             continue;
         }
         if(nonblocking){
@@ -346,32 +361,61 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
 }
 
 int platform_socket_getsocktype(cdk_sock_t sock) {
-    int socktype;
+    int type;
     socklen_t len;
 
     len = sizeof(int);
-    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, &socktype, (socklen_t*)&len)) {
-        perror("error");
+    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, &type, (socklen_t*)&len)) {
         abort();
     }
-    return socktype;
+    return type;
 }
 
-ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
-    errno = 0;
-    ssize_t n;
-    do {
-        n = recv(sock, buf, size, 0);
-    } while (n == -1 && errno == EINTR);
-    return n;
+ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size, bool nonblocking) {
+    if (nonblocking) {
+        ssize_t n;
+        do {
+            n = recv(sock, buf, size, 0);
+        } while (n == -1 && errno == EINTR);
+        return n;
+    }
+    ssize_t off = 0;
+    while (off < size) {
+        ssize_t tmp;
+        do {
+            tmp = recv(sock, buf + off, size - off, 0);
+        } while (tmp == -1 && errno == EINTR);
+        if (tmp == SOCKET_ERROR) {
+            return SOCKET_ERROR;
+        }
+        if (tmp == 0) {
+            return off;
+        }
+        off += tmp;
+    }
+    return off;
 }
 
-ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
-    ssize_t n;
-    do {
-        n = send(sock, buf, size, 0);
-    } while (n == -1 && errno == EINTR);
-    return n;
+ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size, bool nonblocking) {
+    if (nonblocking) {
+        ssize_t n;
+        do {
+            n = send(sock, buf, size, 0);
+        } while (n == -1 && errno == EINTR);
+        return n;
+    }
+    ssize_t off = 0;
+    while (off < size) {
+        ssize_t tmp;
+        do {
+            tmp = send(sock, buf + off, size - off, 0);
+        } while (n == -1 && errno == EINTR);
+        if (tmp == SOCKET_ERROR) {
+            return SOCKET_ERROR;
+        }
+        off += tmp;
+    }
+    return off;
 }
 
 ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* lenptr) {

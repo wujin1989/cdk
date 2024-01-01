@@ -122,6 +122,7 @@ typedef pid_t                cdk_tid_t;
 #endif
 
 #define INVALID_SOCKET       -1
+#define SOCKET_ERROR         -1
 typedef pid_t                cdk_pid_t;
 typedef int                  cdk_sock_t;
 typedef int                  cdk_pollfd_t;

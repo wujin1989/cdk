@@ -38,13 +38,15 @@ extern void cdk_net_exit(void);
 extern void cdk_net_startup(int nthrds);
 extern void cdk_net_cleanup(void);
 /** sync */
+extern void cdk_net_startup2(void);
+extern void cdk_net_cleanup2(void);
 extern cdk_sock_t cdk_net_listen2(const char* protocol, const char* host, const char* port);
 extern cdk_sock_t cdk_net_accept2(cdk_sock_t sock);
 extern cdk_sock_t cdk_net_dial2(const char* protocol, const char* host, const char* port);
 extern ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size);
 extern ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size);
 extern ssize_t cdk_net_recvfrom2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen);
-extern ssize_t cdk_net_sendto2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len);
+extern ssize_t cdk_net_sendto2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t sslen);
 extern void cdk_net_close2(cdk_sock_t sock);
-extern void cdk_net_recvtimeo2(cdk_sock_t sock, int timeout);
-extern void cdk_net_sendtimeo2(cdk_sock_t sock, int timeout);
+extern void cdk_net_recvtimeo2(cdk_sock_t sock, int timeout_ms);
+extern void cdk_net_sendtimeo2(cdk_sock_t sock, int timeout_ms);

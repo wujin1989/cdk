@@ -154,7 +154,7 @@ static async_socket_ctx_t* _allocate_async_socket_ctx(const char* protocol, cons
 static void _async_listen_cb(void* param) {
     async_socket_ctx_t* ctx = param;
 
-    cdk_sock_t sock = platform_socket_listen(ctx->host, ctx->port, ctx->protocol, ctx->idx, ctx->cores);
+    cdk_sock_t sock = platform_socket_listen(ctx->host, ctx->port, ctx->protocol, ctx->idx, ctx->cores, true);
     cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
     if (channel) {
         if (channel->type == SOCK_STREAM) {
@@ -174,7 +174,7 @@ static void _async_dial_cb(void* param) {
     async_socket_ctx_t* ctx = param;
     bool connected = false;
 
-    cdk_sock_t sock = platform_socket_dial(ctx->host, ctx->port, ctx->protocol, &connected);
+    cdk_sock_t sock = platform_socket_dial(ctx->host, ctx->port, ctx->protocol, &connected, true);
     cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
     if (channel) {
         if (channel->type == SOCK_STREAM) {
@@ -356,7 +356,7 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
         mtx_unlock(&poller->evmtx);
 
         int hardcode = 1;
-        platform_socket_send(poller->evfds[0], &hardcode, sizeof(int));
+        platform_socket_send(poller->evfds[0], &hardcode, sizeof(int), false);
     }
 }
 
@@ -380,34 +380,65 @@ void cdk_net_cleanup(void) {
     _poller_manager_destroy();
 }
 
+void cdk_net_startup2(void) {
+    platform_socket_startup();
+}
+
+void cdk_net_cleanup2(void) {
+    platform_socket_cleanup();
+}
+
 cdk_sock_t cdk_net_listen2(const char* protocol, const char* host, const char* port){
-    platform_socket_listen();
+    int proto = 0;
+    if (!strcmp(protocol, "tcp")) {
+        proto = SOCK_STREAM;
+    }
+    if (!strcmp(protocol, "udp")) {
+        proto = SOCK_DGRAM;
+    }
+    return platform_socket_listen(host, port, proto, 0, 0, false);
 }
 
 cdk_sock_t cdk_net_accept2(cdk_sock_t sock){
-
+    return platform_socket_accept(sock, false);
 }
 
 cdk_sock_t cdk_net_dial2(const char* protocol, const char* host, const char* port){
-
+    int proto = 0;
+    bool unused;
+    if (!strcmp(protocol, "tcp")) {
+        proto = SOCK_STREAM;
+    }
+    if (!strcmp(protocol, "udp")) {
+        proto = SOCK_DGRAM;
+    }
+    return platform_socket_dial(host, port, proto, &unused, false);
 }
 
 ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size){
-
+    return platform_socket_recv(sock, buf, size, false);
 }
 
 ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size){
-
+    return platform_socket_send(sock, buf, size, false);
 }
 
 ssize_t cdk_net_recvfrom2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen){
-
+    return platform_socket_recvfrom(sock, buf, size, ss, sslen);
 }
 
-ssize_t cdk_net_sendto2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len){
-
+ssize_t cdk_net_sendto2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t sslen){
+    return platform_socket_sendto(sock, buf, size, ss, sslen);
 }
 
 void cdk_net_close2(cdk_sock_t sock){
     platform_socket_close(sock);
+}
+
+void cdk_net_recvtimeo2(cdk_sock_t sock, int timeout_ms) {
+    platform_socket_recvtimeo(sock, timeout_ms);
+}
+
+void cdk_net_sendtimeo2(cdk_sock_t sock, int timeout_ms) {
+    platform_socket_sendtimeo(sock, timeout_ms);
 }

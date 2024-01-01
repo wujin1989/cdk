@@ -54,12 +54,12 @@ static void _channel_unencrypted_send(cdk_channel_t* channel) {
     ssize_t n = 0;
     txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->txlist)), txlist_node_t, n);
     if (channel->type == SOCK_STREAM) {
-        n = platform_socket_send(channel->fd, e->buf, (int)e->len);
+        n = platform_socket_send(channel->fd, e->buf, (int)e->len, true);
     }
     if (channel->type == SOCK_DGRAM) {
         n = platform_socket_sendto(channel->fd, e->buf, (int)e->len, &(channel->udp.peer.ss), channel->udp.peer.sslen);
     }
-    if (n == -1) {
+    if (n == PLATFORM_SO_ERROR_SOCKET_ERROR) {
         if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN)
             || (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
@@ -145,12 +145,12 @@ static void _channel_unencrypted_send_explicit(cdk_channel_t* channel, void* dat
     ssize_t n = 0;
     if (txlist_empty(&channel->txlist)) {
         if (channel->type == SOCK_STREAM) {
-            n = platform_socket_send(channel->fd, data, size);
+            n = platform_socket_send(channel->fd, data, size, true);
         }
         if (channel->type == SOCK_DGRAM) {
             n = platform_socket_sendto(channel->fd, data, size, &(channel->udp.peer.ss), channel->udp.peer.sslen);
         }
-        if (n == -1) {
+        if (n == PLATFORM_SO_ERROR_SOCKET_ERROR) {
             if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN)
                 || (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
 
@@ -199,13 +199,13 @@ static void _channel_encrypted_recv(cdk_channel_t* channel) {
 static void _channel_unencrypted_recv(cdk_channel_t* channel) {
     ssize_t n;
     if (channel->type == SOCK_STREAM) {
-        n = platform_socket_recv(channel->fd, (char*)(channel->rxbuf.buf) + channel->rxbuf.off, DEFAULT_IOBUF_SIZE / 2);
+        n = platform_socket_recv(channel->fd, (char*)(channel->rxbuf.buf) + channel->rxbuf.off, DEFAULT_IOBUF_SIZE / 2, true);
     }
     if (channel->type == SOCK_DGRAM) {
         channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
         n = platform_socket_recvfrom(channel->fd, channel->rxbuf.buf, DEFAULT_IOBUF_SIZE, &channel->udp.peer.ss, &channel->udp.peer.sslen);
     }
-    if (n == -1) {
+    if (n == PLATFORM_SO_ERROR_SOCKET_ERROR) {
         if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN)
             || (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
@@ -395,7 +395,7 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
         channel->poller = poller;
         channel->fd = sock;
         channel->handler = handler;
-        channel->type = platform_socket_socktype(sock);
+        channel->type = platform_socket_getsocktype(sock);
         atomic_init(&channel->closing, false);
         
         channel->rxbuf.len = DEFAULT_IOBUF_SIZE;
@@ -492,8 +492,8 @@ void channel_send(cdk_channel_t* channel) {
 }
 
 void channel_accept(cdk_channel_t* channel) {
-    cdk_sock_t cli = platform_socket_accept(channel->fd);
-    if (cli == -1) {
+    cdk_sock_t cli = platform_socket_accept(channel->fd, true);
+    if (cli == PLATFORM_SO_ERROR_INVALID_SOCKET) {
         if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN)
             || (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
@@ -566,6 +566,8 @@ bool channel_is_reading(cdk_channel_t* channel) {
 
 void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
     if (channel->type == SOCK_STREAM) {
+        channel->tcp.latest_wr_time = cdk_time_now();
+
         if (channel->tcp.tls) {
             _channel_encrypted_send_explicit(channel, data, size);
         } else {

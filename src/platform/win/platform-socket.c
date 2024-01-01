@@ -58,13 +58,7 @@ void platform_socket_close(cdk_sock_t sock) {
 cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
     cdk_sock_t cli = accept(sock, NULL, NULL);
     if (cli == INVALID_SOCKET) {
-        if (WSAGetLastError() != WSAEWOULDBLOCK) {
-            platform_socket_close(sock);
-            abort();
-        }
-        if (WSAGetLastError() == WSAEWOULDBLOCK) {
-            return INVALID_SOCKET;
-        }
+        return INVALID_SOCKET;
     }
     if(nonblocking) {
         platform_socket_nonblock(cli);
@@ -111,7 +105,7 @@ int platform_socket_getaddrfamily(cdk_sock_t sock) {
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
-    int af = platform_socket_af(sock);
+    int af = platform_socket_getaddrfamily(sock);
     /**
      * windows doesn't support setting TCP_MAXSEG but IP_PMTUDISC_DONT forces the MSS to the protocol
      * minimum which is what we want here. linux doesn't do this (disabling PMTUD just avoids setting DF).
@@ -182,7 +176,9 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         if (protocol == SOCK_DGRAM) {
             _disable_udp_connreset(sock);
             platform_socket_setrecvbuf(sock, INT32_MAX);
-            platform_socket_rss(sock, (uint16_t)idx, cores);
+            if (nonblocking) {
+                platform_socket_rss(sock, (uint16_t)idx, cores);
+            }
         }
         if (bind(sock, rp->ai_addr, (int)rp->ai_addrlen) == SOCKET_ERROR) {
             platform_socket_close(sock);
@@ -279,28 +275,65 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
 }
 
 int platform_socket_getsocktype(cdk_sock_t sock) {
-    int socktype;
+    int type;
     int len = sizeof(int);
-    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&socktype, &len)) {
+    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&type, &len)) {
         abort();
     }
-    return socktype;
+    return type;
 }
 
-ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
-    return recv(sock, buf, size, 0);
+void platform_socket_recvtimeo(cdk_sock_t sock, int timeout_ms) {
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout_ms, sizeof(int))) {
+        abort();
+    }
 }
 
-ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
-    return send(sock, buf, size, 0);
+void platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms) {
+    if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout_ms, sizeof(int))) {
+        abort();
+    }
 }
 
-ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* lenptr) {
-    return recvfrom(sock, buf, size, 0, (struct sockaddr*)ss, lenptr);
+ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size, bool nonblocking) {
+    if (nonblocking) {
+        return recv(sock, buf, size, 0);
+    }
+    ssize_t off = 0;
+    while (off < size) {
+        ssize_t tmp = recv(sock, (char*)buf + off, size - off, 0);
+        if (tmp == SOCKET_ERROR) {
+            return SOCKET_ERROR;
+        }
+        if (tmp == 0) {
+            return off;
+        }
+        off += tmp;
+    }
+    return off;
 }
 
-ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len) {
-    return sendto(sock, buf, size, 0, (struct sockaddr*)ss, len);
+ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size, bool nonblocking) {
+    if (nonblocking) {
+        return send(sock, buf, size, 0);
+    }
+    ssize_t off = 0;
+    while (off < size) {
+        ssize_t tmp = send(sock, (const char*)buf + off, size - off, 0);
+        if (tmp == SOCKET_ERROR) {
+            return SOCKET_ERROR;
+        }
+        off += tmp;
+    }
+    return off;
+}
+
+ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen) {
+    return recvfrom(sock, buf, size, 0, (struct sockaddr*)ss, sslen);
+}
+
+ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t sslen) {
+    return sendto(sock, buf, size, 0, (struct sockaddr*)ss, sslen);
 }
 
 int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]) {
