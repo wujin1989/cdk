@@ -88,6 +88,7 @@ cdk_poller_t* poller_create(void) {
         cdk_list_init(&poller->chlist);
         mtx_init(&poller->evmtx, mtx_plain);
         platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
+        platform_socket_nonblock(poller->evfds[1]);
 
         cdk_channel_t* wakeup = channel_create(poller, poller->evfds[1], &eventfd_handler);
         if (wakeup) {
