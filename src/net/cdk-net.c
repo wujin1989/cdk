@@ -356,7 +356,7 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
         mtx_unlock(&poller->evmtx);
 
         int hardcode = 1;
-        platform_socket_send(poller->evfds[0], &hardcode, sizeof(int), false);
+        platform_socket_sendall(poller->evfds[0], &hardcode, sizeof(int));
     }
 }
 
@@ -416,11 +416,19 @@ cdk_sock_t cdk_net_dial2(const char* protocol, const char* host, const char* por
 }
 
 ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size){
-    return platform_socket_recv(sock, buf, size, false);
+    return platform_socket_recv(sock, buf, size);
 }
 
 ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size){
-    return platform_socket_send(sock, buf, size, false);
+    return platform_socket_send(sock, buf, size);
+}
+
+ssize_t cdk_net_recvall2(cdk_sock_t sock, void* buf, int size) {
+    return platform_socket_recvall(sock, buf, size);
+}
+
+ssize_t cdk_net_sendall2(cdk_sock_t sock, void* buf, int size) {
+    return platform_socket_sendall(sock, buf, size);
 }
 
 ssize_t cdk_net_recvfrom2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen){

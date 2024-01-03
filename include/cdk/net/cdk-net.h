@@ -45,6 +45,8 @@ extern cdk_sock_t cdk_net_accept2(cdk_sock_t sock);
 extern cdk_sock_t cdk_net_dial2(const char* protocol, const char* host, const char* port);
 extern ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size);
 extern ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size);
+extern ssize_t cdk_net_recvall2(cdk_sock_t sock, void* buf, int size);
+extern ssize_t cdk_net_sendall2(cdk_sock_t sock, void* buf, int size);
 extern ssize_t cdk_net_recvfrom2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen);
 extern ssize_t cdk_net_sendto2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t sslen);
 extern void cdk_net_close2(cdk_sock_t sock);

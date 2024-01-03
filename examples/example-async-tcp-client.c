@@ -1,5 +1,4 @@
 #include "cdk.h"
-#include <string.h>
 
 typedef enum net_msg_type_e{
 	KEEPALIVE_MSG_TYPE,

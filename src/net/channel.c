@@ -54,7 +54,7 @@ static void _channel_unencrypted_send(cdk_channel_t* channel) {
     ssize_t n = 0;
     txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->txlist)), txlist_node_t, n);
     if (channel->type == SOCK_STREAM) {
-        n = platform_socket_send(channel->fd, e->buf, (int)e->len, true);
+        n = platform_socket_send(channel->fd, e->buf, (int)e->len);
     }
     if (channel->type == SOCK_DGRAM) {
         n = platform_socket_sendto(channel->fd, e->buf, (int)e->len, &(channel->udp.peer.ss), channel->udp.peer.sslen);
@@ -145,7 +145,7 @@ static void _channel_unencrypted_send_explicit(cdk_channel_t* channel, void* dat
     ssize_t n = 0;
     if (txlist_empty(&channel->txlist)) {
         if (channel->type == SOCK_STREAM) {
-            n = platform_socket_send(channel->fd, data, size, true);
+            n = platform_socket_send(channel->fd, data, size);
         }
         if (channel->type == SOCK_DGRAM) {
             n = platform_socket_sendto(channel->fd, data, size, &(channel->udp.peer.ss), channel->udp.peer.sslen);
@@ -199,7 +199,7 @@ static void _channel_encrypted_recv(cdk_channel_t* channel) {
 static void _channel_unencrypted_recv(cdk_channel_t* channel) {
     ssize_t n;
     if (channel->type == SOCK_STREAM) {
-        n = platform_socket_recv(channel->fd, (char*)(channel->rxbuf.buf) + channel->rxbuf.off, DEFAULT_IOBUF_SIZE / 2, true);
+        n = platform_socket_recv(channel->fd, (char*)(channel->rxbuf.buf) + channel->rxbuf.off, DEFAULT_IOBUF_SIZE / 2);
     }
     if (channel->type == SOCK_DGRAM) {
         channel->udp.peer.sslen = sizeof(struct sockaddr_storage);

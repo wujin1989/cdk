@@ -1,6 +1,12 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.16)
 
 project(examples LANGUAGES C)
+
+add_executable(example-sync-tcp-client "example-sync-tcp-client.c")
+target_link_libraries(example-sync-tcp-client PUBLIC cdk)
+
+add_executable(example-sync-tcp-server "example-sync-tcp-server.c")
+target_link_libraries(example-sync-tcp-server PUBLIC cdk)
 
 add_executable(example-tcp-perf-client "example-tcp-perf-client.c")
 target_link_libraries(example-tcp-perf-client PUBLIC cdk)
@@ -8,8 +14,8 @@ target_link_libraries(example-tcp-perf-client PUBLIC cdk)
 add_executable(example-tcp-perf-server "example-tcp-perf-server.c")
 target_link_libraries(example-tcp-perf-server PUBLIC cdk)
 
-add_executable(example-tcp-server "example-tcp-server.c")
-target_link_libraries(example-tcp-server PUBLIC cdk)
+add_executable(example-async-tcp-server "example-async-tcp-server.c")
+target_link_libraries(example-async-tcp-server PUBLIC cdk)
 
 add_executable(example-rwlock "example-rwlock.c")
 target_link_libraries(example-rwlock PUBLIC cdk)
@@ -17,8 +23,8 @@ target_link_libraries(example-rwlock PUBLIC cdk)
 add_executable(example-spinlock "example-spinlock.c")
 target_link_libraries(example-spinlock PUBLIC cdk)
 
-add_executable(example-tcp-client "example-tcp-client.c")
-target_link_libraries(example-tcp-client PUBLIC cdk)
+add_executable(example-async-tcp-client "example-async-tcp-client.c")
+target_link_libraries(example-async-tcp-client PUBLIC cdk)
 
 add_executable(example-udp-client "example-udp-client.c")
 target_link_libraries(example-udp-client PUBLIC cdk)

@@ -295,10 +295,15 @@ void platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms) {
     }
 }
 
-ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size, bool nonblocking) {
-    if (nonblocking) {
-        return recv(sock, buf, size, 0);
-    }
+ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
+    return recv(sock, buf, size, 0);
+}
+
+ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
+    return send(sock, buf, size, 0);
+}
+
+ssize_t platform_socket_recvall(cdk_sock_t sock, void* buf, int size) {
     ssize_t off = 0;
     while (off < size) {
         ssize_t tmp = recv(sock, (char*)buf + off, size - off, 0);
@@ -313,10 +318,7 @@ ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size, bool nonblock
     return off;
 }
 
-ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size, bool nonblocking) {
-    if (nonblocking) {
-        return send(sock, buf, size, 0);
-    }
+ssize_t platform_socket_sendall(cdk_sock_t sock, void* buf, int size) {
     ssize_t off = 0;
     while (off < size) {
         ssize_t tmp = send(sock, (const char*)buf + off, size - off, 0);

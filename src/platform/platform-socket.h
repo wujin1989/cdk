@@ -61,8 +61,10 @@ extern cdk_sock_t   platform_socket_dial(const char* restrict host, const char* 
 extern void         platform_socket_close(cdk_sock_t sock);
 extern int          platform_socket_getaddrfamily(cdk_sock_t sock);
 extern int          platform_socket_getsocktype(cdk_sock_t sock);
-extern ssize_t      platform_socket_recv(cdk_sock_t sock, void* buf, int size, bool nonblocking);
-extern ssize_t      platform_socket_send(cdk_sock_t sock, void* buf, int size, bool nonblocking);
+extern ssize_t      platform_socket_recv(cdk_sock_t sock, void* buf, int size);
+extern ssize_t      platform_socket_send(cdk_sock_t sock, void* buf, int size);
+extern ssize_t      platform_socket_recvall(cdk_sock_t sock, void* buf, int size);
+extern ssize_t      platform_socket_sendall(cdk_sock_t sock, void* buf, int size);
 extern ssize_t      platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* lenptr);
 extern ssize_t      platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len);
 extern int          platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]);

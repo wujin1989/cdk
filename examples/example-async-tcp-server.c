@@ -55,8 +55,8 @@ int main(void) {
 	cdk_tlsconf_t conf = {
 		.cafile = NULL,
 		.capath = NULL,
-		.crtfile = "certs/server.crt",
-		.keyfile = "certs/server.key",
+		.crtfile = "certs/cert.crt",
+		.keyfile = "certs/cert.key",
 		.verifypeer = false
 	};
 	cdk_unpack_t unpacker = {

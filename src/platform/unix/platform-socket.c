@@ -371,20 +371,29 @@ int platform_socket_getsocktype(cdk_sock_t sock) {
     return type;
 }
 
-ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size, bool nonblocking) {
-    if (nonblocking) {
-        ssize_t n;
-        do {
-            n = recv(sock, buf, size, 0);
-        } while (n == -1 && errno == EINTR);
-        return n;
-    }
+ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
+    ssize_t n;
+    do {
+        n = recv(sock, buf, size, 0);
+    } while (n == -1 && errno == EINTR);
+    return n;
+}
+
+ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
+    ssize_t n;
+    do {
+        n = send(sock, buf, size, 0);
+    } while (n == -1 && errno == EINTR);
+    return n;
+}
+
+ssize_t platform_socket_recvall(cdk_sock_t sock, void* buf, int size) {
     ssize_t off = 0;
     while (off < size) {
         ssize_t tmp;
         do {
             tmp = recv(sock, buf + off, size - off, 0);
-        } while (tmp == -1 && errno == EINTR);
+        } while (tmp == SOCKET_ERROR && errno == EINTR);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;
         }
@@ -396,20 +405,13 @@ ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size, bool nonblock
     return off;
 }
 
-ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size, bool nonblocking) {
-    if (nonblocking) {
-        ssize_t n;
-        do {
-            n = send(sock, buf, size, 0);
-        } while (n == -1 && errno == EINTR);
-        return n;
-    }
+ssize_t platform_socket_sendall(cdk_sock_t sock, void* buf, int size) {
     ssize_t off = 0;
     while (off < size) {
         ssize_t tmp;
         do {
             tmp = send(sock, buf + off, size - off, 0);
-        } while (tmp == -1 && errno == EINTR);
+        } while (tmp == SOCKET_ERROR && errno == EINTR);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;
         }
