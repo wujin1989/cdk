@@ -392,7 +392,7 @@ ssize_t platform_socket_recvall(cdk_sock_t sock, void* buf, int size) {
     while (off < size) {
         ssize_t tmp;
         do {
-            tmp = recv(sock, buf + off, size - off, 0);
+            tmp = recv(sock, buf + off, size - (int)off, 0);
         } while (tmp == SOCKET_ERROR && errno == EINTR);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;
@@ -410,7 +410,7 @@ ssize_t platform_socket_sendall(cdk_sock_t sock, void* buf, int size) {
     while (off < size) {
         ssize_t tmp;
         do {
-            tmp = send(sock, buf + off, size - off, 0);
+            tmp = send(sock, buf + off, size - (int)off, 0);
         } while (tmp == SOCKET_ERROR && errno == EINTR);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;

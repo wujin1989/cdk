@@ -99,6 +99,9 @@ static inline void _logger_asyncbase(int level, const char* restrict file, int l
 		levels[level],                                                 \
 		file, line
 	);
+	if (ret > sizeof(buf)) {
+		abort();
+	}
 	ret += vsprintf(buf + ret, fmt, v);
 	ret++;
 	char* arg = malloc(ret);

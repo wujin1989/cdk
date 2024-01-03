@@ -306,7 +306,7 @@ ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
 ssize_t platform_socket_recvall(cdk_sock_t sock, void* buf, int size) {
     ssize_t off = 0;
     while (off < size) {
-        ssize_t tmp = recv(sock, (char*)buf + off, size - off, 0);
+        ssize_t tmp = recv(sock, (char*)buf + (int)off, size - (int)off, 0);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;
         }
@@ -321,7 +321,7 @@ ssize_t platform_socket_recvall(cdk_sock_t sock, void* buf, int size) {
 ssize_t platform_socket_sendall(cdk_sock_t sock, void* buf, int size) {
     ssize_t off = 0;
     while (off < size) {
-        ssize_t tmp = send(sock, (const char*)buf + off, size - off, 0);
+        ssize_t tmp = send(sock, (const char*)buf + (int)off, size - (int)off, 0);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;
         }
