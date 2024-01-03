@@ -53,10 +53,10 @@ int main(void) {
 		.tcp.on_close = handle_close,
 		.tcp.unpacker = &unpacker
 	};
-	atomic_init(&connected_clients, 0);
-	atomic_init(&disconnected_clients, 0);
-	atomic_init(&total_readcnt, 0);
-	atomic_init(&total_readbytes, 0);
+	atomic_init(&connected_clients, 1);
+	atomic_init(&disconnected_clients, 1);
+	atomic_init(&total_readcnt, 1);
+	atomic_init(&total_readbytes, 1);
 
 	for (int i = 0; i < total_clients; i++) {
 		cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
