@@ -376,6 +376,9 @@ ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
     do {
         n = recv(sock, buf, size, 0);
     } while (n == -1 && errno == EINTR);
+    if (n == -1) {
+        return SOCKET_ERROR;
+    }
     return n;
 }
 
@@ -384,6 +387,9 @@ ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
     do {
         n = send(sock, buf, size, 0);
     } while (n == -1 && errno == EINTR);
+    if (n == -1) {
+        return SOCKET_ERROR;
+    }
     return n;
 }
 
@@ -425,6 +431,9 @@ ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct so
     do {
         n = recvfrom(sock, buf, size, 0, (struct sockaddr*)ss, lenptr);
     } while (n == -1 && errno == EINTR);
+    if (n == -1) {
+        return SOCKET_ERROR;
+    }
     return n;
 }
 
@@ -433,6 +442,9 @@ ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sock
     do {
         n = sendto(sock, buf, size, 0, (struct sockaddr*)ss, len);
     } while (n == -1 && errno == EINTR);
+    if (n == -1) {
+        return SOCKET_ERROR;
+    }
     return n;
 }
 

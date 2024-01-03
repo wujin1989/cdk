@@ -685,18 +685,7 @@ extern void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
  * @param peer Flag indicating whether to obtain the peer address (`true`) or local address (`false`)
  * @return N/A
  */
-extern void cdk_net_obtain_addr(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
-```
-```c
-/**
- * @brief Get the address family of a socket
- *
- * This function returns the address family (e.g., AF_INET, AF_INET6) of the specified socket `sock`.
- *
- * @param sock Socket descriptor
- * @return The address family of the socket
- */
-extern int cdk_net_af(cdk_sock_t sock);
+extern void cdk_net_getaddrinfo(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
 ```
 ```c
 /**
@@ -707,67 +696,46 @@ extern int cdk_net_af(cdk_sock_t sock);
  * @param sock Socket descriptor
  * @return The socket type of the socket
  */
-extern int cdk_net_socktype(cdk_sock_t sock);
+extern int cdk_net_getsocktype(cdk_sock_t sock);
 ```
 ```c
 /**
- * @brief Set the receive buffer size of a socket
- *
- * This function sets the receive buffer size of the specified socket `sock` to the specified value `val`.
- *
- * @param sock Socket descriptor
- * @param val  The value of the receive buffer size to set
- * @return N/A
- */
-extern void cdk_net_set_recvbuf(cdk_sock_t sock, int val);
-```
-```c
-/**
- * @brief Set the send buffer size of a socket
- *
- * This function sets the send buffer size of the specified socket `sock` to the specified value `val`.
- *
- * @param sock Socket descriptor
- * @param val  The value of the send buffer size to set
- * @return N/A
- */
-extern void cdk_net_set_sendbuf(cdk_sock_t sock, int val);
-```
-```c
-/**
- * @brief Listen for incoming connections on a network address
+ * @brief Listen for incoming connections on a network address asynchronously
  *
  * This function listens for incoming connections on the specified network address `host:port`
- * of the specified `type`. It creates a channel and associates it with the provided `handler`.
+ * of the specified `protocol`. It creates a channel and associates it with the provided `handler`
+ * for asynchronous event processing.
  *
- * @param type    The network address type (e.g., "tcp", "udp")
- * @param host    The host address to listen on
- * @param port    The port number to listen on
- * @param handler Pointer to the handler function for incoming events on the channel
+ * @param protocol The network address type (e.g., "tcp", "udp")
+ * @param host     The host address to listen on
+ * @param port     The port number to listen on
+ * @param handler  Pointer to the handler function for asynchronous events on the channel
  * @return N/A
  */
-extern void cdk_net_listen(const char* type, const char* host, const char* port, cdk_handler_t* handler);
+extern void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler);
 ```
 ```c
 /**
- * @brief Establish a network connection to a remote host
+ * @brief Establish a network connection to a remote host asynchronously
  *
  * This function establishes a network connection to the remote host specified by the `host:port`
- * address of the specified `type`. It creates a channel and associates it with the provided `handler`.
+ * address of the specified `protocol`. It creates a channel and associates it with the provided `handler`
+ * for asynchronous event processing.
  *
- * @param type    The network address type (e.g., "tcp", "udp")
- * @param host    The remote host address to connect to
- * @param port    The port number to connect to
- * @param handler Pointer to the handler function for incoming events on the channel
+ * @param protocol The network address type (e.g., "tcp", "udp")
+ * @param host     The remote host address to connect to
+ * @param port     The port number to connect to
+ * @param handler  Pointer to the handler function for asynchronous events on the channel
  * @return N/A
  */
-extern void cdk_net_dial(const char* type, const char* host, const char* port, cdk_handler_t* handler);
+extern void cdk_net_dial(const char* protocol, const char* host, const char* port, cdk_handler_t* handler);
 ```
 ```c
 /**
- * @brief Send a buffer through the specified network channel.
+ * @brief Send a buffer through the specified network channel
  *
- * This function is used to send a buffer through the specified network channel.
+ * This function is used in the context of creating asynchronous network programs
+ * to send a buffer through the specified network channel.
  *
  * The function is designed to be thread-safe, allowing multiple threads to safely
  * invoke it simultaneously when sending data through the given channel.
@@ -832,32 +800,239 @@ extern void cdk_net_close(cdk_channel_t* channel);
  * @param N/A
  * @return N/A
  */
-extern void cdk_net_stop(void);
+extern void cdk_net_exit(void);
 ```
 ```c
 /**
- * @brief Start up the network system with worker threads and TLS configuration
+ * @brief Start up the async network system with worker threads
  *
- * This function starts up the network system with the specified number of worker threads and
- * the provided TLS configuration. It prepares the system to handle network operations.
+ * This function starts up the async network system with the specified number of worker threads,
+ * It prepares the system to handle network operations.
  *
- * @param nworkers  Number of worker threads to start
- * @param tlsconf   Pointer to the TLS configuration for secure network communication (can be NULL for non-secure communication)
+ * @param nthrds  Number of worker threads to start
  * @return N/A
  */
-extern void cdk_net_startup(int nworkers, cdk_tlsconf_t* tlsconf);
+extern void cdk_net_startup(int nthrds);
 ```
 ```c
 /**
- * @brief Clean up and shut down the network system
+ * @brief Clean up and shut down the async network system
  *
- * This function cleans up and shuts down the network system. It releases all associated resources
+ * This function cleans up and shuts down the async network system. It releases all associated resources
  * and terminates the network operations.
  * 
  * @param N/A
  * @return N/A
  */
 extern void cdk_net_cleanup(void);
+```
+```c
+/**
+ * @brief Start up the sync network system
+ *
+ * This function starts up the sync network system,
+ * It prepares the system to handle network operations.
+ *
+ * @param N/A
+ * @return N/A
+ */
+extern void cdk_net_startup2(void);
+```
+```c
+/**
+ * @brief Clean up and shut down the sync network system
+ *
+ * This function cleans up and shuts down the sync network system. It releases all associated resources
+ * and terminates the network operations.
+ * 
+ * @param N/A
+ * @return N/A
+ */
+extern void cdk_net_cleanup2(void);
+```
+```c
+/**
+ * @brief Listen for incoming connections on a network address synchronously.
+ *
+ * This function listens for incoming connections on the specified network address `host:port`
+ * of the specified `protocol`. It is a blocking, synchronous function that creates a socket,
+ * binds it to the specified address, and starts listening for incoming connections.
+ *
+ * @param protocol The network address type (e.g., "tcp", "udp").
+ * @param host     The host address to listen on.
+ * @param port     The port number to listen on.
+ * @return A socket descriptor representing the listening socket.
+ */
+extern cdk_sock_t cdk_net_listen2(const char* protocol, const char* host, const char* port);
+```
+```c
+/**
+ * @brief Accept an incoming connection on the specified socket synchronously.
+ *
+ * This function blocks until an incoming connection is accepted on the provided socket.
+ * If successful, it returns a new socket descriptor representing the accepted connection.
+ * If unsuccessful, it returns INVALID_SOCKET.
+ *
+ * @param sock The socket descriptor on which to accept an incoming connection.
+ * @return A new socket descriptor for the accepted connection, or INVALID_SOCKET on failure.
+ */
+extern cdk_sock_t cdk_net_accept2(cdk_sock_t sock);
+```
+```c
+/**
+ * @brief Establish a network connection to a remote host synchronously.
+ *
+ * This function attempts to establish a network connection to the remote host specified by
+ * the `host:port` address of the specified `protocol`. It is a blocking, synchronous function
+ * that creates a socket, connects to the specified address, and returns the socket descriptor
+ * if successful. 
+ *
+ * @param protocol The network address type (e.g., "tcp", "udp").
+ * @param host     The remote host address to connect to.
+ * @param port     The port number to connect to.
+ * @return A socket descriptor representing the connection.
+ */
+extern cdk_sock_t cdk_net_dial2(const char* protocol, const char* host, const char* port);
+```
+```c
+/**
+ * @brief Receive data from a network socket synchronously.
+ *
+ * This function attempts to receive data from the specified network socket `sock`
+ * into the provided buffer `buf` with a maximum size of `size`. It is a blocking,
+ * synchronous function that returns the number of bytes received on success, 0 if
+ * the connection is closed, or SOCKET_ERROR on failure.
+ *
+ * @param sock The socket descriptor from which to receive data.
+ * @param buf  Pointer to the buffer where the received data will be stored.
+ * @param size The maximum size of the buffer.
+ * @return The number of bytes received on success, 0 if the connection is closed, or SOCKET_ERROR on failure.
+ */
+extern ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size);
+```
+```c
+/**
+ * @brief Send data through a network socket synchronously.
+ *
+ * This function attempts to send data from the provided buffer `buf` with a size of `size`
+ * through the specified network socket `sock`. It is a blocking, synchronous function that
+ * returns the number of bytes sent on success, 0 if the connection is closed, or SOCKET_ERROR
+ * on failure.
+ *
+ * @param sock The socket descriptor through which to send data.
+ * @param buf  Pointer to the buffer containing the data to be sent.
+ * @param size The size of the data to be sent.
+ * @return The number of bytes sent on success, 0 if the connection is closed, or SOCKET_ERROR on failure.
+ */
+extern ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size);
+```
+```c
+/**
+ * @brief Receive all specified data from a network socket synchronously.
+ *
+ * This function attempts to receive all specified data, with a size of `size`, from
+ * the specified network socket `sock` into the provided buffer `buf`. It is a blocking,
+ * synchronous function that returns the total number of bytes received on success, 0 if
+ * the connection is closed, or SOCKET_ERROR on failure.
+ *
+ * @param sock The socket descriptor from which to receive data.
+ * @param buf  Pointer to the buffer where the received data will be stored.
+ * @param size The size of the data to be received.
+ * @return The total number of bytes received on success, 0 if the connection is closed, or SOCKET_ERROR on failure.
+ */
+extern ssize_t cdk_net_recvall2(cdk_sock_t sock, void* buf, int size);
+```
+```c
+/**
+ * @brief Send all specified data through a network socket synchronously.
+ *
+ * This function attempts to send all specified data, with a size of `size`, from
+ * the provided buffer `buf` through the specified network socket `sock`. It is a
+ * blocking, synchronous function that returns the total number of bytes sent on
+ * success, or SOCKET_ERROR on failure.
+ *
+ * @param sock The socket descriptor through which to send data.
+ * @param buf  Pointer to the buffer containing the data to be sent.
+ * @param size The size of the data to be sent.
+ * @return The total number of bytes sent on success, or SOCKET_ERROR on failure.
+ */
+extern ssize_t cdk_net_sendall2(cdk_sock_t sock, void* buf, int size);
+```
+```c
+/**
+ * @brief Receive data from a network socket with peer address information synchronously.
+ *
+ * This function attempts to receive data from the specified network socket `sock` into
+ * the provided buffer `buf` with a maximum size of `size`. It also retrieves the peer
+ * address information of the sender and stores it in the provided sockaddr_storage `ss`.
+ * The length of the peer address information is stored in the variable pointed to by `sslen`.
+ * It is a blocking, synchronous function that returns the number of bytes received on success,
+ * 0 if the connection is closed, or SOCKET_ERROR on failure.
+ *
+ * @param sock  The socket descriptor from which to receive data.
+ * @param buf   Pointer to the buffer where the received data will be stored.
+ * @param size  The maximum size of the buffer.
+ * @param ss    Pointer to the sockaddr_storage structure to store the received peer address information.
+ * @param sslen Pointer to the variable storing the size of the ss buffer; on return, it holds the size of the received peer address information.
+ * @return The number of bytes received on success, 0 if the connection is closed, or SOCKET_ERROR on failure.
+ */
+extern ssize_t cdk_net_recvfrom2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen);
+```
+```c
+/**
+ * @brief Send data through a network socket to a specified peer synchronously.
+ *
+ * This function attempts to send data from the provided buffer `buf` with a size of `size`
+ * through the specified network socket `sock` to the specified peer address stored in the
+ * sockaddr_storage structure `ss`. The size of the peer address information is specified
+ * by the `sslen` parameter. It is a blocking, synchronous function that returns the number
+ * of bytes sent on success, or SOCKET_ERROR on failure.
+ *
+ * @param sock  The socket descriptor through which to send data.
+ * @param buf   Pointer to the buffer containing the data to be sent.
+ * @param size  The size of the data to be sent.
+ * @param ss    Pointer to the sockaddr_storage structure containing the destination peer address.
+ * @param sslen The size of the peer address information in the ss buffer.
+ * @return The number of bytes sent on success, or SOCKET_ERROR on failure.
+ */
+extern ssize_t cdk_net_sendto2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t sslen);
+```
+```c
+/**
+ * @brief Close a network socket file descriptor synchronously.
+ *
+ * This function closes the specified network socket file descriptor `sock` synchronously.
+ *
+ * @param sock The file descriptor of the socket to be closed.
+ * @return N/A
+ */
+extern void cdk_net_close2(cdk_sock_t sock);
+```
+```c
+/**
+ * @brief Set the receive timeout for a network socket synchronously.
+ *
+ * This function sets the receive timeout for the specified network socket file descriptor `sock`
+ * synchronously. The timeout is specified in milliseconds through the `timeout_ms` parameter.
+ *
+ * @param sock        The file descriptor of the socket for which to set the receive timeout.
+ * @param timeout_ms  The receive timeout value in milliseconds.
+ * @return N/A
+ */
+extern void cdk_net_recvtimeo2(cdk_sock_t sock, int timeout_ms);
+```
+```c
+/**
+ * @brief Set the send timeout for a network socket synchronously.
+ *
+ * This function sets the send timeout for the specified network socket file descriptor `sock`
+ * synchronously. The timeout is specified in milliseconds through the `timeout_ms` parameter.
+ *
+ * @param sock        The file descriptor of the socket for which to set the send timeout.
+ * @param timeout_ms  The send timeout value in milliseconds.
+ * @return N/A
+ */
+extern void cdk_net_sendtimeo2(cdk_sock_t sock, int timeout_ms);
 ```
 ## Sync
 ### cdk-rwlock
@@ -999,14 +1174,14 @@ extern void  cdk_loader_destroy(void* m);
 /**
  * @brief Create a logger
  *
- * This function creates a logger and initializes its internal state. It specifies the output destination
- * for log messages and the number of threads to be used for logging.
+ * This function creates an internal logger and initializes its internal state. It specifies the output destination
+ * for log messages and whether asynchronous logging is enabled.
  *
  * @param out The output destination for log messages
- * @param nthrds The number of threads to be used for logging
+ * @param async Enable asynchronous logging if true, otherwise disable it
  * @return N/A
  */
-extern void cdk_logger_create(const char* restrict out, int nthrds);
+extern void cdk_logger_create(const char* restrict out, bool async);
 ```
 ```c
 /**
@@ -1164,52 +1339,48 @@ extern void cdk_time_sleep(const uint32_t ms);
 /**
  * @brief Create a timer
  *
- * This function initializes a timer, which can be used to manage and schedule timer jobs.
+ * This function initializes an internal timer, which can be used to manage and schedule timer jobs.
+ * The timer is created with default settings, including the automatic start of one worker thread.
  *
- * @param timer Pointer to the timer to be created
- * @param nthrds Number of worker threads for the timer
  * @return N/A
  */
-extern void cdk_timer_create(cdk_timer_t* timer, int nthrds);
+extern void cdk_timer_create(void);
 ```
 ```c
 /**
  * @brief Destroy a timer
  *
- * This function cleans up and releases the resources associated with a timer object.
+ * This function cleans up and releases the resources associated with a internal timer object.
  *
- * @param timer Pointer to the timer object to be destroyed
  * @return N/A
  */
-extern void cdk_timer_destroy(cdk_timer_t* timer);
+extern void cdk_timer_destroy(void);
 ```
 ```c
 /**
  * @brief Add a timer job
  *
- * This function adds a timer job to the specified timer. The timer job is scheduled to run after the specified
+ * This function adds a timer job to the internal timer. The timer job is scheduled to run after the specified
  * expiration time, and optionally repeat at regular intervals.
  *
- * @param timer Pointer to the timer object
  * @param routine Pointer to the function to be executed by the timer job
  * @param arg Argument to be passed to the timer job function
  * @param expire Expiration time in milliseconds for the timer job
  * @param repeat Flag indicating whether the timer job should repeat after each expiration
  * @return Pointer to the timer job object representing the added job
  */
-extern cdk_timer_job_t* cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat);
+extern cdk_timer_job_t* cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat);
 ```
 ```c
 /**
  * @brief Delete a timer job
  *
- * This function removes a timer job from the specified timer. The timer job will no longer be executed by the timer.
+ * This function removes a timer job from the internal timer. The timer job will no longer be executed by the timer.
  *
- * @param timer Pointer to the timer object
  * @param job Pointer to the timer job object to be deleted
  * @return N/A
  */
-extern void cdk_timer_del(cdk_timer_t* timer, cdk_timer_job_t* job);
+extern void cdk_timer_del(cdk_timer_job_t* job);
 ```
 ### cdk-utils
 ```c
