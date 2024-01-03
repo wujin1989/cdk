@@ -22,7 +22,7 @@ int func2(void* p) {
 }
 int main(void) {
 	thrd_t t1, t2;
-	cdk_logger_create(NULL, 0);
+	cdk_logger_create(NULL, false);
 
 	mtx_init(&mtx, mtx_plain);
 	thrd_create(&t1, func1, NULL);

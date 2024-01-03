@@ -105,7 +105,7 @@ static void _poller_manager_create(int parallel) {
     if (parallel <= 0) {
         abort();
     }
-    cdk_timer_create(&manager.timer, 1);
+    cdk_timer_create();
     cdk_list_init(&manager.poller_lst);
     mtx_init(&manager.poller_mtx, mtx_plain);
     cnd_init(&manager.poller_cnd);
@@ -125,7 +125,7 @@ static void _poller_manager_destroy(void) {
     free(manager.thrdids);
     manager.thrdids = NULL;
     
-    cdk_timer_destroy(&manager.timer);
+    cdk_timer_destroy();
     mtx_destroy(&manager.poller_mtx);
     cnd_destroy(&manager.poller_cnd);
     platform_socket_cleanup();

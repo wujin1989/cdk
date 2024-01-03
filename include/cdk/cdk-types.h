@@ -264,7 +264,6 @@ struct cdk_poller_s {
 struct cdk_poller_manager_s {
 	thrd_t* thrdids;
 	int thrdcnt;
-	cdk_timer_t timer;
 	atomic_flag initialized;
 	cdk_list_t poller_lst;
 	mtx_t poller_mtx;

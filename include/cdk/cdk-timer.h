@@ -23,8 +23,8 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void             cdk_timer_create(cdk_timer_t* timer, int nthrds);
-extern void             cdk_timer_destroy(cdk_timer_t* timer);
-extern cdk_timer_job_t* cdk_timer_add(cdk_timer_t* timer, void (*routine)(void*), void* arg, uint32_t expire, bool repeat);
-extern void             cdk_timer_del(cdk_timer_t* timer, cdk_timer_job_t* job);
-extern void             cdk_timer_reset(cdk_timer_t* timer, cdk_timer_job_t* job, uint32_t expire);
+extern void             cdk_timer_create(void);
+extern void             cdk_timer_destroy(void);
+extern cdk_timer_job_t* cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat);
+extern void             cdk_timer_del(cdk_timer_job_t* job);
+extern void             cdk_timer_reset(cdk_timer_job_t* job, uint32_t expire);

@@ -23,7 +23,7 @@ static void handle_close(cdk_channel_t* channel, const char* error) {
 
 int main(void) {
 	cdk_net_startup(1);
-	cdk_logger_create(NULL, 0);
+	cdk_logger_create(NULL, false);
 
 	cdk_unpack_t unpacker = {
 		.fixedlen.len = BUFFERSIZE,

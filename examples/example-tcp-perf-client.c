@@ -32,7 +32,7 @@ static void handle_close(cdk_channel_t* channel, const char* error) {
 	}
 }
 
-static inline void _test_finished(void* param) {
+static inline void _finished(void* param) {
 	cdk_net_exit();
 }
 
@@ -43,8 +43,8 @@ static void _printf_statistic_info() {
 
 int main(void) {
 	cdk_net_startup(4);
-	cdk_logger_create(NULL, 0);
-	cdk_timer_create(&timer, 1);
+	cdk_logger_create(NULL, false);
+	cdk_timer_create();
 
 	cdk_unpack_t unpacker = {
 		.fixedlen.len = BUFFERSIZE,
@@ -63,9 +63,9 @@ int main(void) {
 	for (int i = 0; i < total_clients; i++) {
 		cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 	}
-	cdk_timer_add(&timer, _test_finished, NULL, 10000, false);
+	cdk_timer_add(_finished, NULL, 10000, false);
 	cdk_net_cleanup();
-	cdk_timer_destroy(&timer);
+	cdk_timer_destroy();
 
 	_printf_statistic_info();
 	cdk_logger_destroy();

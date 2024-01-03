@@ -14,7 +14,7 @@ int func(void* p) {
 }
 
 int main(void) {
-	cdk_logger_create(NULL, 0);
+	cdk_logger_create(NULL, false);
 	cdk_spinlock_init(&lock);
 
 	thrd_t t;

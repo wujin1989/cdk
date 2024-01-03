@@ -36,6 +36,7 @@
 #endif
 
 #define BUFSIZE    4096
+#define DEFAULT_LOGGER_THREAD_NUM 1
 
 typedef struct logger_s {
 	FILE* file;
@@ -48,8 +49,7 @@ static const char* levels[] = {
 };
 
 static logger_t logger;
-static atomic_flag once_create  = ATOMIC_FLAG_INIT;
-static atomic_flag once_destroy = ATOMIC_FLAG_INIT;
+static atomic_flag initialized = ATOMIC_FLAG_INIT;
 
 static inline void _logger_printer(void* arg) {
 	fprintf(logger.file, "%s", (char*)arg);
@@ -108,30 +108,29 @@ static inline void _logger_asyncbase(int level, const char* restrict file, int l
 	}
 }
 
-void cdk_logger_create(const char* restrict out, int nthrds) {
-	if (atomic_flag_test_and_set(&once_create)) {
-		return;
+void cdk_logger_create(const char* restrict out, bool async) {
+	if (!atomic_flag_test_and_set(&initialized)) {
+		if (async) {
+			logger.async = true;
+			cdk_thrdpool_create(&logger.pool, DEFAULT_LOGGER_THREAD_NUM);
+		}
+		if (!out) {
+			logger.file = stdout;
+			return;
+		}
+		logger.file = fopen(out, "a+");
 	}
-	if (nthrds > 0) {
-		logger.async = true;
-		cdk_thrdpool_create(&logger.pool, nthrds);
-	}
-	if (!out) { 
-		logger.file = stdout;
-		return; 
-	}
-	logger.file = fopen(out, "a+");
 }
 
 void cdk_logger_destroy(void) {
-	if (atomic_flag_test_and_set(&once_destroy)) {
-		return;
-	}
-	if (logger.async) {
-		cdk_thrdpool_destroy(&logger.pool);
-	}
-	if (logger.file) {
-		fclose(logger.file);
+	if (atomic_flag_test_and_set(&initialized)) {
+		if (logger.async) {
+			cdk_thrdpool_destroy(&logger.pool);
+		}
+		if (logger.file) {
+			fclose(logger.file);
+		}
+		atomic_flag_clear(&initialized);
 	}
 }
 

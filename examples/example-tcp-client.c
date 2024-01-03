@@ -59,7 +59,7 @@ static void handle_heartbeat(cdk_channel_t* channel) {
 
 int main(void) {
 	cdk_net_startup(4);
-	cdk_logger_create(NULL, 0);
+	cdk_logger_create(NULL, false);
 
 	cdk_tlsconf_t conf = {
 		.cafile = "certs/ca.crt",
