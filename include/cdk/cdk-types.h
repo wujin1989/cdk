@@ -328,8 +328,6 @@ struct cdk_handler_s {
 			void (*on_read)   (cdk_channel_t*, void* buf, size_t len);
 			void (*on_write)  (cdk_channel_t*);
 			void (*on_close)  (cdk_channel_t*, const char* error);
-			/** on_timeout function requires the user to manually invoke the cdk_net_close function to close the channel. */
-			void (*on_timeout)(cdk_channel_t*);
 			void (*on_heartbeat)(cdk_channel_t*);
 			int conn_timeout;
 			int wr_timeout;

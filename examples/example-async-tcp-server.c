@@ -36,6 +36,9 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 			smsg->hdr.type = htonl(PONG_MSG_TYPE);
 			memcpy(smsg->data, pong, sizeof(pong));
 			cdk_net_send(channel, smsg, sizeof(net_msg_t) + sizeof(pong));
+
+			free(smsg);
+			smsg = NULL;
 		}
 	}
 }
@@ -44,9 +47,17 @@ static void handle_close(cdk_channel_t* channel, const char* error) {
 	cdk_loge("connection closed, reason: %s\n", error);
 }
 
-static void handle_timeout(cdk_channel_t* channel) {
-	cdk_loge("connection timeout.\n");
-	cdk_net_close(channel);
+static void handle_heartbeat(cdk_channel_t* channel) {
+	net_msg_t* msg = malloc(sizeof(net_msg_t) + sizeof(keepalive));
+	if (msg) {
+		msg->hdr.size = htonl((uint32_t)(sizeof(keepalive)));
+		msg->hdr.type = htonl(KEEPALIVE_MSG_TYPE);
+		memcpy(msg->data, keepalive, sizeof(keepalive));
+		cdk_net_send(channel, msg, sizeof(net_msg_t) + sizeof(keepalive));
+
+		free(msg);
+		msg = NULL;
+	}
 }
 
 int main(void) {
@@ -71,8 +82,9 @@ int main(void) {
 		.tcp.on_accept  = handle_accept,
 		.tcp.on_read    = handle_read,
 		.tcp.on_close   = handle_close,
-		.tcp.on_timeout = handle_timeout,
+		.tcp.on_heartbeat = handle_heartbeat,
 		.tcp.rd_timeout = 10000,
+		.tcp.hb_interval = 5000,
 		.tcp.tlsconf = &conf,
 		.tcp.unpacker = &unpacker
 	};

@@ -40,9 +40,6 @@ static inline void _eventfd_read(cdk_channel_t* channel, void* buf, size_t len) 
     }
 }
 
-static inline void _eventfd_close(cdk_channel_t* channel, const char* error) {
-}
-
 static cdk_unpack_t eventfd_unpacker = {
     .type = UNPACK_TYPE_FIXEDLEN,
     .fixedlen.len = sizeof(int)
@@ -50,7 +47,6 @@ static cdk_unpack_t eventfd_unpacker = {
 
 static cdk_handler_t eventfd_handler = {
     .tcp.on_read = _eventfd_read,
-    .tcp.on_close = _eventfd_close,
     .tcp.unpacker = &eventfd_unpacker
 };
 
