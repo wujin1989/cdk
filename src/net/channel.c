@@ -263,17 +263,17 @@ static void _channel_conn_timeout_cb(void* param) {
 
 static void _channel_conn_timeout_routine(void* param) {
     cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _channel_conn_timeout_cb, channel, false);
+    cdk_net_postevent(channel->poller, _channel_conn_timeout_cb, channel, true);
 }
 
 static void _channel_rd_timeout_routine(void* param) {
     cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _channel_rd_timeout_cb, channel, false);
+    cdk_net_postevent(channel->poller, _channel_rd_timeout_cb, channel, true);
 }
 
 static void _channel_wr_timeout_routine(void* param) {
     cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _channel_wr_timeout_cb, channel, false);
+    cdk_net_postevent(channel->poller, _channel_wr_timeout_cb, channel, true);
 }
 
 void channel_connecting(cdk_channel_t* channel) {

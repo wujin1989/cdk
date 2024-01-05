@@ -111,7 +111,7 @@ void cdk_timer_reset(cdk_timer_job_t* job, uint32_t expire) {
 	cdk_rbtree_node_t* onode = NULL;
 	cdk_rbtree_node_t* nnode = NULL;
 
-	mtx_lock(&timer.rbmtx);
+	//mtx_lock(&timer.rbmtx);
 	okey.u64 = job->birthtime + job->expire;
 
 	job->expire = expire;
@@ -143,7 +143,7 @@ void cdk_timer_reset(cdk_timer_job_t* job, uint32_t expire) {
 			_timer_add(&timer, entry);
 		}
 	}
-	mtx_unlock(&timer.rbmtx);
+	//mtx_unlock(&timer.rbmtx);
 }
 
 static inline int _timer_thrdfunc(void* arg) {
@@ -165,24 +165,23 @@ static inline int _timer_thrdfunc(void* arg) {
 			continue;
 		}
 		cdk_rbtree_erase(&timer->rbtree, &entry->n);
-		mtx_unlock(&timer->rbmtx);
+		
 
 		cdk_timer_job_t* job;
 		while (!cdk_list_empty(&entry->joblst)) {
 			job = cdk_list_data(cdk_list_head(&entry->joblst), cdk_timer_job_t, n);
 			cdk_list_remove(&job->n);
-			if (timer->status) {
-				job->routine(job->arg);
-				if (job->repeat) {
-					cdk_timer_reset(job, job->expire);
-					continue;
-				}
+			job->routine(job->arg);
+			if (job->repeat) {
+				cdk_timer_reset(job, job->expire);
+			} else {
+				free(job);
+				job = NULL;
 			}
-			free(job);
-			job = NULL;
 		}
 		free(entry);
 		entry = NULL;
+		mtx_unlock(&timer->rbmtx);
 	}
 	return 0;
 }
