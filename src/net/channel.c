@@ -557,6 +557,9 @@ bool channel_is_reading(cdk_channel_t* channel) {
 }
 
 void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
     if (channel->type == SOCK_STREAM) {
         if (channel->tcp.tls) {
             _channel_encrypted_send_explicit(channel, data, size);

@@ -17,12 +17,9 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 
 static void handle_close(cdk_channel_t* channel, const char* error) {
 	if (++disconnected_clients == total_clients) {
+		accepted_clients = disconnected_clients = 0;
 		cdk_loge("%d clients has disconnected.\n", total_clients);
 	}
-}
-
-static void handle_heartbeat(cdk_channel_t* channel) {
-	cdk_net_send(channel, "keepalive", strlen("keepalive"));
 }
 
 int main(void) {
@@ -36,8 +33,6 @@ int main(void) {
 		.tcp.on_accept = handle_accept,
 		.tcp.on_read = handle_read,
 		.tcp.on_close = handle_close,
-		.tcp.on_heartbeat = handle_heartbeat,
-		.tcp.hb_interval = 1,
 		.tcp.unpacker = &unpacker
 	};
 	cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);

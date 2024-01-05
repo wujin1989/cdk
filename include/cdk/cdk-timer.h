@@ -27,4 +27,3 @@ extern void             cdk_timer_create(void);
 extern void             cdk_timer_destroy(void);
 extern cdk_timer_job_t* cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat);
 extern void             cdk_timer_del(cdk_timer_job_t* job);
-extern void             cdk_timer_reset(cdk_timer_job_t* job, uint32_t expire);

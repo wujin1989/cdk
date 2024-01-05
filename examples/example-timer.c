@@ -9,7 +9,6 @@ void callback(void* p) {
 }
 
 int main(void) {
-	cdk_timer_t timer;
 	cdk_timer_create();
 	cdk_logger_create(NULL, true);
 	mtx_init(&mtx, mtx_plain);
