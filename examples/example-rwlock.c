@@ -22,7 +22,7 @@ int writer(void* p) {
 	return 0;
 }
 int main(void) {
-	cdk_logger_create(NULL, false);
+	cdk_logger_create(NULL, true);
 	cdk_rwlock_init(&rwlock);
 
 	for (int i = 0; i < 15; i++) {

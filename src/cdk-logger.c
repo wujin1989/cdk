@@ -102,7 +102,7 @@ static inline void _logger_asyncbase(int level, const char* restrict file, int l
 	if (ret > sizeof(buf)) {
 		abort();
 	}
-	ret += vsprintf(buf + ret, fmt, v);
+	ret += vsprintf_s(buf + ret, sizeof(buf) - ret, fmt, v);
 	ret++;
 	char* arg = malloc(ret);
 	if (arg) {
@@ -121,7 +121,7 @@ void cdk_logger_create(const char* restrict out, bool async) {
 			logger.file = stdout;
 			return;
 		}
-		logger.file = fopen(out, "a+");
+		fopen_s(&logger.file, out, "a+");
 	}
 }
 

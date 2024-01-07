@@ -17,7 +17,6 @@ set(CMAKE_C_STANDARD 11)
 if(WIN32)
 	if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 		add_compile_options("/experimental:c11atomics")
-		add_compile_options("/D_CRT_SECURE_NO_WARNINGS")
 	endif()
 endif()
 

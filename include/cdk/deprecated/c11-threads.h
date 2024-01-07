@@ -455,7 +455,7 @@ static inline int thrd_equal(thrd_t thr0, thrd_t thr1)
 	return GetThreadId(thr0) == GetThreadId(thr1);
 }
 
-static inline _Noreturn void thrd_exit(int res) 
+static inline void thrd_exit(int res) 
 {
 	__tss_dtor_invoke();
 	_endthreadex((unsigned)res);

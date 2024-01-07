@@ -28,7 +28,6 @@ _Pragma("once")
 #include <fenv.h>
 #include <float.h>
 #include <inttypes.h>
-#include <iso646.h>
 #include <limits.h>
 #include <locale.h>
 #include <math.h>
@@ -42,21 +41,19 @@ _Pragma("once")
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdnoreturn.h>
+#include <time.h>
 #include <string.h>
-#include <tgmath.h>
 //#include <threads.h>
 /**
  * This is a backup, it will be removed when threads.h for vs and xcode are released.
  */
 #include "cdk/deprecated/c11-threads.h"
-#include <time.h>
-/**
- * MacOSX not support.
- */
+//#include <stdnoreturn.h>
+//#include <iso646.h>
+//#include <tgmath.h>
 //#include <uchar.h>
-#include <wchar.h>
-#include <wctype.h>
+//#include <wchar.h>
+//#include <wctype.h>
 
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-process.h"
