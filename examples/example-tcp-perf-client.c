@@ -3,7 +3,6 @@
 #define BUFFERSIZE 4096
 #define RUNTIME	10   //s
 
-cdk_timer_t timer;
 int total_clients = 100;
 char buffer[BUFFERSIZE];
 atomic_int connected_clients;
@@ -37,7 +36,7 @@ static inline void _finished(void* param) {
 }
 
 static void _printf_statistic_info() {
-	cdk_logi("tps:\t %d Q/s\n", atomic_load(&total_readcnt) / RUNTIME);
+	cdk_logi("qps:\t %d Q/s\n", atomic_load(&total_readcnt) / RUNTIME);
 	cdk_logi("throughput:\t %zu MB/s\n", (atomic_load(&total_readbytes) / (RUNTIME * 1024 * 1024)));
 }
 
