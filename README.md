@@ -21,7 +21,7 @@ The compiler needs to support C11.
 # Documentation
 Reference docs/API-Specification.html
 
-If you'd just like to talk, come chat with us [on Discord](https://discord.gg/eFqfE7kh).
+If you'd just like to talk, come chat with us [on Discord](https://discord.gg/ty7XHjAwvg).
 
 
 # License
