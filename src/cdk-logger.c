@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include "platform/platform-io.h"
 
 #if defined(__linux__) || defined(__APPLE__)
 #define S       '/'
@@ -102,7 +103,7 @@ static inline void _logger_asyncbase(int level, const char* restrict file, int l
 	if (ret > sizeof(buf)) {
 		abort();
 	}
-	ret += vsprintf_s(buf + ret, sizeof(buf) - ret, fmt, v);
+	ret += platform_io_vsprintf(buf + ret, sizeof(buf) - ret, fmt, v);
 	ret++;
 	char* arg = malloc(ret);
 	if (arg) {
@@ -121,7 +122,7 @@ void cdk_logger_create(const char* restrict out, bool async) {
 			logger.file = stdout;
 			return;
 		}
-		fopen_s(&logger.file, out, "a+");
+		logger.file = platform_io_fopen(out, "a+");
 	}
 }
 

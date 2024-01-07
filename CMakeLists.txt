@@ -9,7 +9,6 @@ if (CMAKE_SIZEOF_VOID_P LESS 8)
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 11)
@@ -103,6 +102,7 @@ if(WIN32)
 		src/platform/win/platform-loader.c
 		src/platform/win/wepoll/wepoll.c
 		src/platform/win/platform-event.c
+		src/platform/win/platform-io.c
 	)
 endif()
 
@@ -114,6 +114,7 @@ if(UNIX)
 		src/platform/unix/platform-utils.c
 		src/platform/unix/platform-loader.c
 		src/platform/unix/platform-event.c
+		src/platform/unix/platform-io.c
 	)
 endif()
 
