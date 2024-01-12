@@ -21,5 +21,5 @@
 
 _Pragma("once")
 
-
+extern void coroutine_create(void (*routine)(void*), void* restrict arg);
 
