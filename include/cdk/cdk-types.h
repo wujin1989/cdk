@@ -111,6 +111,7 @@ typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
 typedef struct cdk_spinlock_s            cdk_spinlock_t;
+typedef struct cdk_ucontext_s            cdk_ucontext_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -356,4 +357,39 @@ struct cdk_sha1_s {
 	uint32_t state[5];
 	size_t count[2];
 	uint8_t  buffer[64];
+};
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+
+#endif
+
+#if defined(__amd64__) || defined(_M_X64)
+typedef struct cdk_mcontext_s {
+	uint64_t rdi;
+	uint64_t rsi;
+	uint64_t rdx;
+	uint64_t rcx;
+	uint64_t r8;
+	uint64_t r9;
+
+	uint64_t rbx;
+	uint64_t rbp;
+	uint64_t r10;
+	uint64_t r11;
+	uint64_t r12;
+	uint64_t r13;
+	uint64_t r14;
+	uint64_t r15;
+
+	uint64_t rip;
+	uint64_t rsp;
+} cdk_mcontext_t;
+#endif
+
+struct cdk_ucontext_s {
+	cdk_mcontext_t uc_mctx;
+	struct {
+		void* sp;
+		size_t	sz;
+	} uc_stack;
 };
