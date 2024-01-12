@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(cdk VERSION 1.0.0 LANGUAGES C)
+project(cdk VERSION 1.0.0 LANGUAGES C ASM-ATT ASM_MASM)
 
 option(BUILD_DYNAMIC_LIBRARY "build the dynamic library" OFF)
 
@@ -103,7 +103,18 @@ if(WIN32)
 		src/platform/win/wepoll/wepoll.c
 		src/platform/win/platform-event.c
 		src/platform/win/platform-io.c
+		src/platform/win/platform-ucontext.c
 	)
+	if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "AMD64" OR CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
+		if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+			list(APPEND SRCS src/platform/win/platform-ucontext-att.s)
+		endif()
+		if (CMAKE_C_COMPILER_ID MATCHES "MSVC")
+			list(APPEND SRCS src/platform/win/platform-ucontext-masm.asm)
+		endif()
+	else()
+		message(FATAL_ERROR "current architecture is ${CMAKE_HOST_SYSTEM_PROCESSOR}, now not support")
+	endif()
 endif()
 
 if(UNIX)
@@ -115,7 +126,15 @@ if(UNIX)
 		src/platform/unix/platform-loader.c
 		src/platform/unix/platform-event.c
 		src/platform/unix/platform-io.c
+		src/platform/unix/platform-ucontext.c
 	)
+	if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "AMD64" OR CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
+		if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
+			list(APPEND SRCS src/platform/unix/platform-ucontext-att.s)
+		endif()
+	else()
+		message(FATAL_ERROR "current architecture is ${CMAKE_HOST_SYSTEM_PROCESSOR}, now not support")
+	endif()
 endif()
 
 if(BUILD_DYNAMIC_LIBRARY)
