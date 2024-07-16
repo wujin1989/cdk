@@ -442,6 +442,9 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
         if (channel->tcp.wr_timer) {
             cdk_timer_del(channel->tcp.wr_timer);
         }
+        if (channel->tcp.conn_timer) {
+            cdk_timer_del(channel->tcp.conn_timer);
+        }
     }
     if (channel->type == SOCK_DGRAM) {
         if (channel->handler->udp.on_close) {
@@ -505,6 +508,9 @@ void channel_accept(cdk_channel_t* channel) {
 }
 
 void channel_connect(cdk_channel_t* channel) {
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
     int err = 0;
     socklen_t len = sizeof(int);
 
