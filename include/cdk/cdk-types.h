@@ -83,7 +83,8 @@ typedef enum cdk_event_type_e{
 	EVENT_TYPE_W = 2,
 }cdk_event_type_t;
 
-#define cdk_tls_t void
+#define cdk_tls_ssl_t void
+#define cdk_tls_ctx_t void
 
 typedef struct cdk_channel_s             cdk_channel_t;
 typedef struct cdk_handler_s             cdk_handler_t;
@@ -112,6 +113,7 @@ typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
 typedef struct cdk_spinlock_s            cdk_spinlock_t;
 typedef struct cdk_ucontext_s            cdk_ucontext_t;
+typedef struct cdk_conf_s                cdk_conf_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -279,11 +281,16 @@ struct cdk_event_s {
 };
 
 struct cdk_tlsconf_s {
-	const char* cafile;
-	const char* capath;
-	const char* crtfile;
-	const char* keyfile;
-	bool verifypeer;
+	const char* cafile;    /* Path to a file containing trusted CA certificates in PEM format. This is used for verifying the peer's certificate during TLS/SSL handshakes. */
+	const char* capath;    /* Path to a directory containing multiple files, each with a single trusted CA certificate in PEM format. These are also used for verifying the peer's certificate. */
+	const char* crtfile;   /* Path to the certificate file in PEM format for this TLS context. This is typically the server's certificate when acting as a server or the client's certificate for client authentication. */
+	const char* keyfile;   /* Path to the private key file in PEM format that corresponds to the certificate specified by crtfile. This is required for the TLS context to establish secure connections. */
+	bool verifypeer;       /* A boolean flag indicating whether the TLS context should verify the peer's certificate. If set to true, the TLS handshake will fail if the peer does not provide a valid certificate. */
+};
+
+struct cdk_conf_s {
+	int nthrds;
+	cdk_tlsconf_t tls;
 };
 
 struct cdk_channel_s {
@@ -304,7 +311,7 @@ struct cdk_channel_s {
 		struct {
 			bool accepting;
 			bool connecting;
-			cdk_tls_t* tls;
+			cdk_tls_ssl_t* tls_ssl;
 			uint64_t latest_rd_time;
 			uint64_t latest_wr_time;
 			cdk_timer_job_t* conn_timer;
@@ -335,7 +342,6 @@ struct cdk_handler_s {
 			int rd_timeout;
 			int hb_interval;
 			cdk_unpack_t* unpacker;
-			cdk_tlsconf_t* tlsconf;
 		}tcp;
 		struct {
 			void (*on_connect) (cdk_channel_t*);

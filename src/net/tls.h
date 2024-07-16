@@ -23,10 +23,12 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_tls_t* tls_create(cdk_tlsconf_t* conf);
-extern void tls_destroy(cdk_tls_t* tls);
-extern int tls_connect(cdk_tls_t* tls, int fd, int* error);
-extern int tls_accept(cdk_tls_t* tls, int fd, int* error);
-extern int tls_read(cdk_tls_t* tls, void* buf, int size, int* error);
-extern int tls_write(cdk_tls_t* tls, void* buf, int size, int* error);
-extern const char* tls_error2string(int err);
+extern cdk_tls_ctx_t* tls_ctx_create(cdk_tlsconf_t* conf);
+extern void tls_ctx_destroy(cdk_tls_ctx_t* ctx);
+extern cdk_tls_ssl_t* tls_ssl_create(cdk_tls_ctx_t* ctx);
+extern void tls_ssl_destroy(cdk_tls_ssl_t* ssl);
+extern int tls_ssl_connect(cdk_tls_ssl_t* ssl, int fd, int* error);
+extern int tls_ssl_accept(cdk_tls_ssl_t* ssl, int fd, int* error);
+extern int tls_ssl_read(cdk_tls_ssl_t* ssl, void* buf, int size, int* error);
+extern int tls_ssl_write(cdk_tls_ssl_t* ssl, void* buf, int size, int* error);
+extern const char* tls_ssl_error2string(int err);

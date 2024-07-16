@@ -23,7 +23,10 @@ static void handle_close(cdk_channel_t* channel, const char* error) {
 }
 
 int main(void) {
-	cdk_net_startup(1);
+	cdk_conf_t conf = {
+		.nthrds = 1
+	};
+	cdk_net_startup(&conf);
 	cdk_logger_create(NULL, false);
 
 	cdk_unpack_t unpacker = {

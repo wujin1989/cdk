@@ -33,6 +33,7 @@
 #include "cdk/cdk-logger.h"
 
 cdk_poller_manager_t manager = {.initialized = ATOMIC_FLAG_INIT };
+cdk_tls_ctx_t* tls_ctx;
 
 typedef struct async_channel_send_ctx_s{
     cdk_channel_t* channel;
@@ -179,7 +180,7 @@ static void _async_dial_cb(void* param) {
     if (channel) {
         if (channel->type == SOCK_STREAM) {
             if (connected) {
-                if (channel->tcp.tls) {
+                if (channel->tcp.tls_ssl) {
                     channel_tls_cli_handshake(channel);
                 } else {
                     channel_connected(channel);
@@ -369,14 +370,16 @@ void cdk_net_exit(void) {
     mtx_unlock(&manager.poller_mtx);
 }
 
-void cdk_net_startup(int nthrds) {
+void cdk_net_startup(cdk_conf_t* conf) {
     if (atomic_flag_test_and_set(&manager.initialized)) {
         return;
     }
-    _poller_manager_create(nthrds);
+    tls_ctx = tls_ctx_create(&conf->tls);
+    _poller_manager_create(conf->nthrds);
 }
 
 void cdk_net_cleanup(void) {
+    tls_ctx_destroy(tls_ctx);
     _poller_manager_destroy();
 }
 

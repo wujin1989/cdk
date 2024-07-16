@@ -1,15 +1,15 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 
-project(cdk VERSION 1.0.0 LANGUAGES C ASM-ATT ASM_MASM)
+project(cdk VERSION 1.0.0 LANGUAGES C ASM_MASM)
 
 option(BUILD_DYNAMIC_LIBRARY "build the dynamic library" OFF)
+option(CMAKE_EXPORT_COMPILE_COMMANDS "export compile cmds" OFF)
 
 if (CMAKE_SIZEOF_VOID_P LESS 8)
 	message(FATAL_ERROR "only 64bit supported")
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_C_STANDARD 11)
@@ -56,7 +56,7 @@ if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
 	endif()
 endif()
 
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL 3.0 REQUIRED)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(include)

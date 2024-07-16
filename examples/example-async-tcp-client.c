@@ -38,6 +38,17 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 	cdk_addrinfo_t addrinfo;
 	cdk_net_getaddrinfo(channel->fd, &addrinfo, true);
 	cdk_logi("recv %s from %s:%d. type: %d, len: %d.\n", rmsg->data, addrinfo.a, addrinfo.p, ntohl(rmsg->hdr.type), ntohl(rmsg->hdr.size));
+
+	net_msg_t* msg = malloc(sizeof(net_msg_t) + sizeof(ping));
+	if (msg) {
+		msg->hdr.size = htonl((uint32_t)(sizeof(ping)));
+		msg->hdr.type = htonl(PING_MSG_TYPE);
+		memcpy(msg->data, ping, sizeof(ping));
+		cdk_net_send(channel, msg, sizeof(net_msg_t) + sizeof(ping));
+
+		free(msg);
+		msg = NULL;
+	}
 }
 
 static void handle_close(cdk_channel_t* channel, const char* error) {
@@ -58,16 +69,19 @@ static void handle_heartbeat(cdk_channel_t* channel) {
 }
 
 int main(void) {
-	cdk_net_startup(4);
+	cdk_conf_t conf = {
+		.nthrds = 4,
+		.tls = {
+			.cafile = "certs/ca.crt",
+			.capath = NULL,
+			.crtfile = NULL,
+			.keyfile = NULL,
+			.verifypeer = true
+		}
+	};
+	cdk_net_startup(&conf);
 	cdk_logger_create(NULL, false);
 
-	cdk_tlsconf_t conf = {
-		.cafile = "certs/ca.crt",
-		.capath = NULL,
-		.crtfile = NULL,
-		.keyfile = NULL,
-		.verifypeer = true
-	};
 	cdk_unpack_t unpacker = {
 		.type = UNPACK_TYPE_LENGTHFIELD,
 		.lengthfield.adj = 0,
@@ -84,7 +98,6 @@ int main(void) {
 		.tcp.wr_timeout = 10000,
 		.tcp.conn_timeout = 5000,
 		.tcp.hb_interval = 5000,
-		.tcp.tlsconf = &conf,
 		.tcp.unpacker = &unpacker
 	};
 	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);

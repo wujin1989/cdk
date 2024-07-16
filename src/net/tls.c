@@ -64,40 +64,50 @@ static void _tls_ctx_destroy(SSL_CTX* ctx) {
 	}
 }
 
-const char* tls_error2string(int err) {
+const char* tls_ssl_error2string(int err) {
 	static char buffer[512];
 	ERR_error_string(err, buffer);
 	return buffer;
 }
 
-cdk_tls_t* tls_create(cdk_tlsconf_t* conf) {
+cdk_tls_ctx_t* tls_ctx_create(cdk_tlsconf_t* conf) {
+	if (!conf->cafile && !conf->capath && !conf->crtfile) {
+		return NULL;
+	}
 	SSL_CTX* ctx = _tls_ctx_create(conf);
 	if (!ctx) {
-		return NULL;	
+		return NULL;
 	}
-	SSL* ssl = SSL_new(ctx);
+	return ctx;
+}
+
+void tls_ctx_destroy(cdk_tls_ctx_t* ctx) {
+	_tls_ctx_destroy((SSL_CTX*)ctx);
+}
+
+cdk_tls_ssl_t* tls_ssl_create(cdk_tls_ctx_t* ctx) {
+	SSL* ssl = SSL_new((SSL_CTX*)ctx);
 	if (!ssl) {
 		return NULL;
 	}
-	_tls_ctx_destroy(ctx);
 	return ssl;
 }
 
-void tls_destroy(cdk_tls_t* tls) {
-	if (tls) {
-		SSL_shutdown((SSL*)tls);
+void tls_ssl_destroy(cdk_tls_ssl_t* ssl) {
+	if (ssl) {
+		SSL_shutdown((SSL*)ssl);
 	}
-	if (tls) {
-		SSL_free((SSL*)tls);
+	if (ssl) {
+		SSL_free((SSL*)ssl);
 	}
 }
 
-int tls_connect(cdk_tls_t* tls, int fd, int* error) {
-	SSL_set_fd((SSL*)tls, fd);
+int tls_ssl_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
+	SSL_set_fd((SSL*)ssl, fd);
 	
-	int ret = SSL_connect((SSL*)tls);
+	int ret = SSL_connect((SSL*)ssl);
 	if (ret <= 0) {
-		int err = SSL_get_error((SSL*)tls, ret);
+		int err = SSL_get_error((SSL*)ssl, ret);
 		*error = err;
 		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
 			return 0;
@@ -107,12 +117,12 @@ int tls_connect(cdk_tls_t* tls, int fd, int* error) {
 	return ret;
 }
 
-int tls_accept(cdk_tls_t* tls, int fd, int* error) {
-	SSL_set_fd((SSL*)tls, fd);
+int tls_ssl_accept(cdk_tls_ssl_t* ssl, int fd, int* error) {
+	SSL_set_fd((SSL*)ssl, fd);
 
-	int ret = SSL_accept((SSL*)tls);
+	int ret = SSL_accept((SSL*)ssl);
 	if (ret <= 0) {
-		int err = SSL_get_error((SSL*)tls, ret);
+		int err = SSL_get_error((SSL*)ssl, ret);
 		*error = err;
 		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
 			return 0;
@@ -122,10 +132,10 @@ int tls_accept(cdk_tls_t* tls, int fd, int* error) {
 	return ret;
 }
 
-int tls_read(cdk_tls_t* tls, void* buf, int size, int* error) {
-	int n = SSL_read((SSL*)tls, buf, size);
+int tls_ssl_read(cdk_tls_ssl_t* ssl, void* buf, int size, int* error) {
+	int n = SSL_read((SSL*)ssl, buf, size);
 	if (n <= 0) {
-		int err = SSL_get_error((SSL*)tls, n);
+		int err = SSL_get_error((SSL*)ssl, n);
 		*error = err;
 		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
 			return 0;
@@ -135,10 +145,10 @@ int tls_read(cdk_tls_t* tls, void* buf, int size, int* error) {
 	return n;
 }
 
-int tls_write(cdk_tls_t* tls, void* buf, int size, int* error) {
-	int n = SSL_write((SSL*)tls, buf, size);
+int tls_ssl_write(cdk_tls_ssl_t* ssl, void* buf, int size, int* error) {
+	int n = SSL_write((SSL*)ssl, buf, size);
 	if (n <= 0) {
-		int err = SSL_get_error((SSL*)tls, n);
+		int err = SSL_get_error((SSL*)ssl, n);
 		*error = err;
 		if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
 			return 0;

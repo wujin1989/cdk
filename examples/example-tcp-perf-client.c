@@ -41,7 +41,10 @@ static void _printf_statistic_info() {
 }
 
 int main(void) {
-	cdk_net_startup(4);
+	cdk_conf_t conf = {
+		.nthrds = 4,
+	};
+	cdk_net_startup(&conf);
 	cdk_logger_create(NULL, false);
 	cdk_timer_create();
 

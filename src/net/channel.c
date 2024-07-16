@@ -32,6 +32,7 @@
 #include "cdk/container/cdk-rbtree.h"
 
 extern cdk_poller_manager_t manager;
+extern cdk_tls_ctx_t* tls_ctx;
 
 static void _write_complete_cb(void* param) {
     cdk_channel_t* channel = param;
@@ -93,12 +94,12 @@ static void _channel_encrypted_send(cdk_channel_t* channel) {
         return;
     }
     txlist_node_t* e = cdk_list_data(cdk_list_head(&(channel->txlist)), txlist_node_t, n);
-    int n = tls_write(channel->tcp.tls, e->buf, (int)e->len, &err);
+    int n = tls_ssl_write(channel->tcp.tls_ssl, e->buf, (int)e->len, &err);
     if (n <= 0) {
         if (n == 0) {
             return;
         }
-        channel_destroy(channel, tls_error2string(err));
+        channel_destroy(channel, tls_ssl_error2string(err));
         return;
     }
     if (n < e->len) {
@@ -119,7 +120,7 @@ static void _channel_encrypted_send_explicit(cdk_channel_t* channel, void* data,
     int n = 0;
     if (txlist_empty(&channel->txlist)) {
         int err = 0;
-        n = tls_write(channel->tcp.tls, data, size, &err);
+        n = tls_ssl_write(channel->tcp.tls_ssl, data, size, &err);
         if (n <= 0) {
             if (n == 0) {
                 txlist_insert(&channel->txlist, data, size, true);
@@ -128,7 +129,7 @@ static void _channel_encrypted_send_explicit(cdk_channel_t* channel, void* data,
                 }
                 return;
             }
-            channel_destroy(channel, tls_error2string(err));
+            channel_destroy(channel, tls_ssl_error2string(err));
             return;
         }
     }
@@ -188,12 +189,12 @@ static void _channel_unencrypted_send_explicit(cdk_channel_t* channel, void* dat
 
 static void _channel_encrypted_recv(cdk_channel_t* channel) {
     int err = 0;
-    int n = tls_read(channel->tcp.tls, (char*)(channel->rxbuf.buf) + channel->rxbuf.off, DEFAULT_IOBUF_SIZE / 2, &err);
+    int n = tls_ssl_read(channel->tcp.tls_ssl, (char*)(channel->rxbuf.buf) + channel->rxbuf.off, DEFAULT_IOBUF_SIZE / 2, &err);
     if (n <= 0) {
         if (n == 0) {
             return;
         }
-        channel_destroy(channel, tls_error2string(err));
+        channel_destroy(channel, tls_ssl_error2string(err));
         return;
     }
     channel->tcp.latest_rd_time = cdk_time_now();
@@ -355,13 +356,13 @@ void channel_accepting(cdk_channel_t* channel) {
 void channel_tls_cli_handshake(void* param) {
     int err = 0;
     cdk_channel_t* channel = param;
-    int n = tls_connect(channel->tcp.tls, channel->fd, &err);
+    int n = tls_ssl_connect(channel->tcp.tls_ssl, channel->fd, &err);
     if (n <= 0) {
         if (n == 0) {
             cdk_net_postevent(channel->poller, channel_tls_cli_handshake, channel, true);
             return;
         }
-        channel_destroy(channel, tls_error2string(err));
+        channel_destroy(channel, tls_ssl_error2string(err));
         return;
     }
     channel_connected(channel);
@@ -370,13 +371,13 @@ void channel_tls_cli_handshake(void* param) {
 void channel_tls_srv_handshake(void* param) {
     int err = 0;
     cdk_channel_t* channel = param;
-    int n = tls_accept(channel->tcp.tls, channel->fd, &err);
+    int n = tls_ssl_accept(channel->tcp.tls_ssl, channel->fd, &err);
     if (n <= 0) {
         if (n == 0) {
             cdk_net_postevent(channel->poller, channel_tls_srv_handshake, channel, true);
             return;
         }
-        channel_destroy(channel, tls_error2string(err));
+        channel_destroy(channel, tls_ssl_error2string(err));
         return;
     }
     channel_accepted(channel);
@@ -402,8 +403,8 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
         }
         txlist_create(&channel->txlist);
         if (channel->type == SOCK_STREAM) {
-            if (channel->handler->tcp.tlsconf) {
-                channel->tcp.tls = tls_create(channel->handler->tcp.tlsconf);
+            if (tls_ctx) {
+                channel->tcp.tls_ssl = tls_ssl_create(tls_ctx);
             }
         }
         cdk_list_insert_tail(&poller->chlist, &channel->node);
@@ -419,7 +420,7 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
     atomic_store(&channel->closing, true);
     channel_disable_all(channel);
     platform_socket_close(channel->fd);
-    tls_destroy(channel->tcp.tls);
+    tls_ssl_destroy(channel->tcp.tls_ssl);
     cdk_list_remove(&channel->node);
 
     txlist_destroy(&channel->txlist);
@@ -459,7 +460,7 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
 
 void channel_recv(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
-        if (channel->tcp.tls) {
+        if (channel->tcp.tls_ssl) {
             _channel_encrypted_recv(channel);
         } else {
             _channel_unencrypted_recv(channel);
@@ -472,7 +473,7 @@ void channel_recv(cdk_channel_t* channel) {
 
 void channel_send(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
-        if (channel->tcp.tls) {
+        if (channel->tcp.tls_ssl) {
             _channel_encrypted_send(channel);
         } else {
             _channel_unencrypted_send(channel);
@@ -495,7 +496,7 @@ void channel_accept(cdk_channel_t* channel) {
     }
     cdk_channel_t* nchannel = channel_create(manager.poller_roundrobin(), cli, channel->handler);
     if (nchannel) {
-        if (nchannel->tcp.tls) {
+        if (nchannel->tcp.tls_ssl) {
             channel_tls_srv_handshake(nchannel);
         } else {
             channel_accepted(nchannel);
@@ -515,7 +516,7 @@ void channel_connect(cdk_channel_t* channel) {
     if (err) {
         channel_destroy(channel, platform_socket_error2string(err));
     } else {
-        if (channel->tcp.tls) {
+        if (channel->tcp.tls_ssl) {
             channel_tls_cli_handshake(channel);
         } else {
             channel_connected(channel);
@@ -561,7 +562,7 @@ void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
         return;
     }
     if (channel->type == SOCK_STREAM) {
-        if (channel->tcp.tls) {
+        if (channel->tcp.tls_ssl) {
             _channel_encrypted_send_explicit(channel, data, size);
         } else {
             _channel_unencrypted_send_explicit(channel, data, size);

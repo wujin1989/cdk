@@ -35,7 +35,7 @@ extern void cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
 extern void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail);
 extern void cdk_net_close(cdk_channel_t* channel);
 extern void cdk_net_exit(void);
-extern void cdk_net_startup(int nthrds);
+extern void cdk_net_startup(cdk_conf_t* conf);
 extern void cdk_net_cleanup(void);
 /** sync */
 extern void cdk_net_startup2(void);

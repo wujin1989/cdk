@@ -10,7 +10,10 @@ static void on_close(cdk_channel_t* channel, const char* error) {
 }
 
 int main(void) {
-	cdk_net_startup(4);
+	cdk_conf_t conf = {
+		.nthrds = 4
+	};
+	cdk_net_startup(&conf);
 	cdk_handler_t handler = {
 		.udp.on_read = on_read,
 		.udp.on_close = on_close,
