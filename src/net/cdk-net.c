@@ -199,7 +199,12 @@ static void _async_dial_cb(void* param) {
                 ? sizeof(struct sockaddr_in) 
                 : sizeof(struct sockaddr_in6);
             
-            channel_connected(channel);
+            if (channel->handler->udp.on_ready) {
+                channel->handler->udp.on_ready(channel);
+            }
+            if (!channel_is_reading(channel)) {
+                channel_enable_read(channel);
+            }
         }
     }
     free(ctx);

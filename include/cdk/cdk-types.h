@@ -343,7 +343,7 @@ struct cdk_handler_s {
 			cdk_unpack_t* unpacker;
 		}tcp;
 		struct {
-			void (*on_connect) (cdk_channel_t*);
+			void (*on_ready) (cdk_channel_t*);
 			void (*on_read)  (cdk_channel_t*, void* buf, size_t len);
 			void (*on_write) (cdk_channel_t*);
 			void (*on_close) (cdk_channel_t*, const char* error);

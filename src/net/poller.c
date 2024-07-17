@@ -66,23 +66,22 @@ static inline void _poller_channel_handle(cdk_channel_t* channel, uint32_t mask)
 
 void poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
-    if (events) {
-        while (poller->active) {
-            int nevents = platform_event_wait(poller->pfd, events);
-            for (int i = 0; i < nevents; i++) {
-                void* ud = events[i].ptr;
-                uint32_t mask = events[i].events;
-                if (!ud) {
-                    abort();
-                }
-                if (*((cdk_sock_t*)ud) == poller->evfds[1]) {
-                    _poller_event_handle(poller);
-                } else {
-                    _poller_channel_handle((cdk_channel_t*)ud, mask);
-                }
-            }
-        }
-    }
+	while (poller->active) {
+		int nevents = platform_event_wait(poller->pfd, events);
+		for (int i = 0; i < nevents; i++) {
+			void* ud = events[i].ptr;
+			uint32_t mask = events[i].events;
+			if (!ud) {
+				abort();
+			}
+			if (*((cdk_sock_t*)ud) == poller->evfds[1]) {
+				_poller_event_handle(poller);
+			}
+			else {
+				_poller_channel_handle((cdk_channel_t*)ud, mask);
+			}
+		}
+	}
 }
 
 cdk_poller_t* poller_create(void) {

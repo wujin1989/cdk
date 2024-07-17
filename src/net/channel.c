@@ -318,14 +318,6 @@ void channel_connected(cdk_channel_t* channel) {
             channel->tcp.wr_timer = cdk_timer_add(_channel_wr_timeout_routine, channel, channel->handler->tcp.wr_timeout, true);
         }
     }
-    if (channel->type == SOCK_DGRAM) {
-        if (channel->handler->udp.on_connect) {
-            channel->handler->udp.on_connect(channel);
-        }
-        if (!channel_is_reading(channel)) {
-            channel_enable_read(channel);
-        }
-    }
 }
 
 void channel_accepted(cdk_channel_t* channel) {

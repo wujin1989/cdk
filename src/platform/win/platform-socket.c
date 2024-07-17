@@ -122,9 +122,7 @@ int platform_socket_extract_family(cdk_sock_t sock) {
     socklen_t len;
 
     len = sizeof(WSAPROTOCOL_INFOW);
-    if (getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len)) {
-        abort();
-    }
+    getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len);
     return info.iAddressFamily;
 }
 
@@ -236,16 +234,19 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
         if (protocol == SOCK_DGRAM) {
             _disable_udp_connreset(sock);
         }
-        if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
-            if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                platform_socket_close(sock);
-                continue;
+        if (protocol == SOCK_STREAM) {
+            if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
+                if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                    platform_socket_close(sock);
+                    continue;
+                }
+                if (WSAGetLastError() == WSAEWOULDBLOCK) {
+                    break;
+                }
             }
-            if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                break;
+            else {
+                *connected = true;
             }
-        } else {
-            *connected = true;
         }
         break;
     }

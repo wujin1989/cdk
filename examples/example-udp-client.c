@@ -22,8 +22,8 @@ static int routine(void* p) {
 	return 0;
 }
 
-static void on_connect(cdk_channel_t* channel) {
-	printf("udp connected\n");
+static void on_ready(cdk_channel_t* channel) {
+	printf("udp ready\n");
 	thrd_t tid;
 	thrd_create(&tid, routine, channel);
 	thrd_detach(tid);
@@ -35,7 +35,7 @@ int main(void) {
 	};
 	cdk_net_startup(&conf);
 	cdk_handler_t handler = {
-		.udp.on_connect = on_connect,
+		.udp.on_ready = on_ready,
 		.udp.on_read = on_read,
 		.udp.on_close = on_close,
 	};
