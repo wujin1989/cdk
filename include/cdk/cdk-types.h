@@ -102,7 +102,7 @@ typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
 typedef struct cdk_unpack_s              cdk_unpack_t;
-typedef struct cdk_addrinfo_s            cdk_addrinfo_t;
+typedef struct cdk_address_s             cdk_address_t;
 typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_poller_manager_s      cdk_poller_manager_t;
 typedef struct cdk_event_s               cdk_event_t;
@@ -246,7 +246,7 @@ struct cdk_unpack_s {
 	};
 };
 
-struct cdk_addrinfo_s {
+struct cdk_address_s {
 	uint16_t    f;
 	char        a[INET6_ADDRSTRLEN];
 	uint16_t    p;

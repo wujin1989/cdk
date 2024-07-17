@@ -24,10 +24,10 @@ _Pragma("once")
 #include "cdk/cdk-types.h"
 
 /** common */
-extern void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai);
-extern void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
-extern void cdk_net_getaddrinfo(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
-extern int cdk_net_getsocktype(cdk_sock_t sock);
+extern void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai);
+extern void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss);
+extern void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port);
+extern void cdk_net_extract_address(cdk_sock_t sock, cdk_address_t* ai, bool peer);
 /** async */
 extern void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler);
 extern void cdk_net_dial(const char* protocol, const char* host, const char* port, cdk_handler_t* handler);

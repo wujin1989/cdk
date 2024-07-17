@@ -649,43 +649,62 @@ extern uint64_t cdk_varint_decode(char* buf, int* pos);
  * @brief Convert a network address to presentation format
  *
  * This function converts a network address in `struct sockaddr_storage` format
- * to presentation format and stores the result in the `cdk_addrinfo_t` structure.
+ * to presentation format and stores the result in the `cdk_address_t` structure.
  *
  * @param ss Pointer to the `struct sockaddr_storage` containing the network address
- * @param ai Pointer to the `cdk_addrinfo_t` structure to store the converted
+ * @param ai Pointer to the `cdk_address_t` structure to store the converted
  * address
  * @return N/A
  */
-extern void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai);
+extern void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai);
 ```
 ```c
 /**
  * @brief Convert a network address from presentation format to binary form
  *
  * This function converts a network address in presentation format from 
- * the `cdk_addrinfo_t` structure to binary form and stores the result in the `struct sockaddr_storage`.
+ * the `cdk_address_t` structure to binary form and stores the result in the `struct sockaddr_storage`.
  *
- * @param ai Pointer to the `cdk_addrinfo_t` structure containing the network address
+ * @param ai Pointer to the `cdk_address_t` structure containing the network address
  * @param ss Pointer to the `struct sockaddr_storage` to store the converted address
  * @return N/A
  */
-extern void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss);
+extern void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss);
+```
+```c
+/**
+ * @brief Constructs a network address structure based on the provided host and port.
+ *
+ * This function takes a socket, a pointer to a sockaddr_storage structure where
+ * the constructed address will be stored, and strings representing the host and port.
+ * It copies the host string into an internal representation, converts the port string
+ * into a numerical value, and extracts the family of the socket.
+ * The final step is to convert the gathered information into a binary format suitable
+ * for network communication and store it in the sockaddr_storage structure.
+ *
+ * @param sock A valid socket descriptor.
+ * @param ss Pointer to a sockaddr_storage structure that will hold the resulting address.
+ * @param host Pointer to a null-terminated string containing the host name or IP address.
+ * @param port Pointer to a null-terminated string containing the port number as text.
+ * @return N/A
+ */
+extern void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port);
 ```
 ```c
 /**
  * @brief Obtain the local or peer address associated with a socket
  *
  * This function obtains the local or peer address associated with 
- * the specified socket `sock` and stores it in the `cdk_addrinfo_t` structure `ai`. 
+ * the specified socket `sock` and stores it in the `cdk_address_t` structure `ai`. 
  * The `peer` flag indicates whether the peer address should be obtained 
  * (if `true`) or the local address (if `false`).
  *
  * @param sock Socket descriptor
- * @param ai   Pointer to the `cdk_addrinfo_t` structure to  store the obtained address
+ * @param ai   Pointer to the `cdk_address_t` structure to  store the obtained address
  * @param peer Flag indicating whether to obtain the peer address (`true`) or local address (`false`)
  * @return N/A
  */
-extern void cdk_net_getaddrinfo(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer);
+extern void cdk_net_extract_address(cdk_sock_t sock, cdk_address_t* ai, bool peer);
 ```
 ```c
 /**

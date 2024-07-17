@@ -116,6 +116,18 @@ void platform_socket_reuse_addr(cdk_sock_t sock) {
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on));
 }
 
+int platform_socket_extract_family(cdk_sock_t sock) {
+
+    WSAPROTOCOL_INFOW info; /* using unicode name to avoiding ninja build warning */
+    socklen_t len;
+
+    len = sizeof(WSAPROTOCOL_INFOW);
+    if (getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len)) {
+        abort();
+    }
+    return info.iAddressFamily;
+}
+
 cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores, bool nonblocking) {
     cdk_sock_t sock;
     struct addrinfo  hints;

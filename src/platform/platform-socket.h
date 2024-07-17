@@ -53,6 +53,7 @@ extern void         platform_socket_maxseg(cdk_sock_t sock);
 extern void         platform_socket_nonblock(cdk_sock_t sock);
 extern void         platform_socket_reuse_addr(cdk_sock_t sock);
 extern void         platform_socket_reuse_port(cdk_sock_t sock);
+extern int          platform_socket_extract_family(cdk_sock_t sock);
 extern void         platform_socket_startup(void);
 extern void         platform_socket_cleanup(void);
 extern cdk_sock_t   platform_socket_accept(cdk_sock_t sock, bool nonblocking);

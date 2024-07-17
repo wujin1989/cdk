@@ -134,6 +134,18 @@ void platform_socket_maxseg(cdk_sock_t sock) {
 cdk_pollfd_t platform_socket_pollfd_create(void) {
     return epoll_create1(0);
 }
+
+int platform_socket_extract_family(cdk_sock_t sock) {
+
+    int af;
+    socklen_t len;
+
+    len = sizeof(int);
+    if (getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &af, &len)) {
+        abort();
+    }
+    return af;
+}
 #endif
 
 #if defined(__APPLE__)
@@ -177,6 +189,17 @@ void platform_socket_maxseg(cdk_sock_t sock) {
 
 cdk_pollfd_t platform_socket_pollfd_create(void) {
     return kqueue();
+}
+
+int platform_socket_extract_family(cdk_sock_t sock) {
+
+    struct sockaddr_storage ss;
+    socklen_t len;
+
+    len = sizeof(struct sockaddr_storage);
+    getsockname(sock, (struct sockaddr*)&ss, &len);
+
+    return ss.ss_family;
 }
 #endif
 

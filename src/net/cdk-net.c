@@ -189,12 +189,16 @@ static void _async_dial_cb(void* param) {
             }
         }
         if (channel->type == SOCK_DGRAM) {
-            cdk_addrinfo_t ai = { 0 };
+            cdk_net_make_address(sock, &channel->udp.peer.ss, ctx->host, ctx->port);
+            /**
+             * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage,
+             * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
+             */
+            channel->udp.peer.sslen = 
+                (platform_socket_extract_family(sock) == AF_INET) 
+                ? sizeof(struct sockaddr_in) 
+                : sizeof(struct sockaddr_in6);
             
-            cdk_net_getaddrinfo(sock, &ai, true);
-            cdk_net_pton(&ai, &channel->udp.peer.ss);
-            channel->udp.peer.sslen = (ai.f == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
-
             channel_connected(channel);
         }
     }
@@ -239,7 +243,7 @@ static void _inet_ntop(int af, const void* restrict src, char* restrict dst) {
     }
 }
 
-void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai) {
+void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai) {
     char d[INET6_ADDRSTRLEN];
     memset(d, 0, sizeof(d));
 
@@ -269,7 +273,7 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_addrinfo_t* ai) {
     memcpy(ai->a, d, INET6_ADDRSTRLEN);
 }
 
-void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss) {
+void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss) {
     memset(ss, 0, sizeof(struct sockaddr_storage));
 
     if (ai->f == AF_INET6){
@@ -288,7 +292,17 @@ void cdk_net_pton(cdk_addrinfo_t* ai, struct sockaddr_storage* ss) {
     }
 }
 
-void cdk_net_getaddrinfo(cdk_sock_t sock, cdk_addrinfo_t* ai, bool peer) {
+void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port) {
+    cdk_address_t ai = { 0 };
+
+    memcpy(ai.a, host, strlen(host));
+    ai.p = (uint16_t)strtoul(port, NULL, 10);
+    ai.f = platform_socket_extract_family(sock);
+
+    cdk_net_pton(&ai, ss);
+}
+
+void cdk_net_extract_address(cdk_sock_t sock, cdk_address_t* ai, bool peer) {
     struct sockaddr_storage ss;
     socklen_t len;
 

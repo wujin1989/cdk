@@ -1,7 +1,7 @@
 #include "cdk.h"
 
 static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
-	cdk_addrinfo_t addrinfo;
+	cdk_address_t addrinfo;
 	cdk_net_ntop(&channel->udp.peer.ss, &addrinfo);
 	printf("recv %s from %s:%d\n", (char*)buf, addrinfo.a, addrinfo.p);
 }
