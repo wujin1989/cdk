@@ -33,8 +33,8 @@ void platform_time_sleep(const uint32_t ms) {
 	struct timespec req;
 	struct timespec rem;
 
-	req.tv_sec  = ms * USEC / (1000000000UL);
-	req.tv_nsec = ms * USEC % (1000000000UL);
+	req.tv_sec = ms / (1000UL);
+	req.tv_nsec = (ms % 1000UL) * (1000000UL);
 	do {
 		ret = nanosleep(&req, &rem);
 	} while (ret == -1 && errno == EINTR);

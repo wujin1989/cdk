@@ -44,7 +44,6 @@ _Pragma("once")
 #include <mstcpip.h>
 
 #pragma comment(lib,"ws2_32.lib")
-#pragma comment(lib,"winmm.lib")
 
 #define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR, 12)
 #endif

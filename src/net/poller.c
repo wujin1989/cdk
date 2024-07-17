@@ -25,7 +25,7 @@
 #include "net/channel.h"
 #include "net/txlist.h"
 
-static inline void _eventfd_read(cdk_poller_t* poller) {
+static inline void _eventfd_recv(cdk_poller_t* poller) {
     bool wakeup;
     platform_socket_recv(poller->evfds[1], (char*)(&wakeup), sizeof(bool));
     
@@ -50,16 +50,24 @@ void poller_poll(cdk_poller_t* poller) {
             int nevents = platform_event_wait(poller->pfd, events);
             for (int i = 0; i < nevents; i++) {
                 if (*((int*)events[i].ptr) == poller->evfds[1]) {
-                    _eventfd_read(poller);
+                    _eventfd_recv(poller);
                 } else {
                     cdk_channel_t* channel = events[i].ptr;
                     uint32_t mask = events[i].events;
 
                     if (mask & EVENT_TYPE_R) {
-                        (channel->type == SOCK_STREAM) ? ((channel->tcp.accepting) ? channel_accept(channel) : channel_recv(channel)) : channel_recv(channel);
+                        (channel->type == SOCK_STREAM) 
+                            ? ((channel->tcp.accepting) 
+                                ? channel_accept(channel) 
+                                : channel_recv(channel)) 
+                            : channel_recv(channel);
                     }
                     if (mask & EVENT_TYPE_W) {
-                        (channel->type == SOCK_STREAM) ? ((channel->tcp.connecting) ? channel_connect(channel) : channel_send(channel)) : channel_send(channel);
+                        (channel->type == SOCK_STREAM) 
+                            ? ((channel->tcp.connecting) 
+                                ? channel_connect(channel) 
+                                : channel_send(channel)) 
+                            : channel_send(channel);
                     }
                 }
             }

@@ -39,11 +39,9 @@ void txlist_insert(cdk_list_t* list, void* data, size_t size, bool totail) {
 		memset(node, 0, sizeof(txlist_node_t) + size);
 		memcpy(node->buf, data, size);
 		node->len = size;
-		
 		if (totail) {
 			cdk_list_insert_tail(list, &(node->n));
-		}
-		else {
+		} else {
 			cdk_list_insert_head(list, &(node->n));
 		}
 	}
