@@ -27,28 +27,20 @@ static atomic_flag initialized = ATOMIC_FLAG_INIT;
 static void _disable_udp_connreset(cdk_sock_t sock) {
     int on = 0;
     DWORD nouse;
-    if (WSAIoctl(sock, SIO_UDP_CONNRESET, &on, sizeof(int), NULL, 0, &nouse, NULL, NULL)) {
-        abort();
-    }
+    WSAIoctl(sock, SIO_UDP_CONNRESET, &on, sizeof(int), NULL, 0, &nouse, NULL, NULL);
 }
 
 void platform_socket_nonblock(cdk_sock_t sock) {
     u_long on = 1;
-    if (ioctlsocket(sock, FIONBIO, &on)) {
-        abort();
-    }
+    ioctlsocket(sock, FIONBIO, &on);
 }
 
 void platform_socket_setrecvbuf(cdk_sock_t sock, int val) {
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&val, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&val, sizeof(int));
 }
 
 void platform_socket_setsendbuf(cdk_sock_t sock, int val) {
-    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&val, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&val, sizeof(int));
 }
 
 void platform_socket_close(cdk_sock_t sock) {
@@ -68,9 +60,7 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
 
 void platform_socket_nodelay(cdk_sock_t sock, bool on) {
     int val = on ? 1 : 0;
-    if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&val, sizeof(val))) {
-        abort();
-    }
+    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&val, sizeof(val));
 }
 
 void platform_socket_keepalive(cdk_sock_t sock) {
@@ -79,18 +69,10 @@ void platform_socket_keepalive(cdk_sock_t sock) {
     int i = 1;  /* 1 second; same as default on win32 */
     int c = 10; /* 10 retries; same as hardcoded on win32 since vista */
 
-    if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const char*)&on, sizeof(on))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (const char*)&d, sizeof(d))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const char*)&i, sizeof(i))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const char*)&c, sizeof(c))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const char*)&on, sizeof(on));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (const char*)&d, sizeof(d));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const char*)&i, sizeof(i));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const char*)&c, sizeof(c));
 }
 
 int platform_socket_getaddrfamily(cdk_sock_t sock) {
@@ -98,9 +80,7 @@ int platform_socket_getaddrfamily(cdk_sock_t sock) {
     socklen_t len;
 
     len = sizeof(WSAPROTOCOL_INFOW);
-    if (getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len)) {
-        abort();
-    }
+    getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len);
     return info.iAddressFamily;
 }
 
@@ -112,38 +92,28 @@ void platform_socket_maxseg(cdk_sock_t sock) {
      */
     if (af == AF_INET) {
         int val = IP_PMTUDISC_DONT;
-        if (setsockopt(sock, IPPROTO_IP, IP_MTU_DISCOVER, (const char*)&val, sizeof(int))) {
-            abort();
-        }
+        setsockopt(sock, IPPROTO_IP, IP_MTU_DISCOVER, (const char*)&val, sizeof(int));
     }
     if (af == AF_INET6) {
         int val = IP_PMTUDISC_DONT;
-        if (setsockopt(sock, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (const char*)&val, sizeof(int))) {
-            abort();
-        }
+        setsockopt(sock, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (const char*)&val, sizeof(int));
     }
 }
 
 void platform_socket_v6only(cdk_sock_t sock, bool on) {
     int val = on ? 1 : 0;
-    if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof(int));
 }
 
 void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
     (void)(cores);
     DWORD nouse;
-    if (WSAIoctl(sock, SIO_CPU_AFFINITY, &idx, sizeof(uint16_t), NULL, 0, &nouse, NULL, NULL)) {
-        abort();
-    }
+    WSAIoctl(sock, SIO_CPU_AFFINITY, &idx, sizeof(uint16_t), NULL, 0, &nouse, NULL, NULL);
 }
 
 void platform_socket_reuse_addr(cdk_sock_t sock) {
     int on = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on));
 }
 
 cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores, bool nonblocking) {
@@ -284,15 +254,11 @@ int platform_socket_getsocktype(cdk_sock_t sock) {
 }
 
 void platform_socket_recvtimeo(cdk_sock_t sock, int timeout_ms) {
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout_ms, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout_ms, sizeof(int));
 }
 
 void platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms) {
-    if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout_ms, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout_ms, sizeof(int));
 }
 
 ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {

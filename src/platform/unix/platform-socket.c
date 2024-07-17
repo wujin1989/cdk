@@ -27,23 +27,17 @@
 void platform_socket_nonblock(cdk_sock_t sock) {
     int flag = fcntl(sock, F_GETFL, 0);
     if (flag == -1) {
-        abort();
+        return;
     }
-    if (fcntl(sock, F_SETFL, flag | O_NONBLOCK)) {
-        abort();
-    }
+    fcntl(sock, F_SETFL, flag | O_NONBLOCK);
 }
 
 void platform_socket_setrecvbuf(cdk_sock_t sock, int val) {
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void*)&val, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const void*)&val, sizeof(int));
 }
 
 void platform_socket_setsendbuf(cdk_sock_t sock, int val) {
-    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void*)&val, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void*)&val, sizeof(int));
 }
 
 void platform_socket_close(cdk_sock_t sock) {
@@ -66,23 +60,17 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
 
 void platform_socket_nodelay(cdk_sock_t sock, bool on) {
     int val = on ? 1 : 0;
-    if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const void*)&val, sizeof(val))) {
-        abort();
-    }
+    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const void*)&val, sizeof(val));
 }
 
 void platform_socket_reuse_addr(cdk_sock_t sock) {
     int on = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void*)&on, sizeof(on))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void*)&on, sizeof(on));
 }
 
 void platform_socket_v6only(cdk_sock_t sock, bool on) {
     int val = on ? 1 : 0;
-    if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const void*)&val, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const void*)&val, sizeof(int));
 }
 
 void platform_socket_recvtimeo(cdk_sock_t sock, int timeout_ms) {
@@ -90,9 +78,7 @@ void platform_socket_recvtimeo(cdk_sock_t sock, int timeout_ms) {
         .tv_sec = timeout_ms / 1000,
         .tv_usec = (timeout_ms % 1000) * 1000
     };
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const void*)&tv, sizeof(struct timeval))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const void*)&tv, sizeof(struct timeval));
 }
 
 void platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms) {
@@ -100,9 +86,7 @@ void platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms) {
         .tv_sec = timeout_ms / 1000,
         .tv_usec = (timeout_ms % 1000) * 1000
     };
-    if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const void*)&tv, sizeof(struct timeval))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const void*)&tv, sizeof(struct timeval));
 }
 
 #if defined(__linux__)
@@ -117,18 +101,14 @@ void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
     bpf_config.len = (sizeof(bpf_code) / sizeof(bpf_code[0]));
     bpf_config.filter = bpf_code;
 
-    if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (const void*)&bpf_config, sizeof(bpf_config))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (const void*)&bpf_config, sizeof(bpf_config));
 }
 
 int platform_socket_getaddrfamily(cdk_sock_t sock) {
     int af;
     socklen_t len;
     len = sizeof(int);
-    if (getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &af, &len)) {
-        abort();
-    }
+    getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &af, &len);
     return af;
 }
 
@@ -138,27 +118,17 @@ void platform_socket_keepalive(cdk_sock_t sock) {
     int i = 1;  /** 1 second; same as default on win32 */
     int c = 10; /** 10 retries; same as hardcoded on win32 since vista */
 
-    if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (const void*)&d, sizeof(d))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (const void*)&d, sizeof(d));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c));
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
     int af = platform_socket_getaddrfamily(sock);
     int mss = af == AF_INET ? TCPv4_MSS : TCPv6_MSS;
 
-    if (setsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, (const void*)&mss, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, (const void*)&mss, sizeof(int));
 }
 
 cdk_pollfd_t platform_socket_pollfd_create(void) {
@@ -189,18 +159,10 @@ void platform_socket_keepalive(cdk_sock_t sock) {
     int i = 1;  /* 1 second; same as default on win32 */
     int c = 10; /* 10 retries; same as hardcoded on win32 since vista */
 
-    if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPALIVE, (const void*)&d, sizeof(d))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i))) {
-        abort();
-    }
-    if (setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const void*)&on, sizeof(on));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPALIVE, (const void*)&d, sizeof(d));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const void*)&i, sizeof(i));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const void*)&c, sizeof(c));
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
@@ -210,9 +172,7 @@ void platform_socket_maxseg(cdk_sock_t sock) {
      * TCP_MAXSEG doesn't seem to work correctly for outbound connections on macOS/iOS.
      */
     int val = 1;
-    if (setsockopt(sock, IPPROTO_TCP, TCP_NOOPT, (const void*)&val, sizeof(int))) {
-        abort();
-    }
+    setsockopt(sock, IPPROTO_TCP, TCP_NOOPT, (const void*)&val, sizeof(int));
 }
 
 cdk_pollfd_t platform_socket_pollfd_create(void) {
@@ -226,9 +186,7 @@ void platform_socket_pollfd_destroy(cdk_pollfd_t pfd) {
 
 void platform_socket_reuse_port(cdk_sock_t sock) {
     int on = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const void*)&on, sizeof(on))) {
-        abort();
-    }
+    setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const void*)&on, sizeof(on));
 }
 
 cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores, bool nonblocking) {
@@ -365,9 +323,7 @@ int platform_socket_getsocktype(cdk_sock_t sock) {
     socklen_t len;
 
     len = sizeof(int);
-    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, &type, (socklen_t*)&len)) {
-        abort();
-    }
+    getsockopt(sock, SOL_SOCKET, SO_TYPE, &type, (socklen_t*)&len);
     return type;
 }
 
