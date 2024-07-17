@@ -43,32 +43,42 @@ static inline void _eventfd_recv(cdk_poller_t* poller) {
     }
 }
 
+static inline void _poller_event_handle(cdk_poller_t* poller) {
+    _eventfd_recv(poller);
+}
+
+static inline void _poller_channel_handle(cdk_channel_t* channel, uint32_t mask) {
+    if (mask & EVENT_TYPE_R) {
+        (channel->type == SOCK_STREAM)
+            ? ((channel->tcp.accepting)
+                ? channel_accept(channel)
+                : channel_recv(channel))
+            : channel_recv(channel);
+    }
+    if (mask & EVENT_TYPE_W) {
+        (channel->type == SOCK_STREAM)
+            ? ((channel->tcp.connecting)
+                ? channel_connect(channel)
+                : channel_send(channel))
+            : channel_send(channel);
+    }
+}
+
 void poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
     if (events) {
         while (poller->active) {
             int nevents = platform_event_wait(poller->pfd, events);
             for (int i = 0; i < nevents; i++) {
-                if (*((cdk_sock_t*)events[i].ptr) == poller->evfds[1]) {
-                    _eventfd_recv(poller);
+                void* ud = events[i].ptr;
+                uint32_t mask = events[i].events;
+                if (!ud) {
+                    abort();
+                }
+                if (*((cdk_sock_t*)ud) == poller->evfds[1]) {
+                    _poller_event_handle(poller);
                 } else {
-                    cdk_channel_t* channel = events[i].ptr;
-                    uint32_t mask = events[i].events;
-
-                    if (mask & EVENT_TYPE_R) {
-                        (channel->type == SOCK_STREAM) 
-                            ? ((channel->tcp.accepting) 
-                                ? channel_accept(channel) 
-                                : channel_recv(channel)) 
-                            : channel_recv(channel);
-                    }
-                    if (mask & EVENT_TYPE_W) {
-                        (channel->type == SOCK_STREAM) 
-                            ? ((channel->tcp.connecting) 
-                                ? channel_connect(channel) 
-                                : channel_send(channel)) 
-                            : channel_send(channel);
-                    }
+                    _poller_channel_handle((cdk_channel_t*)ud, mask);
                 }
             }
         }
