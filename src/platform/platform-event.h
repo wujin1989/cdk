@@ -30,6 +30,7 @@ typedef struct cdk_pollevent_s {
 	void* ptr;
 }cdk_pollevent_t;
 
-extern void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud);
-extern void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud);
+extern void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud);
+extern void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud);
+extern void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd);
 extern int  platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events);

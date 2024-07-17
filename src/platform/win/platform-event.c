@@ -22,12 +22,8 @@
 #include "platform/platform-event.h"
 #include "wepoll/wepoll.h"
 
-void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
-	struct epoll_event ee;
-	memset(&ee, 0, sizeof(struct epoll_event));
-
-	int op = ud->events == 0 ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
-	events |= ud->events;
+void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) {
+	struct epoll_event ee = {0};
 	if (events & EVENT_TYPE_R) {
 		ee.events |= EPOLLIN;
 	}
@@ -35,26 +31,23 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channe
 		ee.events |= EPOLLOUT;
 	}
 	ee.data.ptr = ud;
-
-	epoll_ctl(pfd, op, sfd, (struct epoll_event*)&ee);
+	epoll_ctl(pfd, EPOLL_CTL_ADD, sfd, (struct epoll_event*)&ee);
 }
 
-void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, cdk_channel_t* ud) {
-	struct epoll_event ee;
-	memset(&ee, 0, sizeof(struct epoll_event));
-
-	int mask = ud->events & (~events);
-	int op = mask == 0 ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
-
-	if (mask & EVENT_TYPE_R) {
+void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) {
+	struct epoll_event ee = { 0 };
+	if (events & EVENT_TYPE_R) {
 		ee.events |= EPOLLIN;
 	}
-	if (mask & EVENT_TYPE_W) {
+	if (events & EVENT_TYPE_W) {
 		ee.events |= EPOLLOUT;
 	}
 	ee.data.ptr = ud;
+	epoll_ctl(pfd, EPOLL_CTL_MOD, sfd, (struct epoll_event*)&ee);
+}
 
-	epoll_ctl(pfd, op, sfd, &ee);
+void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
+	epoll_ctl(pfd, EPOLL_CTL_DEL, sfd, NULL);
 }
 
 int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {

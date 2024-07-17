@@ -531,27 +531,43 @@ void channel_connect(cdk_channel_t* channel) {
 }
 
 void channel_enable_write(cdk_channel_t* channel) {
-    platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+    if (channel->events) {
+        platform_event_mod(channel->poller->pfd, channel->fd, channel->events | EVENT_TYPE_W, channel);
+    } else {
+        platform_event_add(channel->poller->pfd, channel->fd, channel->events | EVENT_TYPE_W, channel);
+    }
     channel->events |= EVENT_TYPE_W;
 }
 
 void channel_enable_read(cdk_channel_t* channel) {
-    platform_event_add(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+    if (channel->events) {
+        platform_event_mod(channel->poller->pfd, channel->fd, channel->events | EVENT_TYPE_R, channel);
+    } else {
+        platform_event_add(channel->poller->pfd, channel->fd, channel->events | EVENT_TYPE_R, channel);
+    }
     channel->events |= EVENT_TYPE_R;
 }
 
 void channel_disable_write(cdk_channel_t* channel) {
-    platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_W, channel);
+    if (channel->events) {
+        platform_event_mod(channel->poller->pfd, channel->fd, channel->events & ~EVENT_TYPE_W, channel);
+    } else {
+        platform_event_del(channel->poller->pfd, channel->fd);
+    }
     channel->events &= ~EVENT_TYPE_W;
 }
 
 void channel_disable_read(cdk_channel_t* channel) {
-    platform_event_del(channel->poller->pfd, channel->fd, EVENT_TYPE_R, channel);
+    if (channel->events) {
+        platform_event_mod(channel->poller->pfd, channel->fd, channel->events & ~EVENT_TYPE_R, channel);
+    } else {
+        platform_event_del(channel->poller->pfd, channel->fd);
+    }
     channel->events &= ~EVENT_TYPE_R;
 }
 
 void channel_disable_all(cdk_channel_t* channel) {
-    platform_event_del(channel->poller->pfd, channel->fd, channel->events, channel);
+    platform_event_del(channel->poller->pfd, channel->fd);
     channel->events = 0;
 }
 

@@ -106,7 +106,6 @@ static void _poller_manager_create(int parallel) {
     if (parallel <= 0) {
         abort();
     }
-    cdk_timer_create();
     cdk_list_init(&manager.poller_lst);
     mtx_init(&manager.poller_mtx, mtx_plain);
     cnd_init(&manager.poller_cnd);
@@ -356,8 +355,8 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
         }
         mtx_unlock(&poller->evmtx);
 
-        int hardcode = 1;
-        platform_socket_sendall(poller->evfds[0], &hardcode, sizeof(int));
+        bool wakeup = true;
+        platform_socket_send(poller->evfds[0], &wakeup, sizeof(bool));
     }
 }
 
@@ -374,13 +373,14 @@ void cdk_net_startup(cdk_conf_t* conf) {
     if (atomic_flag_test_and_set(&manager.initialized)) {
         return;
     }
+    cdk_timer_create();
     tls_ctx = tls_ctx_create(&conf->tls);
     _poller_manager_create(conf->nthrds);
 }
 
 void cdk_net_cleanup(void) {
-    tls_ctx_destroy(tls_ctx);
     _poller_manager_destroy();
+    tls_ctx_destroy(tls_ctx);
 }
 
 void cdk_net_startup2(void) {
