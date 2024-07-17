@@ -44,12 +44,12 @@ static inline void _eventfd_recv(cdk_poller_t* poller) {
 }
 
 void poller_poll(cdk_poller_t* poller) {
-    cdk_pollevent_t* events = malloc(sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
+    cdk_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
     if (events) {
         while (poller->active) {
             int nevents = platform_event_wait(poller->pfd, events);
             for (int i = 0; i < nevents; i++) {
-                if (*((int*)events[i].ptr) == poller->evfds[1]) {
+                if (*((cdk_sock_t*)events[i].ptr) == poller->evfds[1]) {
                     _eventfd_recv(poller);
                 } else {
                     cdk_channel_t* channel = events[i].ptr;
@@ -72,8 +72,6 @@ void poller_poll(cdk_poller_t* poller) {
                 }
             }
         }
-        free(events);
-        events = NULL;
     }
 }
 

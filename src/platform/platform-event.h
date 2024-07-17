@@ -23,7 +23,7 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-#define MAX_PROCESS_EVENTS 1024
+#define MAX_PROCESS_EVENTS 64
 
 typedef struct cdk_pollevent_s {
 	uint32_t events;

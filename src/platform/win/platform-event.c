@@ -51,10 +51,8 @@ void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
 }
 
 int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
-
-	struct epoll_event __events[MAX_PROCESS_EVENTS];
 	int n;
-	
+	struct epoll_event __events[MAX_PROCESS_EVENTS] = {0};
 	memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
 	do {
 		n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, -1);

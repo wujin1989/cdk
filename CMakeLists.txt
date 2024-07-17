@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(cdk VERSION 1.0.0 LANGUAGES C ASM_MASM)
+project(cdk VERSION 1.0.0)
+
+if(WIN32)
+	enable_language(C ASM_MASM)
+endif()
+
+if(UNIX)
+	enable_language(C ASM-ATT)
+endif()
 
 option(BUILD_DYNAMIC_LIBRARY "build the dynamic library" OFF)
 option(CMAKE_EXPORT_COMPILE_COMMANDS "export compile cmds" OFF)
