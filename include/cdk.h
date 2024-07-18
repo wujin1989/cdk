@@ -69,6 +69,7 @@ _Pragma("once")
 #include "cdk/container/cdk-stack.h"
 #include "cdk/container/cdk-list.h"
 #include "cdk/container/cdk-rbtree.h"
+#include "cdk/container/cdk-heap.h"
 #include "cdk/container/cdk-ringbuffer.h"
 #include "cdk/encoding/cdk-varint.h"
 #include "cdk/encoding/cdk-base64.h"

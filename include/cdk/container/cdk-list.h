@@ -22,7 +22,6 @@
 _Pragma("once")
 
 #include "cdk/cdk-types.h"
-#include <stddef.h>
 
 #define cdk_list_data(x, t, m)                              \
     ((t *) ((char *) (x) - offsetof(t, m)))
@@ -37,4 +36,3 @@ extern cdk_list_node_t* cdk_list_next(cdk_list_node_t* x);
 extern cdk_list_node_t* cdk_list_prev(cdk_list_node_t* x);
 extern void             cdk_list_remove(cdk_list_node_t* x);
 extern cdk_list_node_t* cdk_list_sentinel(cdk_list_t* l);
-

@@ -96,6 +96,8 @@ typedef struct cdk_list_node_s           cdk_queue_t;
 typedef struct cdk_list_node_s           cdk_queue_node_t;
 typedef struct cdk_list_node_s           cdk_stack_t;
 typedef struct cdk_list_node_s           cdk_stack_node_t;
+typedef struct cdk_heap_node_s           cdk_heap_node_t;
+typedef struct cdk_heap_s                cdk_heap_t;
 typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
 typedef struct cdk_timer_job_s           cdk_timer_job_t;
 typedef struct cdk_timer_s               cdk_timer_t;
@@ -178,6 +180,18 @@ struct cdk_rbtree_s
 struct cdk_list_node_s {
 	struct cdk_list_node_s* p;
 	struct cdk_list_node_s* n;
+};
+
+struct cdk_heap_node_s {
+	struct cdk_heap_node_s* left;
+	struct cdk_heap_node_s* right;
+	struct cdk_heap_node_s* parent;
+};
+
+struct cdk_heap_s {
+	struct cdk_heap_node_s* heap_min;
+	size_t heap_nelts;
+	int (*heap_cmp)(cdk_heap_node_t* a, cdk_heap_node_t* b);	/* a < b return 1, a > b return 0. less than compare */
 };
 
 struct cdk_thrdpool_s {

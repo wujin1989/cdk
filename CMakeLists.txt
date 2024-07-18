@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(cdk VERSION 1.0.0)
-
-enable_language(C)
+project(cdk VERSION 1.0.0 LANGUAGES C)
 
 option(BUILD_DYNAMIC_LIBRARY "build the dynamic library" OFF)
 option(CMAKE_EXPORT_COMPILE_COMMANDS "export compile cmds" OFF)

@@ -43,3 +43,6 @@ target_link_libraries(example-sha1 PUBLIC cdk)
 
 add_executable(example-ringbuf "example-ringbuf.c")
 target_link_libraries(example-ringbuf PUBLIC cdk)
+
+add_executable(example-heap "example-heap.c")
+target_link_libraries(example-heap PUBLIC cdk)
