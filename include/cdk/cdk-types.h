@@ -191,7 +191,9 @@ struct cdk_heap_node_s {
 struct cdk_heap_s {
 	struct cdk_heap_node_s* heap_min;
 	size_t heap_nelts;
-	int (*heap_cmp)(cdk_heap_node_t* a, cdk_heap_node_t* b);	/* a < b return 1, a > b return 0. less than compare */
+	/* a < b return positive that means min-heap */
+	/* a > b return positive, means max-heap */
+	int (*heap_cmp)(cdk_heap_node_t* a, cdk_heap_node_t* b);
 };
 
 struct cdk_thrdpool_s {
