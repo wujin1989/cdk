@@ -115,13 +115,22 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
 
 	memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
 	int n = kevent(pfd, NULL, 0, __events, MAX_PROCESS_EVENTS, NULL);
-
+	/**
+	 * In systems utilizing the kqueue mechanism, read and write events are handled independently, 
+	 * differing from the behavior of epoll. With epoll, read and write events can be combined, 
+	 * allowing the use of bitwise operations (such as the & operator) to check for specific event types on a file descriptor. 
+	 * However, in kqueue, read and write events are treated as entirely separate occurrences. 
+	 * This means that bitwise operations cannot be simply applied to determine the event type.
+     * Consequently, when processing events returned by kqueue, each event must be examined individually to ascertain whether it is a read event or a write event, 
+	 * and then the event handling logic should be updated accordingly. 
+	 * This typically involves maintaining a separate state for each file descriptor to track the event types that have occurred, rather than employing bitwise operations within a single event mask. 
+	 */
 	for (int i = 0; i < n; i++) {
 		events[i].ptr = __events[i].udata;
-		if (__events[i].filter & EVFILT_READ) {
+		if (__events[i].filter == EVFILT_READ) {
 			events[i].events |= EVENT_TYPE_R;
 		}
-		if (__events[i].filter & EVFILT_WRITE) {
+		if (__events[i].filter == EVFILT_WRITE) {
 			events[i].events |= EVENT_TYPE_W;
 		}
 	}
