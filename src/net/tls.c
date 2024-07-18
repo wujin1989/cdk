@@ -53,6 +53,16 @@ static SSL_CTX* _tls_ctx_create(cdk_tlsconf_t* tlsconf) {
 			return NULL;
 		}
 	}
+	/**
+	 * If the mode is not enabled, when calling SSL_write results in only partial data being written, 
+	 * the remaining data will be copied into cdk's internal tx queue. 
+	 * When attempting to write more data by calling SSL_write again, 
+	 * OpenSSL will verify if the buffer address for this write operation matches the one used in the previous incomplete write operation. 
+	 * If the addresses do not match, OpenSSL will return an error, 
+	 * potentially leading to the closure of the connection. 
+	 * By enabling the mode, OpenSSL permits the use of different buffers for successive write operations, 
+	 * but the caller is still responsible for ensuring the consistency of the data.
+	 */
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, NULL);
 	return ctx;
