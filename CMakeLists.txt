@@ -2,13 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 
 project(cdk VERSION 1.0.0)
 
-if(WIN32)
-	enable_language(C ASM_MASM)
-endif()
-
-if(UNIX)
-	enable_language(C ASM-ATT)
-endif()
+enable_language(C)
 
 option(BUILD_DYNAMIC_LIBRARY "build the dynamic library" OFF)
 option(CMAKE_EXPORT_COMPILE_COMMANDS "export compile cmds" OFF)
@@ -79,11 +73,11 @@ set(SRCS
 	src/crypto/cdk-sha256.c
 	src/encoding/cdk-varint.c
 	src/encoding/cdk-base64.c
-	src/encoding/cJSON/cJSON.c
 	src/container/cdk-list.c
 	src/container/cdk-queue.c
 	src/container/cdk-stack.c
 	src/container/cdk-rbtree.c
+	src/container/cdk-heap.c
 	src/container/cdk-ringbuffer.c
 	src/sync/cdk-rwlock.c
 	src/sync/cdk-spinlock.c
@@ -112,18 +106,7 @@ if(WIN32)
 		src/platform/win/wepoll/wepoll.c
 		src/platform/win/platform-event.c
 		src/platform/win/platform-io.c
-		src/platform/win/platform-ucontext.c
 	)
-	if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "AMD64" OR CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
-		if (CMAKE_C_COMPILER_ID MATCHES "Clang")
-			list(APPEND SRCS src/platform/win/platform-ucontext-att.S)
-		endif()
-		if (CMAKE_C_COMPILER_ID MATCHES "MSVC")
-			list(APPEND SRCS src/platform/win/platform-ucontext-masm.asm)
-		endif()
-	else()
-		message(FATAL_ERROR "current architecture is ${CMAKE_HOST_SYSTEM_PROCESSOR}, now not support")
-	endif()
 endif()
 
 if(UNIX)
@@ -135,15 +118,7 @@ if(UNIX)
 		src/platform/unix/platform-loader.c
 		src/platform/unix/platform-event.c
 		src/platform/unix/platform-io.c
-		src/platform/unix/platform-ucontext.c
 	)
-	if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "AMD64" OR CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
-		if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
-			list(APPEND SRCS src/platform/unix/platform-ucontext-att.S)
-		endif()
-	else()
-		message(FATAL_ERROR "current architecture is ${CMAKE_HOST_SYSTEM_PROCESSOR}, now not support")
-	endif()
 endif()
 
 if(BUILD_DYNAMIC_LIBRARY)

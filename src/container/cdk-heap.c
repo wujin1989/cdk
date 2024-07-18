@@ -19,16 +19,4 @@
  *  IN THE SOFTWARE.
  */
 
-typedef struct coroutine_s {
-
-}coroutine_t;
-
-static inline coroutine_t* coroutine_alloc(void (*routine)(void*), void* restrict arg, int stack) {
-
-}
-
-void coroutine_create(void (*routine)(void*), void* restrict arg) {
-	coroutine_t* co = NULL;
-	co = coroutine_alloc(routine, arg, 128 * 1024);
-	
-}
+#include "cdk/container/cdk-heap.h"
