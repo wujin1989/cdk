@@ -99,7 +99,6 @@ typedef struct cdk_list_node_s           cdk_stack_node_t;
 typedef struct cdk_heap_node_s           cdk_heap_node_t;
 typedef struct cdk_heap_s                cdk_heap_t;
 typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
-typedef struct cdk_timer_job_s           cdk_timer_job_t;
 typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
@@ -206,23 +205,14 @@ struct cdk_thrdpool_s {
 	bool        status;
 };
 
-struct cdk_timer_job_s {
-	void  (*routine)(void*);
-	void*    arg;
-	uint64_t birthtime;
-	uint32_t expire;
-	bool     repeat;
-	cdk_list_node_t n;
-};
-
 struct cdk_timer_s {
-	thrd_t* thrds;
-	size_t thrdcnt;
-	cdk_rbtree_t rbtree;
-	mtx_t tmtx;
-	mtx_t rbmtx;
-	cnd_t rbcnd;
-	bool status;
+	void (*routine)(void* param);
+	void* param;
+	size_t birth;
+	size_t birth_id;
+	size_t expire;
+	bool repeat;
+	cdk_heap_node_t node;
 };
 
 struct cdk_ringbuf_s {
@@ -272,8 +262,8 @@ struct cdk_poller_s {
 	thrd_t tid;
 	cdk_sock_t evfds[2];
 	cdk_list_t evlist;
-	bool active;
 	mtx_t evmtx;
+	bool active;
 	cdk_list_t chlist;
 	cdk_list_node_t node;
 };
