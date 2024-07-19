@@ -21,24 +21,24 @@
 
 #include "cdk/cdk-types.h"
 
-void* platform_loader_create(char* m) {
-	for (int i = 0; i < strlen(m); i++) {
-		if (m[i] == '/') {
-			m[i] = '\\';
+void* platform_loader_create(char* module) {
+	for (int i = 0; i < strlen(module); i++) {
+		if (module[i] == '/') {
+			module[i] = '\\';
 		}
 	}
-	return (void*)LoadLibrary(TEXT(m));
+	return (void*)LoadLibrary(TEXT(module));
 }
 
-void platform_loader_destroy(void* m) {
-	FreeLibrary((HMODULE)m);
+void platform_loader_destroy(void* module) {
+	FreeLibrary((HMODULE)module);
 }
 
-void* platform_loader_load(void* m, const char* restrict f) {
-	void* r = (void*)GetProcAddress((HMODULE)m, f);
-	if (r == NULL) {
-		platform_loader_destroy(m);
+void* platform_loader_load(void* module, const char* restrict func) {
+	void* ret = (void*)GetProcAddress((HMODULE)module, func);
+	if (ret == NULL) {
+		platform_loader_destroy(module);
 	}
-	return r;
+	return ret;
 }
 

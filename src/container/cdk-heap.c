@@ -22,7 +22,7 @@
 #include "cdk/container/cdk-heap.h"
 
  /* swap parent with child. child moves closer to the root, parent moves away. */
-static void _heap_node_swap(cdk_heap_t* heap, cdk_heap_node_t* parent, cdk_heap_node_t* child) {
+static void _node_swap(cdk_heap_t* heap, cdk_heap_node_t* parent, cdk_heap_node_t* child) {
     cdk_heap_node_t* sibling;
     cdk_heap_node_t t;
 
@@ -59,7 +59,7 @@ static void _heap_node_swap(cdk_heap_t* heap, cdk_heap_node_t* parent, cdk_heap_
 void cdk_heap_init(cdk_heap_t* heap, int (*cmp)(cdk_heap_node_t* a, cdk_heap_node_t* b)) {
 	heap->heap_min = NULL;
 	heap->heap_nelts = 0;
-	heap->heap_cmp = cmp;
+	heap->compare = cmp;
 }
 
 void cdk_heap_insert(cdk_heap_t* heap, cdk_heap_node_t* node) {
@@ -99,8 +99,8 @@ void cdk_heap_insert(cdk_heap_t* heap, cdk_heap_node_t* node) {
     /* walk up the tree and check at each node if the heap property holds.
      * it's a min heap so parent < child must be true.
      */
-    while (node->parent != NULL && heap->heap_cmp(node, node->parent)) {
-        _heap_node_swap(heap, node->parent, node);
+    while (node->parent != NULL && heap->compare(node, node->parent)) {
+        _node_swap(heap, node->parent, node);
     }
 }
 
@@ -170,23 +170,23 @@ void cdk_heap_remove(cdk_heap_t* heap, cdk_heap_node_t* node) {
      */
     for (;;) {
         smallest = child;
-        if (child->left != NULL && heap->heap_cmp(child->left, smallest)) {
+        if (child->left != NULL && heap->compare(child->left, smallest)) {
             smallest = child->left;
         }
-        if (child->right != NULL && heap->heap_cmp(child->right, smallest)) {
+        if (child->right != NULL && heap->compare(child->right, smallest)) {
             smallest = child->right;
         }
         if (smallest == child) {
             break;
         }
-        _heap_node_swap(heap, child, smallest);
+        _node_swap(heap, child, smallest);
     }
     /* walk up the subtree and check that each parent is less than the node
      * this is required, because `max` node is not guaranteed to be the
      * actual maximum in tree
      */
-    while (child->parent != NULL && heap->heap_cmp(child, child->parent)) {
-        _heap_node_swap(heap, child->parent, child);
+    while (child->parent != NULL && heap->compare(child, child->parent)) {
+        _node_swap(heap, child->parent, child);
     }
 }
 

@@ -21,19 +21,19 @@
 
 #include "cdk/cdk-types.h"
 
-void* platform_loader_create(const char* m) {
-	return dlopen(m, RTLD_LAZY);
+void* platform_loader_create(char* module) {
+	return dlopen(module, RTLD_LAZY);
 }
 
-void platform_loader_destroy(void* m) {
-	dlclose(m);
+void platform_loader_destroy(void* module) {
+	dlclose(module);
 }
 
-void* platform_loader_load(void* m, const char* restrict f) {
-	void* r = dlsym(m, f);
-	if (r == NULL) {
-		platform_loader_destroy(m);
+void* platform_loader_load(void* module, const char* restrict func) {
+	void* ret = dlsym(module, f);
+	if (ret == NULL) {
+		platform_loader_destroy(module);
 	}
-	return r;
+	return ret;
 }
 

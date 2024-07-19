@@ -155,11 +155,11 @@ union cdk_rbtree_node_key_u {
 
 struct cdk_rbtree_node_s
 {
-	cdk_rbtree_node_key_t rb_key;
-	struct cdk_rbtree_node_s* rb_parent;
-	struct cdk_rbtree_node_s* rb_right;
-	struct cdk_rbtree_node_s* rb_left;
-	char rb_color;
+	cdk_rbtree_node_key_t key;
+	struct cdk_rbtree_node_s* parent;
+	struct cdk_rbtree_node_s* right;
+	struct cdk_rbtree_node_s* left;
+	char color;
 };
 
 struct cdk_rwlock_s {
@@ -173,8 +173,8 @@ struct cdk_spinlock_s {
 
 struct cdk_rbtree_s
 {
-	cdk_rbtree_node_t* rb_root;
-	int(*rb_keycmp)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*);
+	cdk_rbtree_node_t* root;
+	int(*compare)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*);
 };
 
 struct cdk_list_node_s {
@@ -193,7 +193,7 @@ struct cdk_heap_s {
 	size_t heap_nelts;
 	/* a < b return positive that means min-heap */
 	/* a > b return positive, means max-heap */
-	int (*heap_cmp)(cdk_heap_node_t* a, cdk_heap_node_t* b);
+	int (*compare)(cdk_heap_node_t* a, cdk_heap_node_t* b);
 };
 
 struct cdk_thrdpool_s {

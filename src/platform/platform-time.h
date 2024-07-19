@@ -25,6 +25,6 @@ _Pragma("once")
 #include <stdint.h>
 #include <stdbool.h>
 
-extern void platform_time_localtime(const time_t* t, struct tm* r);
+extern void platform_time_localtime(const time_t* time, struct tm* tm);
 extern void platform_time_sleep(const uint32_t ms);
 

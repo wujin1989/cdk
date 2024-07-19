@@ -13,7 +13,7 @@ int main(void) {
 		userdata_t* ud = malloc(sizeof(userdata_t));
 		if (ud) {
 			ud->value = i;
-			ud->node.rb_key.i32 = i;
+			ud->node.key.i32 = i;
 			cdk_rbtree_insert(&tree, &ud->node);
 		}
 	}
@@ -21,7 +21,7 @@ int main(void) {
 	key.i32 = 3;
 	userdata_t* ud = cdk_rbtree_data(cdk_rbtree_find(&tree, key), userdata_t, node);
 	if (ud) {
-		printf("key: %d, value: %d\n", ud->node.rb_key.i32, ud->value);
+		printf("key: %d, value: %d\n", ud->node.key.i32, ud->value);
 		cdk_rbtree_erase(&tree, &ud->node);
 		free(ud);
 		ud = NULL;
@@ -29,7 +29,7 @@ int main(void) {
 	while(!cdk_rbtree_empty(&tree)) {
 		userdata_t* ud = cdk_rbtree_data(cdk_rbtree_first(&tree), userdata_t, node);
 		if (ud) {
-			printf("key: %d, value: %d\n", ud->node.rb_key.i32, ud->value);
+			printf("key: %d, value: %d\n", ud->node.key.i32, ud->value);
 			cdk_rbtree_erase(&tree, &ud->node);
 			free(ud);
 			ud = NULL;

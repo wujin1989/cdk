@@ -21,7 +21,7 @@
 
 _Pragma("once")
 
-extern void* cdk_loader_create(char* m);
-extern void* cdk_loader_load(void* m, const char* restrict f);
-extern void  cdk_loader_destroy(void* m);
+extern void* cdk_loader_create(char* module);
+extern void* cdk_loader_load(void* module, const char* restrict func);
+extern void  cdk_loader_destroy(void* module);
 

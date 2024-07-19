@@ -21,9 +21,9 @@
 
 #include "cdk/cdk-types.h"
 
-void platform_time_localtime(const time_t* t, struct tm* r) {
+void platform_time_localtime(const time_t* time, struct tm* tm) {
 	_tzset();
-	localtime_s(r, t);
+	localtime_s(tm, time);
 }
 
 void platform_time_sleep(const uint32_t ms) {

@@ -21,7 +21,7 @@
 
 _Pragma("once")
 
-extern void* platform_loader_create(char* m);
-extern void* platform_loader_load(void* m, const char* restrict f);
-extern void  platform_loader_destroy(void* m);
+extern void* platform_loader_create(char* module);
+extern void* platform_loader_load(void* module, const char* restrict func);
+extern void  platform_loader_destroy(void* module);
 

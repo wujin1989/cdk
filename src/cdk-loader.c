@@ -21,14 +21,14 @@
 
 #include "platform/platform-loader.h"
 
-void* cdk_loader_create(char* m) {
-	return platform_loader_create(m);
+void* cdk_loader_create(char* module) {
+	return platform_loader_create(module);
 }
 
-void* cdk_loader_load(void* m, const char* restrict f) {
-	return platform_loader_load(m, f);
+void* cdk_loader_load(void* module, const char* restrict func) {
+	return platform_loader_load(module, func);
 }
 
-void cdk_loader_destroy(void* m) {
-	platform_loader_destroy(m);
+void cdk_loader_destroy(void* module) {
+	platform_loader_destroy(module);
 }

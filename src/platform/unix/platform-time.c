@@ -23,9 +23,9 @@
 
 #define USEC   (1000000UL)
 
-void platform_time_localtime(const time_t* t, struct tm* r) {
+void platform_time_localtime(const time_t* time, struct tm* tm) {
 	tzset();
-	localtime_r(t, r);
+	localtime_r(time, tm);
 }
 
 void platform_time_sleep(const uint32_t ms) {
