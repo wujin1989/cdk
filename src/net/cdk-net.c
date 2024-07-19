@@ -95,7 +95,6 @@ static int _routine(void* param) {
         _manager_add_poller(poller);
         poller_poll(poller);
         _manager_del_poller(poller);
-
         poller_destroy(poller);
     }
     return 0;
@@ -352,8 +351,7 @@ void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
 void cdk_net_close(cdk_channel_t* channel) {
     if (thrd_equal(channel->poller->tid, thrd_current())) {
         channel_destroy(channel, NULL);
-    }
-    else {
+    } else {
         _channel_destroy(channel);
     }
 }
