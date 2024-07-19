@@ -35,13 +35,14 @@ extern int default_keycmp_u32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* 
 extern int default_keycmp_u64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
 extern int default_keycmp_str(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
 
-extern void               cdk_rbtree_init(cdk_rbtree_t* tree, int(*keycmp)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*));
-extern void               cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
+extern void cdk_rbtree_init(cdk_rbtree_t* tree, int(*keycmp)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*));
+extern void cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
+extern void cdk_rbtree_erase(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
+extern bool cdk_rbtree_empty(cdk_rbtree_t* tree);
 extern cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_node_key_t key);
-extern void               cdk_rbtree_erase(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_next(cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_prev(cdk_rbtree_node_t* node);
 extern cdk_rbtree_node_t* cdk_rbtree_first(cdk_rbtree_t* tree);
 extern cdk_rbtree_node_t* cdk_rbtree_last(cdk_rbtree_t* tree);
-extern bool               cdk_rbtree_empty(cdk_rbtree_t* tree);
+
 

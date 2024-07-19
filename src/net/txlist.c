@@ -28,8 +28,8 @@ void txlist_create(cdk_list_t* list) {
 
 void txlist_destroy(cdk_list_t* list) {
 	while (!txlist_empty(list)) {
-		txlist_node_t* e = cdk_list_data(cdk_list_head(list), txlist_node_t, n);
-		txlist_remove(e);
+		txlist_node_t* node = cdk_list_data(cdk_list_head(list), txlist_node_t, n);
+		txlist_remove(node);
 	}
 }
 

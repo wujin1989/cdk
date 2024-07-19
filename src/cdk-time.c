@@ -30,8 +30,8 @@ uint64_t cdk_time_now(void) {
 	return (tsc.tv_sec * MSEC + tsc.tv_nsec / USEC);
 }
 
-void cdk_time_localtime(const time_t* t, struct tm* r) {
-	platform_time_localtime(t, r);
+void cdk_time_localtime(const time_t* time, struct tm* tm) {
+	platform_time_localtime(time, tm);
 }
 
 void cdk_time_sleep(const uint32_t ms) {

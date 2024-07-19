@@ -21,68 +21,58 @@
 
 #include "cdk/cdk-types.h"
 
-void cdk_list_init(cdk_list_t* l) {
-	(l)->n = (l);
-	(l)->p = (l);
+void cdk_list_init(cdk_list_t* list) {
+	(list)->next = (list);
+	(list)->prev = (list);
 }
 
-void cdk_list_insert_head(cdk_list_t* l, cdk_list_node_t* x) {
-	/**
-	 * init node;
-	 */
-	(x)->n     = (x);
-	(x)->p     = (x);
+void cdk_list_insert_head(cdk_list_t* list, cdk_list_node_t* node) {
+	/* init node */
+	(node)->next = (node);
+	(node)->prev = (node);
 
-	/**
-	 * insert node;
-	 */
-	(x)->n     = (l)->n;
-	(x)->n->p  = (x);
-	(x)->p     = (l);
-	(l)->n     = (x);
+	/* insert node */
+	(node)->next = (list)->next;
+	(node)->next->prev = (node);
+	(node)->prev = (list);
+	(list)->next = (node);
 }
 
-void cdk_list_insert_tail(cdk_list_t* l, cdk_list_node_t* x) {
-	/**
-	 * init node;
-	 */
-	(x)->n = (x);
-	(x)->p = (x);
+void cdk_list_insert_tail(cdk_list_t* list, cdk_list_node_t* node) {
+	(node)->next = (node);
+	(node)->prev = (node);
 
-	/**
-	 * insert node;
-	 */
-	(x)->p     = (l)->p;
-	(x)->p->n  = (x);
-	(x)->n     = (l);
-	(l)->p     = (x);
+	(node)->prev = (list)->prev;
+	(node)->prev->next = (node);
+	(node)->next = (list);
+	(list)->prev = (node);
 }
 
-bool cdk_list_empty(cdk_list_t* l) {
-	return (l) == (l)->p;
+bool cdk_list_empty(cdk_list_t* list) {
+	return (list) == (list)->prev;
 }
 
-cdk_list_node_t* cdk_list_head(cdk_list_t* l) {
-	return (l)->n;
+cdk_list_node_t* cdk_list_head(cdk_list_t* list) {
+	return (list)->next;
 }
 
-cdk_list_node_t* cdk_list_tail(cdk_list_t* l) {
-	return (l)->p;
+cdk_list_node_t* cdk_list_tail(cdk_list_t* list) {
+	return (list)->prev;
 }
 
-cdk_list_node_t* cdk_list_sentinel(cdk_list_t* l) {
-	return (l);
+cdk_list_node_t* cdk_list_sentinel(cdk_list_t* list) {
+	return (list);
 }
 
-void cdk_list_remove(cdk_list_node_t* x) {
-	(x)->n->p   = (x)->p;
-	(x)->p->n   = (x)->n;
+void cdk_list_remove(cdk_list_node_t* node) {
+	(node)->next->prev = (node)->prev;
+	(node)->prev->next = (node)->next;
 }
 
-cdk_list_node_t* cdk_list_next(cdk_list_node_t* x) {
-	return (x)->n;
+cdk_list_node_t* cdk_list_next(cdk_list_node_t* node) {
+	return (node)->next;
 }
 
-cdk_list_node_t* cdk_list_prev(cdk_list_node_t* x) {
-	return (x)->p;
+cdk_list_node_t* cdk_list_prev(cdk_list_node_t* node) {
+	return (node)->prev;
 }

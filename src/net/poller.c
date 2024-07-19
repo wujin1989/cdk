@@ -47,7 +47,7 @@ static inline void _event_handle(cdk_poller_t* poller) {
     }
 }
 
-static inline void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
+static void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
     if (mask & EVENT_RD) {
         (channel->type == SOCK_STREAM)
             ? ((channel->tcp.accepting)
@@ -72,8 +72,7 @@ static inline int _timeout_update(cdk_poller_t* poller) {
     cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
     if ((timer->birth + timer->expire) <= now) {
         return 0;
-    }
-    else {
+    } else {
         return (timer->birth + timer->expire) - now;
     }
 }

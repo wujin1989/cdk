@@ -32,8 +32,8 @@
 #include "cdk/cdk-utils.h"
 #include "cdk/cdk-logger.h"
 
-cdk_poller_manager_t manager = {.initialized = ATOMIC_FLAG_INIT };
-cdk_tls_ctx_t* tls_ctx;
+cdk_poller_manager_t global_poller_manager = {.initialized = ATOMIC_FLAG_INIT };
+cdk_tls_ctx_t* global_tls_ctx;
 
 typedef struct channel_send_ctx_s{
     cdk_channel_t* channel;
@@ -56,37 +56,37 @@ static void _cb_inactive(void* param) {
     poller->active = false;
 }
 
-static cdk_poller_t* _roundrobin(void) {
-    mtx_lock(&manager.poller_mtx);
-    while (cdk_list_empty(&manager.poller_lst)) {
-        cnd_wait(&manager.poller_cnd, &manager.poller_mtx);
+static inline cdk_poller_t* _roundrobin(void) {
+    mtx_lock(&global_poller_manager.poller_mtx);
+    while (cdk_list_empty(&global_poller_manager.poller_lst)) {
+        cnd_wait(&global_poller_manager.poller_cnd, &global_poller_manager.poller_mtx);
     }
     static cdk_poller_t* curr;
     if (curr == NULL) {
-        curr = cdk_list_data(cdk_list_head(&manager.poller_lst), cdk_poller_t, node);
+        curr = cdk_list_data(cdk_list_head(&global_poller_manager.poller_lst), cdk_poller_t, node);
     } else {
         cdk_list_node_t* n = cdk_list_next(&curr->node);
-        if (n != cdk_list_sentinel(&manager.poller_lst)) {
+        if (n != cdk_list_sentinel(&global_poller_manager.poller_lst)) {
             curr = cdk_list_data(n, cdk_poller_t, node);
         } else {
             curr = cdk_list_data(cdk_list_next(n), cdk_poller_t, node);
         }
     }
-    mtx_unlock(&manager.poller_mtx);
+    mtx_unlock(&global_poller_manager.poller_mtx);
     return curr;
 }
 
 static void _manager_add_poller(cdk_poller_t* poller) {
-    mtx_lock(&manager.poller_mtx);
-    cdk_list_insert_tail(&manager.poller_lst, &poller->node);
-    cnd_signal(&manager.poller_cnd);
-    mtx_unlock(&manager.poller_mtx);
+    mtx_lock(&global_poller_manager.poller_mtx);
+    cdk_list_insert_tail(&global_poller_manager.poller_lst, &poller->node);
+    cnd_signal(&global_poller_manager.poller_cnd);
+    mtx_unlock(&global_poller_manager.poller_mtx);
 }
 
 static void _manager_del_poller(cdk_poller_t* poller) {
-    mtx_lock(&manager.poller_mtx);
+    mtx_lock(&global_poller_manager.poller_mtx);
     cdk_list_remove(&poller->node);
-    mtx_unlock(&manager.poller_mtx);
+    mtx_unlock(&global_poller_manager.poller_mtx);
 }
 
 static int _routine(void* param) {
@@ -105,27 +105,30 @@ static void _manager_create(int parallel) {
     if (parallel <= 0) {
         abort();
     }
-    cdk_list_init(&manager.poller_lst);
-    mtx_init(&manager.poller_mtx, mtx_plain);
-    cnd_init(&manager.poller_cnd);
+    cdk_list_init(&global_poller_manager.poller_lst);
+    mtx_init(&global_poller_manager.poller_mtx, mtx_plain);
+    cnd_init(&global_poller_manager.poller_cnd);
 
-    manager.poller_roundrobin = _roundrobin;
-    manager.thrdcnt = parallel;
-    manager.thrdids = malloc(manager.thrdcnt * sizeof(thrd_t));
-    for (int i = 0; i < manager.thrdcnt; i++) {
-        thrd_create((manager.thrdids + i), _routine, NULL);
+    global_poller_manager.poller_roundrobin = _roundrobin;
+    global_poller_manager.thrdcnt = parallel;
+    global_poller_manager.thrdids = malloc(global_poller_manager.thrdcnt * sizeof(thrd_t));
+    if (!global_poller_manager.thrdids) {
+        return;
+    }
+    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
+        thrd_create((global_poller_manager.thrdids + i), _routine, NULL);
     }
 }
 
 static void _manager_destroy(void) {
-    for (int i = 0; i < manager.thrdcnt; i++) {
-        thrd_join(manager.thrdids[i], NULL);
+    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
+        thrd_join(global_poller_manager.thrdids[i], NULL);
     }
-    free(manager.thrdids);
-    manager.thrdids = NULL;
+    free(global_poller_manager.thrdids);
+    global_poller_manager.thrdids = NULL;
     
-    mtx_destroy(&manager.poller_mtx);
-    cnd_destroy(&manager.poller_cnd);
+    mtx_destroy(&global_poller_manager.poller_mtx);
+    cnd_destroy(&global_poller_manager.poller_cnd);
     platform_socket_cleanup();
 }
 
@@ -144,7 +147,7 @@ static socket_ctx_t* _socket_ctx_allocate(const char* protocol, const char* host
         ctx->idx = idx;
         ctx->cores = cores;
         ctx->handler = handler;
-        ctx->poller = manager.poller_roundrobin();
+        ctx->poller = global_poller_manager.poller_roundrobin();
     }
     return ctx;
 }
@@ -247,8 +250,8 @@ static void _inet_ntop(int af, const void* restrict src, char* restrict dst) {
 }
 
 void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai) {
-    char d[INET6_ADDRSTRLEN];
-    memset(d, 0, sizeof(d));
+    char addr[INET6_ADDRSTRLEN];
+    memset(addr, 0, sizeof(addr));
 
     switch (ss->ss_family)
     {
@@ -256,51 +259,51 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai) {
     {
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
-        _inet_ntop(AF_INET, &si->sin_addr, d);
-        ai->p = ntohs(si->sin_port);
-        ai->f = AF_INET;
+        _inet_ntop(AF_INET, &si->sin_addr, addr);
+        ai->port = ntohs(si->sin_port);
+        ai->family = AF_INET;
         break;
     }
     case AF_INET6:
     {
         struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
 
-        _inet_ntop(AF_INET6, &si6->sin6_addr, d);
-        ai->p = ntohs(si6->sin6_port);
-        ai->f = AF_INET6;
+        _inet_ntop(AF_INET6, &si6->sin6_addr, addr);
+        ai->port = ntohs(si6->sin6_port);
+        ai->family = AF_INET6;
         break;
     }
     default:
         return;
     }
-    memcpy(ai->a, d, INET6_ADDRSTRLEN);
+    memcpy(ai->addr, addr, INET6_ADDRSTRLEN);
 }
 
 void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss) {
     memset(ss, 0, sizeof(struct sockaddr_storage));
 
-    if (ai->f == AF_INET6){
+    if (ai->family == AF_INET6){
         struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
 
         si6->sin6_family = AF_INET6;
-        si6->sin6_port   = htons(ai->p);
-        inet_pton(AF_INET6, ai->a, &(si6->sin6_addr));
+        si6->sin6_port   = htons(ai->port);
+        inet_pton(AF_INET6, ai->addr, &(si6->sin6_addr));
     }
-    if (ai->f == AF_INET){
+    if (ai->family == AF_INET){
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
         si->sin_family = AF_INET;
-        si->sin_port   = htons(ai->p);
-        inet_pton(AF_INET, ai->a, &(si->sin_addr));
+        si->sin_port   = htons(ai->port);
+        inet_pton(AF_INET, ai->addr, &(si->sin_addr));
     }
 }
 
 void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port) {
     cdk_address_t ai = { 0 };
 
-    memcpy(ai.a, host, strlen(host));
-    ai.p = (uint16_t)strtoul(port, NULL, 10);
-    ai.f = platform_socket_extract_family(sock);
+    memcpy(ai.addr, host, strlen(host));
+    ai.port = (uint16_t)strtoul(port, NULL, 10);
+    ai.family = platform_socket_extract_family(sock);
 
     cdk_net_pton(&ai, ss);
 }
@@ -325,8 +328,8 @@ int cdk_net_getsocktype(cdk_sock_t sock) {
 }
 
 void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler) {
-    for (int i = 0; i < manager.thrdcnt; i++) {
-        socket_ctx_t* ctx = _socket_ctx_allocate(protocol, host, port, i, manager.thrdcnt, handler);
+    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
+        socket_ctx_t* ctx = _socket_ctx_allocate(protocol, host, port, i, global_poller_manager.thrdcnt, handler);
         if (ctx) {
             cdk_net_postevent(ctx->poller, _cb_listen, ctx, true);
         }
@@ -374,25 +377,25 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
 }
 
 void cdk_net_exit(void) {
-    mtx_lock(&manager.poller_mtx);
-    for (cdk_list_node_t* n = cdk_list_head(&manager.poller_lst); n != cdk_list_sentinel(&manager.poller_lst); n = cdk_list_next(n)) {
+    mtx_lock(&global_poller_manager.poller_mtx);
+    for (cdk_list_node_t* n = cdk_list_head(&global_poller_manager.poller_lst); n != cdk_list_sentinel(&global_poller_manager.poller_lst); n = cdk_list_next(n)) {
         cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
         cdk_net_postevent(poller, _cb_inactive, poller, true);
     }
-    mtx_unlock(&manager.poller_mtx);
+    mtx_unlock(&global_poller_manager.poller_mtx);
 }
 
 void cdk_net_startup(cdk_conf_t* conf) {
-    if (atomic_flag_test_and_set(&manager.initialized)) {
+    if (atomic_flag_test_and_set(&global_poller_manager.initialized)) {
         return;
     }
-    tls_ctx = tls_ctx_create(&conf->tls);
+    global_tls_ctx = tls_ctx_create(&conf->tls);
     _manager_create(conf->nthrds);
 }
 
 void cdk_net_cleanup(void) {
     _manager_destroy();
-    tls_ctx_destroy(tls_ctx);
+    tls_ctx_destroy(global_tls_ctx);
 }
 
 void cdk_net_startup2(void) {

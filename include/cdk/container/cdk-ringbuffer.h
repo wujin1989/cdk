@@ -23,12 +23,12 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern void     cdk_ringbuf_create(cdk_ringbuf_t* ring, uint32_t esize, uint32_t bufsize);
-extern void     cdk_ringbuf_destroy(cdk_ringbuf_t* ring);
+extern void cdk_ringbuf_create(cdk_ringbuf_t* ring, uint32_t esize, uint32_t bufsize);
+extern void cdk_ringbuf_destroy(cdk_ringbuf_t* ring);
+extern bool cdk_ringbuf_full(cdk_ringbuf_t* ring);
+extern bool cdk_ringbuf_empty(cdk_ringbuf_t* ring);
 extern uint32_t cdk_ringbuf_len(cdk_ringbuf_t* ring);
 extern uint32_t cdk_ringbuf_cap(cdk_ringbuf_t* ring);
 extern uint32_t cdk_ringbuf_avail(cdk_ringbuf_t* ring);
-extern bool     cdk_ringbuf_full(cdk_ringbuf_t* ring);
-extern bool     cdk_ringbuf_empty(cdk_ringbuf_t* ring);
 extern uint32_t cdk_ringbuf_write(cdk_ringbuf_t* ring, const void* buf, uint32_t entry_count);
 extern uint32_t cdk_ringbuf_read(cdk_ringbuf_t* ring, void* buf, uint32_t entry_count);

@@ -27,9 +27,9 @@ _Pragma("once")
 #define cdk_heap_data(x, t, m)                              \
     ((t *) ((char *) (x) - offsetof(t, m)))
 
-extern void cdk_heap_init(cdk_heap_t* heap, int (*heapcmp)(cdk_heap_node_t* a, cdk_heap_node_t* b));
+extern void cdk_heap_init(cdk_heap_t* heap, int (*cmp)(cdk_heap_node_t* a, cdk_heap_node_t* b));
 extern void cdk_heap_insert(cdk_heap_t* heap, cdk_heap_node_t* node);
 extern void cdk_heap_remove(cdk_heap_t* heap, cdk_heap_node_t* node);
-extern cdk_heap_node_t* cdk_heap_min(cdk_heap_t* heap);
 extern void cdk_heap_dequeue(cdk_heap_t* heap);
 extern bool cdk_heap_empty(cdk_heap_t* heap);
+extern cdk_heap_node_t* cdk_heap_min(cdk_heap_t* heap);

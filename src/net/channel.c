@@ -31,10 +31,10 @@
 #include "cdk/net/cdk-net.h"
 #include "cdk/container/cdk-rbtree.h"
 
-extern cdk_poller_manager_t manager;
-extern cdk_tls_ctx_t* tls_ctx;
+extern cdk_poller_manager_t global_poller_manager;
+extern cdk_tls_ctx_t* global_tls_ctx;
 
-static void _cb_write_complete(void* param) {
+static inline void _cb_write_complete(void* param) {
     cdk_channel_t* channel = param;
     
     if (channel->type == SOCK_STREAM) {
@@ -231,7 +231,7 @@ static void _unencrypted_recv(cdk_channel_t* channel) {
     }
 }
 
-static void _cb_channel_destroy(void* param) {
+static inline void _cb_channel_destroy(void* param) {
     cdk_channel_t* channel = param;
     if (channel) {
         free(channel);
@@ -268,7 +268,7 @@ void channel_connecting(cdk_channel_t* channel) {
     }
 }
 
-static void _cb_heartbeat(void* param) {
+static inline void _cb_heartbeat(void* param) {
     cdk_channel_t* channel = param;
     if (channel->handler->tcp.on_heartbeat) {
         channel->handler->tcp.on_heartbeat(channel);
@@ -367,8 +367,8 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
         }
         txlist_create(&channel->txlist);
         if (channel->type == SOCK_STREAM) {
-            if (tls_ctx) {
-                channel->tcp.tls_ssl = tls_ssl_create(tls_ctx);
+            if (global_tls_ctx) {
+                channel->tcp.tls_ssl = tls_ssl_create(global_tls_ctx);
             }
         }
         cdk_list_insert_tail(&poller->chlist, &channel->node);
@@ -461,7 +461,7 @@ void channel_accept(cdk_channel_t* channel) {
         channel_destroy(channel, platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
-    cdk_channel_t* nchannel = channel_create(manager.poller_roundrobin(), cli, channel->handler);
+    cdk_channel_t* nchannel = channel_create(global_poller_manager.poller_roundrobin(), cli, channel->handler);
     if (nchannel) {
         if (nchannel->tcp.tls_ssl) {
             channel_tls_srv_handshake(nchannel);

@@ -27,13 +27,13 @@ _Pragma("once")
 #define cdk_list_data(x, t, m)                              \
     ((t *) ((char *) (x) - offsetof(t, m)))
 
-extern void             cdk_list_init(cdk_list_t* l);
-extern void             cdk_list_insert_head(cdk_list_t* l, cdk_list_node_t* x);
-extern void             cdk_list_insert_tail(cdk_list_t* l, cdk_list_node_t* x);
-extern bool             cdk_list_empty(cdk_list_t* l);
-extern cdk_list_node_t* cdk_list_head(cdk_list_t* l);
-extern cdk_list_node_t* cdk_list_tail(cdk_list_t* l);
-extern cdk_list_node_t* cdk_list_next(cdk_list_node_t* x);
-extern cdk_list_node_t* cdk_list_prev(cdk_list_node_t* x);
-extern void             cdk_list_remove(cdk_list_node_t* x);
-extern cdk_list_node_t* cdk_list_sentinel(cdk_list_t* l);
+extern void cdk_list_init(cdk_list_t* list);
+extern void cdk_list_insert_head(cdk_list_t* list, cdk_list_node_t* node);
+extern void cdk_list_insert_tail(cdk_list_t* list, cdk_list_node_t* node);
+extern void cdk_list_remove(cdk_list_node_t* node);
+extern bool cdk_list_empty(cdk_list_t* list);
+extern cdk_list_node_t* cdk_list_head(cdk_list_t* list);
+extern cdk_list_node_t* cdk_list_tail(cdk_list_t* list);
+extern cdk_list_node_t* cdk_list_next(cdk_list_node_t* node);
+extern cdk_list_node_t* cdk_list_prev(cdk_list_node_t* node);
+extern cdk_list_node_t* cdk_list_sentinel(cdk_list_t* list);

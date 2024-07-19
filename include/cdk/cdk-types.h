@@ -178,8 +178,8 @@ struct cdk_rbtree_s
 };
 
 struct cdk_list_node_s {
-	struct cdk_list_node_s* p;
-	struct cdk_list_node_s* n;
+	struct cdk_list_node_s* prev;
+	struct cdk_list_node_s* next;
 };
 
 struct cdk_heap_node_s {
@@ -258,9 +258,9 @@ struct cdk_unpacker_s {
 };
 
 struct cdk_address_s {
-	uint16_t    f;
-	char        a[INET6_ADDRSTRLEN];
-	uint16_t    p;
+	uint16_t    family;
+	char        addr[INET6_ADDRSTRLEN];
+	uint16_t    port;
 };
 
 struct cdk_poller_s {

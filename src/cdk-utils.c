@@ -36,10 +36,10 @@ int cdk_utils_byteorder(void) {
 }
 
 int cdk_utils_rand(int min, int max) {
-    static unsigned int s = 0;
-    if (s == 0) {
-        s = (unsigned int)time(NULL);
-        srand(s);
+    static unsigned int seed = 0;
+    if (seed == 0) {
+        seed = (unsigned int)time(NULL);
+        srand(seed);
     }
     return min + (int)((double)((double)(max)-(min)+1.0) * (rand() / ((RAND_MAX)+1.0)));
 }

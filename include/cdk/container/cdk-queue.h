@@ -25,8 +25,8 @@ _Pragma("once")
 
 #define cdk_queue_data     cdk_list_data
 
-extern void              cdk_queue_init(cdk_queue_t* q);
-extern void              cdk_queue_enqueue(cdk_queue_t* q, cdk_queue_node_t* x);
-extern cdk_queue_node_t* cdk_queue_dequeue(cdk_queue_t* q);
-extern bool              cdk_queue_empty(cdk_queue_t* q);
+extern void cdk_queue_init(cdk_queue_t* queue);
+extern void cdk_queue_enqueue(cdk_queue_t* queue, cdk_queue_node_t* node);
+extern cdk_queue_node_t* cdk_queue_dequeue(cdk_queue_t* queue);
+extern bool cdk_queue_empty(cdk_queue_t* queue);
 

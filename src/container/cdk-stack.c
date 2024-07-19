@@ -21,24 +21,24 @@
 
 #include "cdk/container/cdk-list.h"
 
-void cdk_stack_init(cdk_stack_t* s) {
-	cdk_list_init(s);
+void cdk_stack_init(cdk_stack_t* stack) {
+	cdk_list_init(stack);
 }
 
-void cdk_stack_push(cdk_stack_t* s, cdk_stack_node_t* x) {
-	cdk_list_insert_tail(s, x);
+void cdk_stack_push(cdk_stack_t* stack, cdk_stack_node_t* node) {
+	cdk_list_insert_tail(stack, node);
 }
 
-bool cdk_stack_empty(cdk_stack_t* s) {
-	return cdk_list_empty(s);
+bool cdk_stack_empty(cdk_stack_t* stack) {
+	return cdk_list_empty(stack);
 }
 
-cdk_stack_node_t* cdk_stack_pop(cdk_stack_t* s) {
-	if (cdk_stack_empty(s)) {
+cdk_stack_node_t* cdk_stack_pop(cdk_stack_t* stack) {
+	if (cdk_stack_empty(stack)) {
 		return NULL;
 	}
-	cdk_stack_node_t* n = cdk_list_tail(s);
-	cdk_list_remove(n);
-	return n;
+	cdk_stack_node_t* node = cdk_list_tail(stack);
+	cdk_list_remove(node);
+	return node;
 }
 

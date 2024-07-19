@@ -3,7 +3,7 @@
 static void on_read(cdk_channel_t* channel, void* buf, size_t len) {
 	cdk_address_t addrinfo;
 	cdk_net_ntop(&channel->udp.peer.ss, &addrinfo);
-	printf("recv %s from %s:%d\n", (char*)buf, addrinfo.a, addrinfo.p);
+	printf("recv %s from %s:%d\n", (char*)buf, addrinfo.addr, addrinfo.port);
 }
 
 static void on_close(cdk_channel_t* channel, const char* error) {

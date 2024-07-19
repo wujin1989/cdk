@@ -25,6 +25,6 @@ _Pragma("once")
 
 extern int cdk_utils_byteorder(void);
 extern int cdk_utils_cpus(void);
-cdk_tid_t  cdk_utils_systemtid(void);
 extern int cdk_utils_rand(int min, int max);
+cdk_tid_t cdk_utils_systemtid(void);
 

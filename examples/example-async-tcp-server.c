@@ -27,7 +27,7 @@ static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
 	net_msg_t* rmsg = buf;
 	cdk_address_t addrinfo;
 	cdk_net_extract_address(channel->fd, &addrinfo, true);
-	cdk_logi("recv %s from %s:%d. type: %d, len: %d.\n", rmsg->data, addrinfo.a, addrinfo.p, ntohl(rmsg->hdr.type), ntohl(rmsg->hdr.size));
+	cdk_logi("recv %s from %s:%d. type: %d, len: %d.\n", rmsg->data, addrinfo.addr, addrinfo.port, ntohl(rmsg->hdr.type), ntohl(rmsg->hdr.size));
 
 	if (ntohl(rmsg->hdr.type) == PING_MSG_TYPE) {
 		net_msg_t* smsg = malloc(sizeof(net_msg_t) + sizeof(pong));
