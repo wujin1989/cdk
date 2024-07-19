@@ -34,7 +34,7 @@
 extern cdk_poller_manager_t manager;
 extern cdk_tls_ctx_t* tls_ctx;
 
-static void _write_complete_cb(void* param) {
+static void _cb_write_complete(void* param) {
     cdk_channel_t* channel = param;
     channel->handler->tcp.on_write(channel);
     if (channel->type == SOCK_STREAM) {
@@ -45,7 +45,7 @@ static void _write_complete_cb(void* param) {
     }
 }
 
-static void _channel_unencrypted_send(cdk_channel_t* channel) {
+static void _unencrypted_send(cdk_channel_t* channel) {
     if (txlist_empty(&channel->txlist)) {
         if (channel_is_writing(channel)) {
             channel_disable_write(channel);
@@ -85,7 +85,7 @@ static void _channel_unencrypted_send(cdk_channel_t* channel) {
     txlist_remove(e);
 }
 
-static void _channel_encrypted_send(cdk_channel_t* channel) {
+static void _encrypted_send(cdk_channel_t* channel) {
     int err = 0;
     if (txlist_empty(&channel->txlist)) {
         if (channel_is_writing(channel)) {
@@ -112,11 +112,7 @@ static void _channel_encrypted_send(cdk_channel_t* channel) {
     txlist_remove(e);
 }
 
-static void _channel_udp_encrypted_send(cdk_channel_t* channel) {
-    _channel_encrypted_send(channel);
-}
-
-static void _channel_encrypted_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
+static void _encrypted_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
     int n = 0;
     if (txlist_empty(&channel->txlist)) {
         int err = 0;
@@ -141,11 +137,11 @@ static void _channel_encrypted_send_explicit(cdk_channel_t* channel, void* data,
     }
     channel->tcp.latest_wr_time = cdk_time_now();
     if (n > 0 && channel->handler->tcp.on_write) {
-        cdk_net_postevent(channel->poller, _write_complete_cb, channel, true);
+        cdk_net_postevent(channel->poller, _cb_write_complete, channel, true);
     }
 }
 
-static void _channel_unencrypted_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
+static void _unencrypted_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
     ssize_t n = 0;
     if (txlist_empty(&channel->txlist)) {
         if (channel->type == SOCK_STREAM) {
@@ -177,17 +173,17 @@ static void _channel_unencrypted_send_explicit(cdk_channel_t* channel, void* dat
     if (channel->type == SOCK_STREAM) {
         channel->tcp.latest_wr_time = cdk_time_now();
         if (n > 0 && channel->handler->tcp.on_write) {
-            cdk_net_postevent(channel->poller, _write_complete_cb, channel, true);
+            cdk_net_postevent(channel->poller, _cb_write_complete, channel, true);
         }
     }
     if (channel->type == SOCK_DGRAM) {
         if (n > 0 && channel->handler->udp.on_write) {
-            cdk_net_postevent(channel->poller, _write_complete_cb, channel, true);
+            cdk_net_postevent(channel->poller, _cb_write_complete, channel, true);
         }
     }
 }
 
-static void _channel_encrypted_recv(cdk_channel_t* channel) {
+static void _encrypted_recv(cdk_channel_t* channel) {
     int err = 0;
     int n = tls_ssl_read(channel->tcp.tls_ssl, (char*)(channel->rxbuf.buf) + channel->rxbuf.off, DEFAULT_IOBUF_SIZE / 2, &err);
     if (n <= 0) {
@@ -202,7 +198,7 @@ static void _channel_encrypted_recv(cdk_channel_t* channel) {
     unpacker_unpack(channel);
 }
 
-static void _channel_unencrypted_recv(cdk_channel_t* channel) {
+static void _unencrypted_recv(cdk_channel_t* channel) {
     ssize_t n;
     if (channel->type == SOCK_STREAM) {
         n = platform_socket_recv(channel->fd, (char*)(channel->rxbuf.buf) + channel->rxbuf.off, DEFAULT_IOBUF_SIZE / 2);
@@ -235,7 +231,7 @@ static void _channel_unencrypted_recv(cdk_channel_t* channel) {
     }
 }
 
-static void _async_channel_destroy_cb(void* param) {
+static void _cb_channel_destroy(void* param) {
     cdk_channel_t* channel = param;
     if (channel) {
         free(channel);
@@ -243,21 +239,21 @@ static void _async_channel_destroy_cb(void* param) {
     }
 }
 
-static void _channel_rd_timeout_cb(void* param) {
+static void _cb_rd_timeout(void* param) {
     cdk_channel_t* channel = param;
     if ((cdk_time_now() - channel->tcp.latest_rd_time) > channel->handler->tcp.rd_timeout) {
         cdk_net_close(channel);
     }
 }
 
-static void _channel_wr_timeout_cb(void* param) {
+static void _cb_wr_timeout(void* param) {
     cdk_channel_t* channel = param;
     if ((cdk_time_now() - channel->tcp.latest_wr_time) > channel->handler->tcp.wr_timeout) {
         cdk_net_close(channel);
     }
 }
 
-static void _channel_conn_timeout_cb(void* param) {
+static void _cb_conn_timeout(void* param) {
     cdk_channel_t* channel = param;
     cdk_net_close(channel);
 }
@@ -268,11 +264,11 @@ void channel_connecting(cdk_channel_t* channel) {
         channel_enable_write(channel);
     }
     if (channel->handler->tcp.conn_timeout) {
-        channel->tcp.conn_timer = cdk_timer_add(&channel->poller->timermgr, _channel_conn_timeout_cb, channel, channel->handler->tcp.conn_timeout, false);
+        channel->tcp.conn_timer = cdk_timer_add(&channel->poller->timermgr, _cb_conn_timeout, channel, channel->handler->tcp.conn_timeout, false);
     }
 }
 
-static void _channel_heartbeat_cb(void* param) {
+static void _cb_heartbeat(void* param) {
     cdk_channel_t* channel = param;
     if (channel->handler->tcp.on_heartbeat) {
         channel->handler->tcp.on_heartbeat(channel);
@@ -281,13 +277,13 @@ static void _channel_heartbeat_cb(void* param) {
 
 static void _channel_timers_init(cdk_channel_t* channel) {
     if (channel->handler->tcp.hb_interval) {
-        channel->tcp.hb_timer = cdk_timer_add(&channel->poller->timermgr, _channel_heartbeat_cb, channel, channel->handler->tcp.hb_interval, true);
+        channel->tcp.hb_timer = cdk_timer_add(&channel->poller->timermgr, _cb_heartbeat, channel, channel->handler->tcp.hb_interval, true);
     }
     if (channel->handler->tcp.rd_timeout) {
-        channel->tcp.rd_timer = cdk_timer_add(&channel->poller->timermgr, _channel_rd_timeout_cb, channel, channel->handler->tcp.rd_timeout, true);
+        channel->tcp.rd_timer = cdk_timer_add(&channel->poller->timermgr, _cb_rd_timeout, channel, channel->handler->tcp.rd_timeout, true);
     }
     if (channel->handler->tcp.wr_timeout) {
-        channel->tcp.wr_timer = cdk_timer_add(&channel->poller->timermgr, _channel_wr_timeout_cb, channel, channel->handler->tcp.wr_timeout, true);
+        channel->tcp.wr_timer = cdk_timer_add(&channel->poller->timermgr, _cb_wr_timeout, channel, channel->handler->tcp.wr_timeout, true);
     }
 }
 
@@ -420,7 +416,7 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
         }
     }
     if (channel->poller->active) {
-        cdk_net_postevent(channel->poller, _async_channel_destroy_cb, channel, true);
+        cdk_net_postevent(channel->poller, _cb_channel_destroy, channel, true);
     } else {
         if (channel) {
             free(channel);
@@ -432,26 +428,26 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
 void channel_recv(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
         if (channel->tcp.tls_ssl) {
-            _channel_encrypted_recv(channel);
+            _encrypted_recv(channel);
         } else {
-            _channel_unencrypted_recv(channel);
+            _unencrypted_recv(channel);
         }
     }
     if (channel->type == SOCK_DGRAM) {
-        _channel_unencrypted_recv(channel);
+        _unencrypted_recv(channel);
     }
 }
 
 void channel_send(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
         if (channel->tcp.tls_ssl) {
-            _channel_encrypted_send(channel);
+            _encrypted_send(channel);
         } else {
-            _channel_unencrypted_send(channel);
+            _unencrypted_send(channel);
         }
     }
     if (channel->type == SOCK_DGRAM) {
-        _channel_unencrypted_send(channel);
+        _unencrypted_send(channel);
     }
 }
 
@@ -553,12 +549,12 @@ void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
     }
     if (channel->type == SOCK_STREAM) {
         if (channel->tcp.tls_ssl) {
-            _channel_encrypted_send_explicit(channel, data, size);
+            _encrypted_send_explicit(channel, data, size);
         } else {
-            _channel_unencrypted_send_explicit(channel, data, size);
+            _unencrypted_send_explicit(channel, data, size);
         }
     }
     if (channel->type == SOCK_DGRAM) {
-        _channel_unencrypted_send_explicit(channel, data, size);
+        _unencrypted_send_explicit(channel, data, size);
     }
 }

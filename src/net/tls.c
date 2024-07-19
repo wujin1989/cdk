@@ -23,7 +23,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-static SSL_CTX* _tls_ctx_create(cdk_tlsconf_t* tlsconf) {
+static SSL_CTX* _ctx_create(cdk_tlsconf_t* tlsconf) {
 	SSL_CTX* ctx = NULL;
 
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
@@ -68,7 +68,7 @@ static SSL_CTX* _tls_ctx_create(cdk_tlsconf_t* tlsconf) {
 	return ctx;
 }
 
-static void _tls_ctx_destroy(SSL_CTX* ctx) {
+static void _ctx_destroy(SSL_CTX* ctx) {
 	if (ctx) {
 		SSL_CTX_free(ctx);
 	}
@@ -84,7 +84,7 @@ cdk_tls_ctx_t* tls_ctx_create(cdk_tlsconf_t* conf) {
 	if (!conf->cafile && !conf->capath && !conf->crtfile) {
 		return NULL;
 	}
-	SSL_CTX* ctx = _tls_ctx_create(conf);
+	SSL_CTX* ctx = _ctx_create(conf);
 	if (!ctx) {
 		return NULL;
 	}
@@ -92,7 +92,7 @@ cdk_tls_ctx_t* tls_ctx_create(cdk_tlsconf_t* conf) {
 }
 
 void tls_ctx_destroy(cdk_tls_ctx_t* ctx) {
-	_tls_ctx_destroy((SSL_CTX*)ctx);
+	_ctx_destroy((SSL_CTX*)ctx);
 }
 
 cdk_tls_ssl_t* tls_ssl_create(cdk_tls_ctx_t* ctx) {

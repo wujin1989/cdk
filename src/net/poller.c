@@ -29,10 +29,10 @@
 #include "net/txlist.h"
 #include <limits.h>
 
-static inline void _eventfd_recv(cdk_poller_t* poller) {
+static inline void _event_handle(cdk_poller_t* poller) {
     bool wakeup;
     platform_socket_recv(poller->evfds[1], (char*)(&wakeup), sizeof(bool));
-    
+
     mtx_lock(&poller->evmtx);
     cdk_event_t* e = NULL;
     if (!cdk_list_empty(&poller->evlist)) {
@@ -47,11 +47,7 @@ static inline void _eventfd_recv(cdk_poller_t* poller) {
     }
 }
 
-static inline void _poller_event_handle(cdk_poller_t* poller) {
-    _eventfd_recv(poller);
-}
-
-static inline void _poller_channel_handle(cdk_channel_t* channel, uint32_t mask) {
+static inline void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
     if (mask & EVENT_RD) {
         (channel->type == SOCK_STREAM)
             ? ((channel->tcp.accepting)
@@ -68,7 +64,7 @@ static inline void _poller_channel_handle(cdk_channel_t* channel, uint32_t mask)
     }
 }
 
-static inline int _poller_timeout_update(cdk_poller_t* poller) {
+static inline int _timeout_update(cdk_poller_t* poller) {
     if (cdk_heap_empty(&poller->timermgr.heap)) {
         return INT_MAX - 1;
     }
@@ -82,7 +78,7 @@ static inline int _poller_timeout_update(cdk_poller_t* poller) {
     }
 }
 
-static inline void _poller_timer_handle(cdk_poller_t* poller) {
+static inline void _timer_handle(cdk_poller_t* poller) {
     do {
         cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
         timer->routine(timer->param);
@@ -91,13 +87,13 @@ static inline void _poller_timer_handle(cdk_poller_t* poller) {
         } else {
             cdk_timer_del(&poller->timermgr, timer);
         }
-    } while (!_poller_timeout_update(poller));
+    } while (!_timeout_update(poller));
 }
 
 void poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
 	while (poller->active) {
-		int nevents = platform_event_wait(poller->pfd, events, _poller_timeout_update(poller));
+		int nevents = platform_event_wait(poller->pfd, events, _timeout_update(poller));
 		for (int i = 0; i < nevents; i++) {
 			void* ud = events[i].ptr;
 			uint32_t mask = events[i].events;
@@ -105,13 +101,13 @@ void poller_poll(cdk_poller_t* poller) {
 				abort();
 			}
 			if (*((cdk_sock_t*)ud) == poller->evfds[1]) {
-				_poller_event_handle(poller);
+                _event_handle(poller);
 			} else {
-				_poller_channel_handle((cdk_channel_t*)ud, mask);
+				_channel_handle((cdk_channel_t*)ud, mask);
 			}
 		}
-        if (!_poller_timeout_update(poller)) {
-            _poller_timer_handle(poller);
+        if (!_timeout_update(poller)) {
+            _timer_handle(poller);
         }
 	}
 }
