@@ -30,7 +30,7 @@ void platform_loader_destroy(void* module) {
 }
 
 void* platform_loader_load(void* module, const char* restrict func) {
-	void* ret = dlsym(module, f);
+	void* ret = dlsym(module, func);
 	if (ret == NULL) {
 		platform_loader_destroy(module);
 	}
