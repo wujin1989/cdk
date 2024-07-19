@@ -23,7 +23,7 @@
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
 #include "channel.h"
-#include "unpack.h"
+#include "unpacker.h"
 #include "tls.h"
 #include "txlist.h"
 #include "cdk/cdk-timer.h"
@@ -199,7 +199,7 @@ static void _channel_encrypted_recv(cdk_channel_t* channel) {
     }
     channel->tcp.latest_rd_time = cdk_time_now();
     channel->rxbuf.off += n;
-    unpack(channel);
+    unpacker_unpack(channel);
 }
 
 static void _channel_unencrypted_recv(cdk_channel_t* channel) {
@@ -226,7 +226,7 @@ static void _channel_unencrypted_recv(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
         channel->tcp.latest_rd_time = cdk_time_now();
         channel->rxbuf.off += n;
-        unpack(channel);
+        unpacker_unpack(channel);
     }
     if (channel->type == SOCK_DGRAM) {
         if (channel->handler->udp.on_read) {
@@ -500,38 +500,38 @@ void channel_connect(cdk_channel_t* channel) {
 
 void channel_enable_write(cdk_channel_t* channel) {
     if (channel->events) {
-        platform_event_mod(channel->poller->pfd, channel->fd, channel->events | EVENT_TYPE_W, channel);
+        platform_event_mod(channel->poller->pfd, channel->fd, channel->events | EVENT_WR, channel);
     } else {
-        platform_event_add(channel->poller->pfd, channel->fd, channel->events | EVENT_TYPE_W, channel);
+        platform_event_add(channel->poller->pfd, channel->fd, channel->events | EVENT_WR, channel);
     }
-    channel->events |= EVENT_TYPE_W;
+    channel->events |= EVENT_WR;
 }
 
 void channel_enable_read(cdk_channel_t* channel) {
     if (channel->events) {
-        platform_event_mod(channel->poller->pfd, channel->fd, channel->events | EVENT_TYPE_R, channel);
+        platform_event_mod(channel->poller->pfd, channel->fd, channel->events | EVENT_RD, channel);
     } else {
-        platform_event_add(channel->poller->pfd, channel->fd, channel->events | EVENT_TYPE_R, channel);
+        platform_event_add(channel->poller->pfd, channel->fd, channel->events | EVENT_RD, channel);
     }
-    channel->events |= EVENT_TYPE_R;
+    channel->events |= EVENT_RD;
 }
 
 void channel_disable_write(cdk_channel_t* channel) {
     if (channel->events) {
-        platform_event_mod(channel->poller->pfd, channel->fd, channel->events & ~EVENT_TYPE_W, channel);
+        platform_event_mod(channel->poller->pfd, channel->fd, channel->events & ~EVENT_WR, channel);
     } else {
         platform_event_del(channel->poller->pfd, channel->fd);
     }
-    channel->events &= ~EVENT_TYPE_W;
+    channel->events &= ~EVENT_WR;
 }
 
 void channel_disable_read(cdk_channel_t* channel) {
     if (channel->events) {
-        platform_event_mod(channel->poller->pfd, channel->fd, channel->events & ~EVENT_TYPE_R, channel);
+        platform_event_mod(channel->poller->pfd, channel->fd, channel->events & ~EVENT_RD, channel);
     } else {
         platform_event_del(channel->poller->pfd, channel->fd);
     }
-    channel->events &= ~EVENT_TYPE_R;
+    channel->events &= ~EVENT_RD;
 }
 
 void channel_disable_all(cdk_channel_t* channel) {
@@ -540,11 +540,11 @@ void channel_disable_all(cdk_channel_t* channel) {
 }
 
 bool channel_is_writing(cdk_channel_t* channel) {
-    return channel->events & EVENT_TYPE_W;
+    return channel->events & EVENT_WR;
 }
 
 bool channel_is_reading(cdk_channel_t* channel) {
-    return channel->events & EVENT_TYPE_R;
+    return channel->events & EVENT_RD;
 }
 
 void channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {

@@ -70,16 +70,16 @@ _Pragma("once")
 #endif
 #endif
 
-typedef enum cdk_unpack_type_e {
-	UNPACK_TYPE_FIXEDLEN    ,
-	UNPACK_TYPE_DELIMITER   ,
-	UNPACK_TYPE_LENGTHFIELD ,
-	UNPACK_TYPE_USERDEFINED ,
-}cdk_unpack_type_t;
+typedef enum cdk_unpacker_type_e {
+	TYPE_FIXEDLEN,
+	TYPE_DELIMITER,
+	TYPE_LENGTHFIELD,
+	TYPE_USERDEFINED,
+}cdk_unpacker_type_t;
 
 typedef enum cdk_event_type_e{
-	EVENT_TYPE_R = 1,
-	EVENT_TYPE_W = 2,
+	EVENT_RD = 1,
+	EVENT_WR = 2,
 }cdk_event_type_t;
 
 #define cdk_tls_ssl_t void
@@ -102,8 +102,8 @@ typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
 typedef struct cdk_timer_s               cdk_timer_t;
 typedef struct cdk_timermgr_s            cdk_timermgr_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
-typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
-typedef struct cdk_unpack_s              cdk_unpack_t;
+typedef enum   cdk_unpacker_type_e       cdk_unpacker_type_t;
+typedef struct cdk_unpacker_s            cdk_unpacker_t;
 typedef struct cdk_address_s             cdk_address_t;
 typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_poller_manager_s      cdk_poller_manager_t;
@@ -229,8 +229,8 @@ struct cdk_ringbuf_s {
 	uint32_t esz; /* entry size */
 };
 
-struct cdk_unpack_s {
-	cdk_unpack_type_t type;
+struct cdk_unpacker_s {
+	cdk_unpacker_type_t type;
 	union {
 		struct {
 			uint32_t len;
@@ -246,8 +246,8 @@ struct cdk_unpack_s {
 			uint32_t  size;      /* length field size       */
 			int32_t   adj;       /* length field adjustment */
 			enum {
-				LEN_FIELD_VARINT,
-				LEN_FIELD_FIXEDINT
+				MODE_VARINT,
+				MODE_FIXEDINT
 			}coding;             /* length field coding     */
 		}lengthfield;
 
@@ -352,7 +352,7 @@ struct cdk_handler_s {
 			int wr_timeout;
 			int rd_timeout;
 			int hb_interval;
-			cdk_unpack_t* unpacker;
+			cdk_unpacker_t* unpacker;
 		}tcp;
 		struct {
 			void (*on_ready) (cdk_channel_t*);

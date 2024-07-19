@@ -74,10 +74,10 @@ int main(void) {
     cdk_net_startup(&conf);
 	cdk_logger_create(NULL, false);
 
-	cdk_unpack_t unpacker = {
-		.type = UNPACK_TYPE_LENGTHFIELD,
+	cdk_unpacker_t unpacker = {
+		.type = TYPE_LENGTHFIELD,
 		.lengthfield.adj = 0,
-		.lengthfield.coding = LEN_FIELD_FIXEDINT,
+		.lengthfield.coding = MODE_FIXEDINT,
 		.lengthfield.offset = 0,
 		.lengthfield.payload = 8,
 		.lengthfield.size = 4

@@ -24,10 +24,10 @@
 
 void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) {
 	struct epoll_event ee = {0};
-	if (events & EVENT_TYPE_R) {
+	if (events & EVENT_RD) {
 		ee.events |= EPOLLIN;
 	}
-	if (events & EVENT_TYPE_W) {
+	if (events & EVENT_WR) {
 		ee.events |= EPOLLOUT;
 	}
 	ee.data.ptr = ud;
@@ -36,10 +36,10 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) 
 
 void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) {
 	struct epoll_event ee = { 0 };
-	if (events & EVENT_TYPE_R) {
+	if (events & EVENT_RD) {
 		ee.events |= EPOLLIN;
 	}
-	if (events & EVENT_TYPE_W) {
+	if (events & EVENT_WR) {
 		ee.events |= EPOLLOUT;
 	}
 	ee.data.ptr = ud;
@@ -64,10 +64,10 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events, int timeout) 
 	for (int i = 0; i < n; i++) {
 		events[i].ptr = __events[i].data.ptr;
 		if (__events[i].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
-			events[i].events |= EVENT_TYPE_R;
+			events[i].events |= EVENT_RD;
 		}
 		if (__events[i].events & (EPOLLOUT | EPOLLHUP | EPOLLERR)) {
-			events[i].events |= EVENT_TYPE_W;
+			events[i].events |= EVENT_WR;
 		}
 	}
 	return n;

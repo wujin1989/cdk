@@ -52,14 +52,14 @@ static inline void _poller_event_handle(cdk_poller_t* poller) {
 }
 
 static inline void _poller_channel_handle(cdk_channel_t* channel, uint32_t mask) {
-    if (mask & EVENT_TYPE_R) {
+    if (mask & EVENT_RD) {
         (channel->type == SOCK_STREAM)
             ? ((channel->tcp.accepting)
                 ? channel_accept(channel)
                 : channel_recv(channel))
             : channel_recv(channel);
     }
-    if (mask & EVENT_TYPE_W) {
+    if (mask & EVENT_WR) {
         (channel->type == SOCK_STREAM)
             ? ((channel->tcp.connecting)
                 ? channel_connect(channel)
@@ -136,7 +136,7 @@ cdk_poller_t* poller_create(void) {
         mtx_init(&poller->evmtx, mtx_plain);
         platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
         platform_socket_nonblock(poller->evfds[1]);
-        platform_event_add(poller->pfd, poller->evfds[1], EVENT_TYPE_R, &poller->evfds[1]);
+        platform_event_add(poller->pfd, poller->evfds[1], EVENT_RD, &poller->evfds[1]);
     }
     return poller;
 }

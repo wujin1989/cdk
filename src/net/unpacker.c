@@ -23,7 +23,7 @@
 #include "cdk/cdk-utils.h"
 #include "cdk/encoding/cdk-varint.h"
 
-static inline void _unpack_fixedlen(cdk_channel_t* channel) {
+static inline void _fixedlen_unpack(cdk_channel_t* channel) {
 	char* head = channel->rxbuf.buf;
 	char* tail = (char*)channel->rxbuf.buf + channel->rxbuf.off;
 	char* tmp = head;
@@ -48,7 +48,7 @@ static inline void _unpack_fixedlen(cdk_channel_t* channel) {
 	}
 }
 
-static inline void _unpack_delimiter(cdk_channel_t* channel) {
+static inline void _delimiter_unpack(cdk_channel_t* channel) {
 	char* head = channel->rxbuf.buf;
 	char* tail = (char*)channel->rxbuf.buf + channel->rxbuf.off;
 	char* tmp = head;
@@ -106,7 +106,7 @@ static inline void _unpack_delimiter(cdk_channel_t* channel) {
 	return;
 }
 
-static inline void _unpack_lengthfield(cdk_channel_t* channel) {
+static inline void _lengthfield_unpack(cdk_channel_t* channel) {
 	uint32_t fs; /* frame size   */
 	uint32_t hs; /* header size  */
 	uint32_t ps; /* payload size */
@@ -122,7 +122,7 @@ static inline void _unpack_lengthfield(cdk_channel_t* channel) {
 		}
 		hs = channel->handler->tcp.unpacker->lengthfield.payload;
 		ps = 0;
-		if (channel->handler->tcp.unpacker->lengthfield.coding == LEN_FIELD_FIXEDINT) {
+		if (channel->handler->tcp.unpacker->lengthfield.coding == MODE_FIXEDINT) {
 
 			ps = *((uint32_t*)(tmp + channel->handler->tcp.unpacker->lengthfield.offset));
 			//1 means little-endian, 0 means big-endian.
@@ -130,7 +130,7 @@ static inline void _unpack_lengthfield(cdk_channel_t* channel) {
 				ps = ntohl(ps);
 			}
 		}
-		if (channel->handler->tcp.unpacker->lengthfield.coding == LEN_FIELD_VARINT) {
+		if (channel->handler->tcp.unpacker->lengthfield.coding == MODE_VARINT) {
 
 			int flexible = (int)(tail - (tmp + channel->handler->tcp.unpacker->lengthfield.offset));
 
@@ -165,27 +165,27 @@ static inline void _unpack_lengthfield(cdk_channel_t* channel) {
 	return;
 }
 
-static void _unpack_userdefined(cdk_channel_t* channel) {
+static void _userdefined_unpack(cdk_channel_t* channel) {
 	channel->handler->tcp.unpacker->userdefined.unpack(channel);
 }
 
-void unpack(cdk_channel_t* channel) {
+void unpacker_unpack(cdk_channel_t* channel) {
 	switch (channel->handler->tcp.unpacker->type)
 	{
-	case UNPACK_TYPE_FIXEDLEN: {
-		_unpack_fixedlen(channel);
+	case TYPE_FIXEDLEN: {
+		_fixedlen_unpack(channel);
 		break;
 	}
-	case UNPACK_TYPE_DELIMITER: {
-		_unpack_delimiter(channel);
+	case TYPE_DELIMITER: {
+		_delimiter_unpack(channel);
 		break;
 	}
-	case UNPACK_TYPE_LENGTHFIELD: {
-		_unpack_lengthfield(channel);
+	case TYPE_LENGTHFIELD: {
+		_lengthfield_unpack(channel);
 		break;
 	}
-	case UNPACK_TYPE_USERDEFINED: {
-		_unpack_userdefined(channel);
+	case TYPE_USERDEFINED: {
+		_userdefined_unpack(channel);
 		break;
 	}
 	default:

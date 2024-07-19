@@ -49,7 +49,7 @@ int main(void) {
 	cdk_net_startup(&conf);
 	cdk_logger_create(NULL, false);
 
-	cdk_unpack_t unpacker = {
+	cdk_unpacker_t unpacker = {
 		.fixedlen.len = BUFFERSIZE,
 	};
 	cdk_handler_t handler = {
