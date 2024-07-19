@@ -22,6 +22,9 @@
 #include "platform/platform-socket.h"
 #include "platform/platform-event.h"
 #include "cdk/container/cdk-list.h"
+#include "cdk/cdk-timer.h"
+#include "cdk/cdk-time.h"
+#include "cdk/container/cdk-heap.h"
 #include "net/channel.h"
 #include "net/txlist.h"
 
@@ -64,10 +67,35 @@ static inline void _poller_channel_handle(cdk_channel_t* channel, uint32_t mask)
     }
 }
 
+static inline void _poller_timer_handle(cdk_poller_t* poller) {
+    do {
+        cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
+        timer->routine(timer->param);
+        if (timer->repeat) {
+            cdk_timer_reset(&poller->timermgr, timer, timer->expire);
+        } else {
+            cdk_timer_del(&poller->timermgr, timer);
+        }
+    } while (!_poller_timeout_update(poller));
+}
+
+static inline int _poller_timeout_update(cdk_poller_t* poller) {
+    if (cdk_heap_empty(&poller->timermgr.heap)) {
+        return INT_MAX - 1;
+    }
+    uint64_t now = cdk_time_now();
+    cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
+    if ((timer->birth + timer->expire) <= now) {
+        return 0;
+    } else {
+        return (timer->birth + timer->expire) - now;
+    }
+}
+
 void poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
 	while (poller->active) {
-		int nevents = platform_event_wait(poller->pfd, events);
+		int nevents = platform_event_wait(poller->pfd, events, _poller_timeout_update(poller));
 		for (int i = 0; i < nevents; i++) {
 			void* ud = events[i].ptr;
 			uint32_t mask = events[i].events;
@@ -76,12 +104,19 @@ void poller_poll(cdk_poller_t* poller) {
 			}
 			if (*((cdk_sock_t*)ud) == poller->evfds[1]) {
 				_poller_event_handle(poller);
-			}
-			else {
+			} else {
 				_poller_channel_handle((cdk_channel_t*)ud, mask);
 			}
 		}
+        if (!_poller_timeout_update(poller)) {
+            _poller_timer_handle(poller);
+        }
 	}
+}
+
+void poller_wakeup(cdk_poller_t* poller) {
+    bool wakeup = true;
+    platform_socket_send(poller->evfds[0], &wakeup, sizeof(bool));
 }
 
 cdk_poller_t* poller_create(void) {
@@ -94,6 +129,8 @@ cdk_poller_t* poller_create(void) {
 
         cdk_list_init(&poller->evlist);
         cdk_list_init(&poller->chlist);
+        cdk_timer_manager_init(&poller->timermgr);
+
         mtx_init(&poller->evmtx, mtx_plain);
         platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
         platform_socket_nonblock(poller->evfds[1]);

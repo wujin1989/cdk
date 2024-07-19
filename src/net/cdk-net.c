@@ -125,7 +125,6 @@ static void _poller_manager_destroy(void) {
     free(manager.thrdids);
     manager.thrdids = NULL;
     
-    cdk_timer_destroy();
     mtx_destroy(&manager.poller_mtx);
     cnd_destroy(&manager.poller_cnd);
     platform_socket_cleanup();
@@ -373,9 +372,7 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
             cdk_list_insert_head(&poller->evlist, &event->node);
         }
         mtx_unlock(&poller->evmtx);
-
-        bool wakeup = true;
-        platform_socket_send(poller->evfds[0], &wakeup, sizeof(bool));
+        poller_wakeup(poller);
     }
 }
 
@@ -392,7 +389,6 @@ void cdk_net_startup(cdk_conf_t* conf) {
     if (atomic_flag_test_and_set(&manager.initialized)) {
         return;
     }
-    cdk_timer_create();
     tls_ctx = tls_ctx_create(&conf->tls);
     _poller_manager_create(conf->nthrds);
 }

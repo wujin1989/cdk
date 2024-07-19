@@ -262,28 +262,13 @@ static void _channel_conn_timeout_cb(void* param) {
     cdk_net_close(channel);
 }
 
-static void _channel_conn_timeout_routine(void* param) {
-    cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _channel_conn_timeout_cb, channel, true);
-}
-
-static void _channel_rd_timeout_routine(void* param) {
-    cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _channel_rd_timeout_cb, channel, true);
-}
-
-static void _channel_wr_timeout_routine(void* param) {
-    cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _channel_wr_timeout_cb, channel, true);
-}
-
 void channel_connecting(cdk_channel_t* channel) {
     channel->tcp.connecting = true;
     if (!channel_is_writing(channel)) {
         channel_enable_write(channel);
     }
     if (channel->handler->tcp.conn_timeout) {
-        channel->tcp.conn_timer = cdk_timer_add(_channel_conn_timeout_routine, channel, channel->handler->tcp.conn_timeout, false);
+        channel->tcp.conn_timer = cdk_timer_add(&channel->poller->timermgr, _channel_conn_timeout_cb, channel, channel->handler->tcp.conn_timeout, false);
     }
 }
 
@@ -294,9 +279,16 @@ static void _channel_heartbeat_cb(void* param) {
     }
 }
 
-static void _channel_heartbeat_routine(void* param) {
-    cdk_channel_t* channel = param;
-    cdk_net_postevent(channel->poller, _channel_heartbeat_cb, channel, true);
+static void _channel_timers_init(cdk_channel_t* channel) {
+    if (channel->handler->tcp.hb_interval) {
+        channel->tcp.hb_timer = cdk_timer_add(&channel->poller->timermgr, _channel_heartbeat_cb, channel, channel->handler->tcp.hb_interval, true);
+    }
+    if (channel->handler->tcp.rd_timeout) {
+        channel->tcp.rd_timer = cdk_timer_add(&channel->poller->timermgr, _channel_rd_timeout_cb, channel, channel->handler->tcp.rd_timeout, true);
+    }
+    if (channel->handler->tcp.wr_timeout) {
+        channel->tcp.wr_timer = cdk_timer_add(&channel->poller->timermgr, _channel_wr_timeout_cb, channel, channel->handler->tcp.wr_timeout, true);
+    }
 }
 
 void channel_connected(cdk_channel_t* channel) {
@@ -308,15 +300,7 @@ void channel_connected(cdk_channel_t* channel) {
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
         }
-        if (channel->handler->tcp.hb_interval) {
-            channel->tcp.hb_timer = cdk_timer_add(_channel_heartbeat_routine, channel, channel->handler->tcp.hb_interval, true);
-        }
-        if (channel->handler->tcp.rd_timeout) {
-            channel->tcp.rd_timer = cdk_timer_add(_channel_rd_timeout_routine, channel, channel->handler->tcp.rd_timeout, true);
-        }
-        if (channel->handler->tcp.wr_timeout) {
-            channel->tcp.wr_timer = cdk_timer_add(_channel_wr_timeout_routine, channel, channel->handler->tcp.wr_timeout, true);
-        }
+        _channel_timers_init(channel);
     }
 }
 
@@ -327,15 +311,7 @@ void channel_accepted(cdk_channel_t* channel) {
     if (!channel_is_reading(channel)) {
         channel_enable_read(channel);
     }
-    if (channel->handler->tcp.hb_interval) {
-        channel->tcp.hb_timer = cdk_timer_add(_channel_heartbeat_routine, channel, channel->handler->tcp.hb_interval, true);
-    }
-    if (channel->handler->tcp.rd_timeout) {
-        channel->tcp.rd_timer = cdk_timer_add(_channel_rd_timeout_routine, channel, channel->handler->tcp.rd_timeout, true);
-    }
-    if (channel->handler->tcp.wr_timeout) {
-        channel->tcp.wr_timer = cdk_timer_add(_channel_wr_timeout_routine, channel, channel->handler->tcp.wr_timeout, true);
-    }
+    _channel_timers_init(channel);
 }
 
 void channel_accepting(cdk_channel_t* channel) {
@@ -426,16 +402,16 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
             channel->handler->tcp.on_close(channel, reason);
         }
         if (channel->tcp.hb_timer) {
-            cdk_timer_del(channel->tcp.hb_timer);
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
         }
         if (channel->tcp.rd_timer) {
-            cdk_timer_del(channel->tcp.rd_timer);
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
         }
         if (channel->tcp.wr_timer) {
-            cdk_timer_del(channel->tcp.wr_timer);
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
         }
         if (channel->tcp.conn_timer) {
-            cdk_timer_del(channel->tcp.conn_timer);
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
         }
     }
     if (channel->type == SOCK_DGRAM) {
@@ -508,7 +484,7 @@ void channel_connect(cdk_channel_t* channel) {
 
     channel_disable_all(channel);
     if (channel->handler->tcp.conn_timeout) {
-        cdk_timer_del(channel->tcp.conn_timer);
+        cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
     }
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {

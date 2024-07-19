@@ -20,15 +20,56 @@
  */
 
 #include "cdk/cdk-types.h"
+#include "cdk/cdk-time.h"
+#include "cdk/container/cdk-heap.h"
 
-cdk_timer_t* cdk_timer_add(void (*routine)(void*), void* param, size_t expire, bool repeat) {
+static int _min_heapcmp(cdk_heap_node_t* a, cdk_heap_node_t* b) {
+	cdk_timer_t* ta = cdk_heap_data(a, cdk_timer_t, node);
+	cdk_timer_t* tb = cdk_heap_data(b, cdk_timer_t, node);
 
+	if ((ta->birth + ta->expire) < (tb->birth + tb->expire)) {
+		return 1;
+	}
+	if ((ta->birth + ta->expire) == (tb->birth + tb->expire)) {
+		if ((ta->id < tb->id)) {
+			return 1;
+		}
+	}
+	return 0;
 }
 
-void cdk_timer_del(cdk_timer_t* timer) {
-
+void cdk_timer_manager_init(cdk_timermgr_t* mgr) {
+	cdk_heap_init(&mgr->heap, _min_heapcmp);
+	mgr->ntimers = 0;
 }
 
-void cdk_timer_reset(cdk_timer_t* timer) {
+cdk_timer_t* cdk_timer_add(cdk_timermgr_t* mgr, void (*routine)(void*), void* param, size_t expire, bool repeat) {
+	cdk_timer_t* timer = malloc(sizeof(cdk_timer_t));
+	if (timer) {
+		timer->routine = routine;
+		timer->param = param;
+		timer->birth = cdk_time_now();
+		timer->id = mgr->ntimers++;
+		timer->expire = expire;
+		timer->repeat = repeat;
 
+		cdk_heap_insert(&mgr->heap, &timer->node);
+		return timer;
+	}
+	return NULL;
+}
+
+void cdk_timer_del(cdk_timermgr_t* mgr, cdk_timer_t* timer) {
+	cdk_heap_remove(&mgr->heap, &timer->node);
+	mgr->ntimers--;
+
+	free(timer);
+	timer = NULL;
+}
+
+void cdk_timer_reset(cdk_timermgr_t* mgr, cdk_timer_t* timer, size_t expire) {
+	cdk_heap_remove(&mgr->heap, &timer->node);
+	timer->birth = cdk_time_now();
+	timer->expire = expire;
+	cdk_heap_insert(&mgr->heap, &timer->node);
 }

@@ -51,12 +51,12 @@ void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
 	epoll_ctl(pfd, EPOLL_CTL_DEL, sfd, NULL);
 }
 
-int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
+int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events, int timeout) {
 	struct epoll_event __events[MAX_PROCESS_EVENTS];
 	int n;
 	memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
 	do {
-		n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, -1);
+		n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, timeout);
 	} while (n == -1 && errno == EINTR);
 
 	if (n < 0) {
@@ -110,11 +110,15 @@ void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
 	kevent(pfd, &ke, 1, NULL, 0, NULL);
 }
 
-int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events) {
+int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events, int timeout) {
 	struct kevent __events[MAX_PROCESS_EVENTS];
 
 	memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
-	int n = kevent(pfd, NULL, 0, __events, MAX_PROCESS_EVENTS, NULL);
+	struct timespec ts = { 0, 0 };
+	ts.tv_sec = (timeout / 1000UL);
+	ts.tv_nsec = ((timeout % 1000UL) * 1000000UL);
+
+	int n = kevent(pfd, NULL, 0, __events, MAX_PROCESS_EVENTS, &ts);
 	/**
 	 * In systems utilizing the kqueue mechanism, read and write events are handled independently, 
 	 * differing from the behavior of epoll. With epoll, read and write events can be combined, 

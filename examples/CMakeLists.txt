@@ -46,3 +46,6 @@ target_link_libraries(example-ringbuf PUBLIC cdk)
 
 add_executable(example-heap "example-heap.c")
 target_link_libraries(example-heap PUBLIC cdk)
+
+add_executable(example-timer "example-timer.c")
+target_link_libraries(example-timer PUBLIC cdk)

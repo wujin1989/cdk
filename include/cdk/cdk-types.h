@@ -100,6 +100,7 @@ typedef struct cdk_heap_node_s           cdk_heap_node_t;
 typedef struct cdk_heap_s                cdk_heap_t;
 typedef struct cdk_thrdpool_s            cdk_thrdpool_t;
 typedef struct cdk_timer_s               cdk_timer_t;
+typedef struct cdk_timermgr_s            cdk_timermgr_t;
 typedef struct cdk_ringbuf_s             cdk_ringbuf_t;
 typedef enum   cdk_unpack_type_e         cdk_unpack_type_t;
 typedef struct cdk_unpack_s              cdk_unpack_t;
@@ -209,10 +210,15 @@ struct cdk_timer_s {
 	void (*routine)(void* param);
 	void* param;
 	size_t birth;
-	size_t birth_id;
+	size_t id;
 	size_t expire;
 	bool repeat;
 	cdk_heap_node_t node;
+};
+
+struct cdk_timermgr_s {
+	cdk_heap_t heap;
+	size_t ntimers;
 };
 
 struct cdk_ringbuf_s {
@@ -265,6 +271,7 @@ struct cdk_poller_s {
 	mtx_t evmtx;
 	bool active;
 	cdk_list_t chlist;
+	cdk_timermgr_t timermgr;
 	cdk_list_node_t node;
 };
 
@@ -318,10 +325,10 @@ struct cdk_channel_s {
 			cdk_tls_ssl_t* tls_ssl;
 			uint64_t latest_rd_time;
 			uint64_t latest_wr_time;
-			cdk_timer_job_t* conn_timer;
-			cdk_timer_job_t* wr_timer;
-			cdk_timer_job_t* rd_timer;
-			cdk_timer_job_t* hb_timer;
+			cdk_timer_t* conn_timer;
+			cdk_timer_t* wr_timer;
+			cdk_timer_t* rd_timer;
+			cdk_timer_t* hb_timer;
 		}tcp;
 		struct {
 			struct {

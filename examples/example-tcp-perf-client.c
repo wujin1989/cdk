@@ -10,7 +10,18 @@ atomic_int disconnected_clients;
 atomic_int total_readcnt;
 atomic_size_t total_readbytes;
 
+static inline void _finished(void* param) {
+	cdk_net_exit();
+}
+
+static void _printf_statistic_info() {
+	cdk_logi("qps:\t %d Q/s\n", atomic_load(&total_readcnt) / RUNTIME);
+	cdk_logi("throughput:\t %zu MB/s\n", (atomic_load(&total_readbytes) / (RUNTIME * 1024 * 1024)));
+}
+
 static void handle_connect(cdk_channel_t* channel) {
+	cdk_timer_add(&channel->poller->timermgr, _finished, NULL, 10000, false);
+
 	atomic_fetch_add(&connected_clients, 1);
 	if (atomic_load(&connected_clients) == total_clients) {
 		cdk_logi("%d clients has connected.\n", total_clients);
@@ -31,22 +42,12 @@ static void handle_close(cdk_channel_t* channel, const char* error) {
 	}
 }
 
-static inline void _finished(void* param) {
-	cdk_net_exit();
-}
-
-static void _printf_statistic_info() {
-	cdk_logi("qps:\t %d Q/s\n", atomic_load(&total_readcnt) / RUNTIME);
-	cdk_logi("throughput:\t %zu MB/s\n", (atomic_load(&total_readbytes) / (RUNTIME * 1024 * 1024)));
-}
-
 int main(void) {
 	cdk_conf_t conf = {
 		.nthrds = 4,
 	};
 	cdk_net_startup(&conf);
 	cdk_logger_create(NULL, false);
-	cdk_timer_create();
 
 	cdk_unpack_t unpacker = {
 		.fixedlen.len = BUFFERSIZE,
@@ -65,9 +66,7 @@ int main(void) {
 	for (int i = 0; i < total_clients; i++) {
 		cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 	}
-	cdk_timer_add(_finished, NULL, 10000, false);
 	cdk_net_cleanup();
-	cdk_timer_destroy();
 
 	_printf_statistic_info();
 	cdk_logger_destroy();

@@ -26,3 +26,4 @@ _Pragma("once")
 extern cdk_poller_t* poller_create(void);
 extern void poller_destroy(cdk_poller_t* poller);
 extern void poller_poll(cdk_poller_t* poller);
+extern void poller_wakeup(cdk_poller_t* poller);
