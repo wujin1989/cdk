@@ -36,7 +36,7 @@ extern cdk_tls_ctx_t* tls_ctx;
 
 static void _cb_write_complete(void* param) {
     cdk_channel_t* channel = param;
-    channel->handler->tcp.on_write(channel);
+    
     if (channel->type == SOCK_STREAM) {
         channel->handler->tcp.on_write(channel);
     }
