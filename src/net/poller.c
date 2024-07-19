@@ -27,6 +27,7 @@
 #include "cdk/container/cdk-heap.h"
 #include "net/channel.h"
 #include "net/txlist.h"
+#include <limits.h>
 
 static inline void _eventfd_recv(cdk_poller_t* poller) {
     bool wakeup;
