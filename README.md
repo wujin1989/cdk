@@ -14,7 +14,7 @@ CDK is a clean and concise cross-platform C development kits that is a supplemen
 - Cross-platform Compatibility
 - Built-in TLS and DTLS Support
 - Built-in TCP Packet Reassembler
-- Concurrent UDP Server
+- Receive side scaling Support
 
 # Requirement
 The compiler needs to support C11.
