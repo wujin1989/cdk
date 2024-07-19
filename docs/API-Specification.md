@@ -495,6 +495,103 @@ extern cdk_stack_node_t* cdk_stack_pop(cdk_stack_t* s);
  */
 extern bool cdk_stack_empty(cdk_stack_t* s);
 ```
+### cdk-heap
+```c
+/**
+ * @brief Get the data pointer associated with a heap node
+ *
+ * This function retrieves the data pointer associated with a heap node `x`.
+ * The type of the data pointer is specified by the template parameter `T`.
+ * The member variable or field `m` is used to access the data pointer within
+ * the heap node structure.
+ *
+ * @param x Pointer to the heap node
+ * @param T Data type of the data pointer
+ * @param m Member variable or field name to access the data pointer
+ * @return Pointer to the data associated with the heap node
+ */
+extern T* cdk_heap_data(cdk_heap_node_t* x, T, m)
+```
+```c
+/**
+ * @brief Initializes a heap data structure.
+ *
+ * This function initializes a heap structure, preparing it for use in heap operations such as insertions,
+ * removals, and queries. The heap is constructed with a custom comparison function to determine the order
+ * of elements.
+ *
+ * @param heap Pointer to the heap structure that will be initialized.
+ * @param heapcmp A comparison function pointer that defines the ordering of nodes in the heap.
+ * 
+ * @return N/A
+ */
+extern void cdk_heap_init(cdk_heap_t* heap, int (*heapcmp)(cdk_heap_node_t* a, cdk_heap_node_t* b));
+```
+```c
+/**
+ * @brief Inserts a new node into the heap.
+ *
+ * This function adds a new node to the heap while maintaining the heap property. The position of the node
+ * is determined by the comparison function provided during heap initialization.
+ *
+ * @param heap Pointer to the heap into which the node will be inserted.
+ * @param node Pointer to the node to be inserted into the heap.
+ * 
+ * @return N/A
+ */
+extern void cdk_heap_insert(cdk_heap_t* heap, cdk_heap_node_t* node);
+```
+```c
+/**
+ * @brief Removes a specific node from the heap.
+ *
+ * This function removes a specified node from the heap.
+ *
+ * @param heap Pointer to the heap from which the node will be removed.
+ * @param node Pointer to the node to be removed from the heap.
+ * 
+ * @return N/A
+ */
+extern void cdk_heap_remove(cdk_heap_t* heap, cdk_heap_node_t* node);
+```
+```c
+/**
+ * @brief Retrieves the minimum node from the heap without removing it.
+ *
+ * This function returns a pointer to the node with the minimum value in the heap, as defined by the
+ * comparison function. The node is not removed from the heap.
+ *
+ * @param heap Pointer to the heap from which the minimum node is retrieved.
+ *
+ * @return A pointer to the minimum node in the heap.
+ */
+extern cdk_heap_node_t* cdk_heap_min(cdk_heap_t* heap);
+```
+```c
+/**
+ * @brief Removes the top node from the heap.
+ *
+ * This function removes the top node from the heap, which is either the minimum or maximum value
+ * depending on whether the heap is a min-heap or max-heap.
+ *
+ * @param heap Pointer to the heap from which the top node will be removed.
+ * 
+ * @return N/A
+ */
+extern void cdk_heap_dequeue(cdk_heap_t* heap);
+```
+```c
+/**
+ * @brief Checks if the heap is empty.
+ *
+ * This function determines whether the heap contains any nodes. An empty heap contains no nodes.
+ *
+ * @param heap Pointer to the heap to check.
+ *
+ * @return True if the heap is empty, false otherwise.
+ */
+extern bool cdk_heap_empty(cdk_heap_t* heap);
+```
 ## Crypto
 ### cdk-sha1
 ```c
@@ -1356,50 +1453,60 @@ extern void cdk_time_sleep(const uint32_t ms);
 ### cdk-timer
 ```c
 /**
- * @brief Create a timer
+ * @brief Initializes the timer manager.
  *
- * This function initializes an internal timer, which can be used to manage and schedule timer jobs.
- * The timer is created with default settings, including the automatic start of one worker thread.
+ * This function sets up the timer manager structure for use. It must be called before any other
+ * timer-related functions can be utilized.
  *
+ * @param mgr Pointer to the timer manager structure that will be initialized.
  * @return N/A
  */
-extern void cdk_timer_create(void);
+extern void cdk_timer_manager_init(cdk_timermgr_t* mgr);
 ```
 ```c
 /**
- * @brief Destroy a timer
+ * @brief Adds a new timer to the timer manager.
  *
- * This function cleans up and releases the resources associated with a internal timer object.
+ * This function creates a new timer job within the timer manager, scheduling it to execute at a
+ * specified time in the future or repeatedly if requested.
  *
- * @return N/A
+ * @param mgr Pointer to the timer manager where the timer will be added.
+ * @param routine A pointer to the callback function to be executed when the timer expires.
+ * @param param A pointer to the parameter that will be passed to the callback function.
+ * @param expire The duration (ms) before the timer expires.
+ * @param repeat A boolean indicating whether the timer should repeat after expiration.
+ *
+ * @return A pointer to the created timer object.
  */
-extern void cdk_timer_destroy(void);
+extern cdk_timer_t* cdk_timer_add(cdk_timermgr_t* mgr, void (*routine)(void*), void* param, size_t expire, bool repeat);
 ```
 ```c
 /**
- * @brief Add a timer job
+ * @brief Deletes an existing timer from the timer manager.
  *
- * This function adds a timer job to the internal timer. The timer job is scheduled to run after the specified
- * expiration time, and optionally repeat at regular intervals.
+ * This function removes a timer job from the timer manager, stopping its execution and freeing resources.
  *
- * @param routine Pointer to the function to be executed by the timer job
- * @param arg Argument to be passed to the timer job function
- * @param expire Expiration time in milliseconds for the timer job
- * @param repeat Flag indicating whether the timer job should repeat after each expiration
- * @return Pointer to the timer job object representing the added job
+ * @param mgr Pointer to the timer manager from which the timer will be deleted.
+ * @param timer Pointer to the timer object to delete.
+ *
+ * @return N/A
  */
-extern cdk_timer_job_t* cdk_timer_add(void (*routine)(void*), void* arg, uint32_t expire, bool repeat);
+extern void cdk_timer_del(cdk_timermgr_t* mgr, cdk_timer_t* timer);
 ```
 ```c
 /**
- * @brief Delete a timer job
+ * @brief Resets the expiration of an existing timer.
  *
- * This function removes a timer job from the internal timer. The timer job will no longer be executed by the timer.
+ * This function updates the expiration time of an existing timer job, allowing for dynamic adjustment
+ * of its timeout period.
  *
- * @param job Pointer to the timer job object to be deleted
+ * @param mgr Pointer to the timer manager where the timer is managed.
+ * @param timer Pointer to the timer object whose expiration will be reset.
+ * @param expire The new duration (in the system's time units) before the timer expires.
+ *
  * @return N/A
  */
-extern void cdk_timer_del(cdk_timer_job_t* job);
+extern void cdk_timer_reset(cdk_timermgr_t* mgr, cdk_timer_t* timer, size_t expire);
 ```
 ### cdk-utils
 ```c

@@ -437,6 +437,89 @@ Copyright©2023 jin.wu. All rights reserved.
  * @return `true` if the stack is empty, `false` otherwise
  */</span>
 <span class="token keyword keyword-extern">extern</span> bool <span class="token function">cdk_stack_empty</span><span class="token punctuation">(</span><span class="token class-name">cdk_stack_t</span><span class="token operator">*</span> s<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><h3 id="cdk-heap">cdk-heap </h3>
+<pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Get the data pointer associated with a heap node
+ *
+ * This function retrieves the data pointer associated with a heap node `x`.
+ * The type of the data pointer is specified by the template parameter `T`.
+ * The member variable or field `m` is used to access the data pointer within
+ * the heap node structure.
+ *
+ * @param x Pointer to the heap node
+ * @param T Data type of the data pointer
+ * @param m Member variable or field name to access the data pointer
+ * @return Pointer to the data associated with the heap node
+ */</span>
+<span class="token keyword keyword-extern">extern</span> T<span class="token operator">*</span> <span class="token function">cdk_heap_data</span><span class="token punctuation">(</span><span class="token class-name">cdk_heap_node_t</span><span class="token operator">*</span> x<span class="token punctuation">,</span> T<span class="token punctuation">,</span> m<span class="token punctuation">)</span>
+</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Initializes a heap data structure.
+ *
+ * This function initializes a heap structure, preparing it for use in heap operations such as insertions,
+ * removals, and queries. The heap is constructed with a custom comparison function to determine the order
+ * of elements.
+ *
+ * @param heap Pointer to the heap structure that will be initialized.
+ * @param heapcmp A comparison function pointer that defines the ordering of nodes in the heap.
+ * 
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_heap_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_heap_t</span><span class="token operator">*</span> heap<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span> <span class="token punctuation">(</span><span class="token operator">*</span>heapcmp<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token class-name">cdk_heap_node_t</span><span class="token operator">*</span> a<span class="token punctuation">,</span> <span class="token class-name">cdk_heap_node_t</span><span class="token operator">*</span> b<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Inserts a new node into the heap.
+ *
+ * This function adds a new node to the heap while maintaining the heap property. The position of the node
+ * is determined by the comparison function provided during heap initialization.
+ *
+ * @param heap Pointer to the heap into which the node will be inserted.
+ * @param node Pointer to the node to be inserted into the heap.
+ * 
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_heap_insert</span><span class="token punctuation">(</span><span class="token class-name">cdk_heap_t</span><span class="token operator">*</span> heap<span class="token punctuation">,</span> <span class="token class-name">cdk_heap_node_t</span><span class="token operator">*</span> node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Removes a specific node from the heap.
+ *
+ * This function removes a specified node from the heap.
+ *
+ * @param heap Pointer to the heap from which the node will be removed.
+ * @param node Pointer to the node to be removed from the heap.
+ * 
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_heap_remove</span><span class="token punctuation">(</span><span class="token class-name">cdk_heap_t</span><span class="token operator">*</span> heap<span class="token punctuation">,</span> <span class="token class-name">cdk_heap_node_t</span><span class="token operator">*</span> node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Retrieves the minimum node from the heap without removing it.
+ *
+ * This function returns a pointer to the node with the minimum value in the heap, as defined by the
+ * comparison function. The node is not removed from the heap.
+ *
+ * @param heap Pointer to the heap from which the minimum node is retrieved.
+ *
+ * @return A pointer to the minimum node in the heap.
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_heap_node_t</span><span class="token operator">*</span> <span class="token function">cdk_heap_min</span><span class="token punctuation">(</span><span class="token class-name">cdk_heap_t</span><span class="token operator">*</span> heap<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Removes the top node from the heap.
+ *
+ * This function removes the top node from the heap, which is either the minimum or maximum value
+ * depending on whether the heap is a min-heap or max-heap.
+ *
+ * @param heap Pointer to the heap from which the top node will be removed.
+ * 
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_heap_dequeue</span><span class="token punctuation">(</span><span class="token class-name">cdk_heap_t</span><span class="token operator">*</span> heap<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Checks if the heap is empty.
+ *
+ * This function determines whether the heap contains any nodes. An empty heap contains no nodes.
+ *
+ * @param heap Pointer to the heap to check.
+ *
+ * @return True if the heap is empty, false otherwise.
+ */</span>
+<span class="token keyword keyword-extern">extern</span> bool <span class="token function">cdk_heap_empty</span><span class="token punctuation">(</span><span class="token class-name">cdk_heap_t</span><span class="token operator">*</span> heap<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><h2 id="crypto">Crypto </h2>
 <h3 id="cdk-sha1">cdk-sha1 </h3>
 <pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
@@ -1175,44 +1258,54 @@ Copyright©2023 jin.wu. All rights reserved.
 <span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_time_sleep</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token class-name">uint32_t</span> ms<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><h3 id="cdk-timer">cdk-timer </h3>
 <pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
- * @brief Create a timer
+ * @brief Initializes the timer manager.
  *
- * This function initializes an internal timer, which can be used to manage and schedule timer jobs.
- * The timer is created with default settings, including the automatic start of one worker thread.
+ * This function sets up the timer manager structure for use. It must be called before any other
+ * timer-related functions can be utilized.
+ *
+ * @param mgr Pointer to the timer manager structure that will be initialized.
+ * @return N/A
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_manager_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_timermgr_t</span><span class="token operator">*</span> mgr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Adds a new timer to the timer manager.
+ *
+ * This function creates a new timer job within the timer manager, scheduling it to execute at a
+ * specified time in the future or repeatedly if requested.
+ *
+ * @param mgr Pointer to the timer manager where the timer will be added.
+ * @param routine A pointer to the callback function to be executed when the timer expires.
+ * @param param A pointer to the parameter that will be passed to the callback function.
+ * @param expire The duration (ms) before the timer expires.
+ * @param repeat A boolean indicating whether the timer should repeat after expiration.
+ *
+ * @return A pointer to the created timer object.
+ */</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_timer_t</span><span class="token operator">*</span> <span class="token function">cdk_timer_add</span><span class="token punctuation">(</span><span class="token class-name">cdk_timermgr_t</span><span class="token operator">*</span> mgr<span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span> <span class="token punctuation">(</span><span class="token operator">*</span>routine<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> param<span class="token punctuation">,</span> <span class="token class-name">size_t</span> expire<span class="token punctuation">,</span> bool repeat<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
+ * @brief Deletes an existing timer from the timer manager.
+ *
+ * This function removes a timer job from the timer manager, stopping its execution and freeing resources.
+ *
+ * @param mgr Pointer to the timer manager from which the timer will be deleted.
+ * @param timer Pointer to the timer object to delete.
  *
  * @return N/A
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_create</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_del</span><span class="token punctuation">(</span><span class="token class-name">cdk_timermgr_t</span><span class="token operator">*</span> mgr<span class="token punctuation">,</span> <span class="token class-name">cdk_timer_t</span><span class="token operator">*</span> timer<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
- * @brief Destroy a timer
+ * @brief Resets the expiration of an existing timer.
  *
- * This function cleans up and releases the resources associated with a internal timer object.
+ * This function updates the expiration time of an existing timer job, allowing for dynamic adjustment
+ * of its timeout period.
+ *
+ * @param mgr Pointer to the timer manager where the timer is managed.
+ * @param timer Pointer to the timer object whose expiration will be reset.
+ * @param expire The new duration (in the system's time units) before the timer expires.
  *
  * @return N/A
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_destroy</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
- * @brief Add a timer job
- *
- * This function adds a timer job to the internal timer. The timer job is scheduled to run after the specified
- * expiration time, and optionally repeat at regular intervals.
- *
- * @param routine Pointer to the function to be executed by the timer job
- * @param arg Argument to be passed to the timer job function
- * @param expire Expiration time in milliseconds for the timer job
- * @param repeat Flag indicating whether the timer job should repeat after each expiration
- * @return Pointer to the timer job object representing the added job
- */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_timer_job_t</span><span class="token operator">*</span> <span class="token function">cdk_timer_add</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span> <span class="token punctuation">(</span><span class="token operator">*</span>routine<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token keyword keyword-void">void</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> arg<span class="token punctuation">,</span> <span class="token class-name">uint32_t</span> expire<span class="token punctuation">,</span> bool repeat<span class="token punctuation">)</span><span class="token punctuation">;</span>
-</code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
- * @brief Delete a timer job
- *
- * This function removes a timer job from the internal timer. The timer job will no longer be executed by the timer.
- *
- * @param job Pointer to the timer job object to be deleted
- * @return N/A
- */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_del</span><span class="token punctuation">(</span><span class="token class-name">cdk_timer_job_t</span><span class="token operator">*</span> job<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_timer_reset</span><span class="token punctuation">(</span><span class="token class-name">cdk_timermgr_t</span><span class="token operator">*</span> mgr<span class="token punctuation">,</span> <span class="token class-name">cdk_timer_t</span><span class="token operator">*</span> timer<span class="token punctuation">,</span> <span class="token class-name">size_t</span> expire<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><h3 id="cdk-utils">cdk-utils </h3>
 <pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
  * @brief Get the byte order of the system
@@ -1287,6 +1380,10 @@ Copyright©2023 jin.wu. All rights reserved.
           </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
           <a href="#cdk-stack" class="md-toc-link">
             <p>cdk-stack</p>
+
+          </a></div><div class="md-toc-link-wrapper" style="padding:0;;display:list-item;list-style:square;margin-left:42px">
+          <a href="#cdk-heap" class="md-toc-link">
+            <p>cdk-heap</p>
 
           </a></div>
         </div>
