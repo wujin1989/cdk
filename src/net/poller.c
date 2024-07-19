@@ -67,6 +67,20 @@ static inline void _poller_channel_handle(cdk_channel_t* channel, uint32_t mask)
     }
 }
 
+static inline int _poller_timeout_update(cdk_poller_t* poller) {
+    if (cdk_heap_empty(&poller->timermgr.heap)) {
+        return INT_MAX - 1;
+    }
+    uint64_t now = cdk_time_now();
+    cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
+    if ((timer->birth + timer->expire) <= now) {
+        return 0;
+    }
+    else {
+        return (timer->birth + timer->expire) - now;
+    }
+}
+
 static inline void _poller_timer_handle(cdk_poller_t* poller) {
     do {
         cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
@@ -77,19 +91,6 @@ static inline void _poller_timer_handle(cdk_poller_t* poller) {
             cdk_timer_del(&poller->timermgr, timer);
         }
     } while (!_poller_timeout_update(poller));
-}
-
-static inline int _poller_timeout_update(cdk_poller_t* poller) {
-    if (cdk_heap_empty(&poller->timermgr.heap)) {
-        return INT_MAX - 1;
-    }
-    uint64_t now = cdk_time_now();
-    cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
-    if ((timer->birth + timer->expire) <= now) {
-        return 0;
-    } else {
-        return (timer->birth + timer->expire) - now;
-    }
 }
 
 void poller_poll(cdk_poller_t* poller) {
