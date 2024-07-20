@@ -34,6 +34,7 @@
 
 cdk_poller_manager_t global_poller_manager = {.initialized = ATOMIC_FLAG_INIT };
 cdk_tls_ctx_t* global_tls_ctx;
+cdk_tls_ctx_t* global_dtls_ctx;
 
 typedef struct channel_send_ctx_s{
     cdk_channel_t* channel;
@@ -385,11 +386,12 @@ void cdk_net_exit(void) {
     mtx_unlock(&global_poller_manager.poller_mtx);
 }
 
-void cdk_net_startup(cdk_conf_t* conf) {
+void cdk_net_startup(cdk_net_conf_t* conf) {
     if (atomic_flag_test_and_set(&global_poller_manager.initialized)) {
         return;
     }
     global_tls_ctx = tls_ctx_create(&conf->tls);
+    global_dtls_ctx = tls_ctx_create(&conf->tls);
     _manager_create(conf->nthrds);
 }
 

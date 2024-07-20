@@ -23,11 +23,36 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-static SSL_CTX* _ctx_create(cdk_tlsconf_t* tlsconf) {
+static int _alpn_select_cb(
+	SSL* ssl, 
+	const unsigned char** out, unsigned char* outlen, 
+	const unsigned char* in, unsigned int inlen, 
+	void* arg) {
+
+	return 0;
+}
+
+static int _sni_select_cb(SSL* s, int* al, void* arg) {
+	return 0;
+}
+
+static int _gen_cookie_cb(SSL* ssl, unsigned char* cookie, size_t* cookie_len) {
+	return 0;
+}
+
+static int _verify_cookie_cb(SSL* ssl, const unsigned char* cookie, size_t cookie_len) {
+	return 0;
+}
+
+static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
 	SSL_CTX* ctx = NULL;
 
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
-	ctx = SSL_CTX_new(TLS_method());
+	if (tlsconf->dtls) {
+		ctx = SSL_CTX_new(DTLS_method());
+	} else {
+		ctx = SSL_CTX_new(TLS_method());
+	}
 	if (!ctx) {
 		return NULL;
 	}
@@ -64,7 +89,11 @@ static SSL_CTX* _ctx_create(cdk_tlsconf_t* tlsconf) {
 	 * but the caller is still responsible for ensuring the consistency of the data.
 	 */
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
-	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, NULL);
+	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT : SSL_VERIFY_NONE, NULL);
+	if (tlsconf->dtls) {
+		SSL_CTX_set_stateless_cookie_generate_cb(ctx, _gen_cookie_cb);
+		SSL_CTX_set_stateless_cookie_verify_cb(ctx, _verify_cookie_cb);
+	}
 	return ctx;
 }
 
@@ -80,7 +109,7 @@ const char* tls_ssl_error2string(int err) {
 	return buffer;
 }
 
-cdk_tls_ctx_t* tls_ctx_create(cdk_tlsconf_t* conf) {
+cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf) {
 	if (!conf->cafile && !conf->capath && !conf->crtfile) {
 		return NULL;
 	}
@@ -166,4 +195,24 @@ int tls_ssl_write(cdk_tls_ssl_t* ssl, void* buf, int size, int* error) {
 		return -1;
 	}
 	return n;
+}
+
+void tls_ssl_sni_set(cdk_tls_ssl_t* ssl, const char* sni) {
+	/* used by client side, support tls, dtls */
+	SSL_set_tlsext_host_name((SSL*)ssl, sni);	
+}
+
+void tls_ctx_sni_set(cdk_tls_ctx_t* ctx) {
+	/* used by server side, support tls, dtls */
+	SSL_CTX_set_tlsext_servername_callback(ctx, _sni_select_cb);
+}
+
+void tls_ctx_alpn_set(cdk_tls_ctx_t* ctx, const unsigned char* protos, unsigned int protos_len, ctrl_side_t side) {
+	/* used by dual side, support tls, dtls */
+	if (side == CTRL_CLIENT) {
+		SSL_CTX_set_alpn_protos((SSL_CTX*)ctx, protos, protos_len);
+	}
+	if (side == CTRL_SERVER) {
+		SSL_CTX_set_alpn_select_cb((SSL_CTX*)ctx, _alpn_select_cb, (void*)protos);
+	}
 }

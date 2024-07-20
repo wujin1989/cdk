@@ -108,12 +108,12 @@ typedef struct cdk_address_s             cdk_address_t;
 typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_poller_manager_s      cdk_poller_manager_t;
 typedef struct cdk_event_s               cdk_event_t;
-typedef struct cdk_tlsconf_s             cdk_tlsconf_t;
+typedef struct cdk_tls_conf_s            cdk_tls_conf_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
 typedef struct cdk_spinlock_s            cdk_spinlock_t;
-typedef struct cdk_conf_s                cdk_conf_t;
+typedef struct cdk_net_conf_s            cdk_net_conf_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -291,17 +291,19 @@ struct cdk_event_s {
 	cdk_list_node_t node;
 };
 
-struct cdk_tlsconf_s {
+struct cdk_tls_conf_s {
 	const char* cafile;    /* Path to a file containing trusted CA certificates in PEM format. This is used for verifying the peer's certificate during TLS/SSL handshakes. */
 	const char* capath;    /* Path to a directory containing multiple files, each with a single trusted CA certificate in PEM format. These are also used for verifying the peer's certificate. */
 	const char* crtfile;   /* Path to the certificate file in PEM format for this TLS context. This is typically the server's certificate when acting as a server or the client's certificate for client authentication. */
 	const char* keyfile;   /* Path to the private key file in PEM format that corresponds to the certificate specified by crtfile. This is required for the TLS context to establish secure connections. */
 	bool verifypeer;       /* A boolean flag indicating whether the TLS context should verify the peer's certificate. If set to true, the TLS handshake will fail if the peer does not provide a valid certificate. */
+	bool dtls;
 };
 
-struct cdk_conf_s {
+struct cdk_net_conf_s {
 	int nthrds;
-	cdk_tlsconf_t tls;
+	cdk_tls_conf_t tls;
+	cdk_tls_conf_t dtls;
 };
 
 struct cdk_channel_s {

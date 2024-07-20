@@ -45,7 +45,7 @@ static void _close_cb(cdk_channel_t* channel, const char* error) {
 }
 
 int main(void) {
-	cdk_conf_t conf = { .nthrds = 4, };
+	cdk_net_conf_t conf = { .nthrds = 4, };
 	cdk_unpacker_t unpacker = {
 		.fixedlen.len = BUFFERSIZE,
 	};

@@ -59,7 +59,7 @@ static void _heartbeat_cb(cdk_channel_t* channel) {
 }
 
 int main(void) {
-	cdk_conf_t conf = {
+	cdk_net_conf_t conf = {
 		.nthrds = 4,
 		.tls = {
 			.cafile = NULL,
