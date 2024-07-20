@@ -1,70 +1,67 @@
 #include "cdk.h"
 
-typedef enum net_msg_type_e{
-	KEEPALIVE_MSG_TYPE,
-	PING_MSG_TYPE,
-	PONG_MSG_TYPE,
-}net_msg_type_t;
+typedef enum msg_type_e{
+	TYPE_KEEPALIVE,
+	TYPE_PING,
+	TYPE_PONG,
+} msg_type_t;
 
-typedef struct net_msg_hdr_s {
+typedef struct msg_hdr_s {
 	uint32_t size;
-	net_msg_type_t type;
-}net_msg_hdr_t;
+	msg_type_t type;
+} msg_hdr_t;
 
-typedef struct net_msg_s {
-	net_msg_hdr_t hdr;
+typedef struct msg_s {
+	msg_hdr_t hdr;
 	char data[];
-}net_msg_t;
+} msg_t;
 
-char ping[16] = "PING";
-char keepalive[16] = "KEEPALIVE";
+char PING[16] = "PING";
+char KEEPALIVE[16] = "KEEPALIVE";
 
-static void handle_connect(cdk_channel_t* channel) {
+static void _connect_cb(cdk_channel_t* channel) {
 	cdk_logi("[%d]has connected to remote...\n", (int)channel->fd);
-	net_msg_t* msg = malloc(sizeof(net_msg_t) + sizeof(ping));
-	if (msg) {
-		msg->hdr.size = htonl((uint32_t)(sizeof(ping)));
-		msg->hdr.type = htonl(PING_MSG_TYPE);
-		memcpy(msg->data, ping, sizeof(ping));
-		cdk_net_send(channel, msg, sizeof(net_msg_t) + sizeof(ping));
-
-		free(msg);
-		msg = NULL;
+	msg_t* smsg = malloc(sizeof(msg_t) + sizeof(PING));
+	if (smsg) {
+		smsg->hdr.size = htonl((uint32_t)(sizeof(PING)));
+		smsg->hdr.type = htonl(TYPE_PING);
+		memcpy(smsg->data, PING, sizeof(PING));
+		cdk_net_send(channel, smsg, sizeof(msg_t) + sizeof(PING));
+		free(smsg);
+		smsg = NULL;
 	}
 }
 
-static void handle_read(cdk_channel_t* channel, void* buf, size_t len) {
-	net_msg_t* rmsg = buf;
+static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
+	msg_t* rmsg = buf;
 	cdk_address_t addrinfo;
 	cdk_net_extract_address(channel->fd, &addrinfo, true);
 	cdk_logi("recv %s from %s:%d. type: %d, len: %d.\n", rmsg->data, addrinfo.addr, addrinfo.port, ntohl(rmsg->hdr.type), ntohl(rmsg->hdr.size));
 
-	net_msg_t* msg = malloc(sizeof(net_msg_t) + sizeof(ping));
-	if (msg) {
-		msg->hdr.size = htonl((uint32_t)(sizeof(ping)));
-		msg->hdr.type = htonl(PING_MSG_TYPE);
-		memcpy(msg->data, ping, sizeof(ping));
-		cdk_net_send(channel, msg, sizeof(net_msg_t) + sizeof(ping));
-
-		free(msg);
-		msg = NULL;
+	msg_t* smsg = malloc(sizeof(msg_t) + sizeof(PING));
+	if (smsg) {
+		smsg->hdr.size = htonl((uint32_t)(sizeof(PING)));
+		smsg->hdr.type = htonl(TYPE_PING);
+		memcpy(smsg->data, PING, sizeof(PING));
+		cdk_net_send(channel, smsg, sizeof(msg_t) + sizeof(PING));
+		free(smsg);
+		smsg = NULL;
 	}
 }
 
-static void handle_close(cdk_channel_t* channel, const char* error) {
+static void _close_cb(cdk_channel_t* channel, const char* error) {
 	cdk_loge("connection closed, reason: %s\n", error);
 }
 
-static void handle_heartbeat(cdk_channel_t* channel) {
-	net_msg_t* msg = malloc(sizeof(net_msg_t) + sizeof(keepalive));
-	if (msg) {
-		msg->hdr.size = htonl((uint32_t)(sizeof(keepalive)));
-		msg->hdr.type = htonl(KEEPALIVE_MSG_TYPE);
-		memcpy(msg->data, keepalive, sizeof(keepalive));
-		cdk_net_send(channel, msg, sizeof(net_msg_t) + sizeof(keepalive));
-
-		free(msg);
-		msg = NULL;
+static void _heartbeat_cb(cdk_channel_t* channel) {
+	msg_t* smsg = malloc(sizeof(msg_t) + sizeof(KEEPALIVE));
+	if (smsg) {
+		smsg->hdr.size = htonl((uint32_t)(sizeof(KEEPALIVE)));
+		smsg->hdr.type = htonl(TYPE_KEEPALIVE);
+		memcpy(smsg->data, KEEPALIVE, sizeof(KEEPALIVE));
+		cdk_net_send(channel, smsg, sizeof(msg_t) + sizeof(KEEPALIVE));
+		free(smsg);
+		smsg = NULL;
 	}
 }
 
@@ -79,9 +76,6 @@ int main(void) {
 			.verifypeer = true
 		}
 	};
-	cdk_net_startup(&conf);
-	cdk_logger_create(NULL, false);
-
 	cdk_unpacker_t unpacker = {
 		.type = TYPE_LENGTHFIELD,
 		.lengthfield.adj = 0,
@@ -91,15 +85,17 @@ int main(void) {
 		.lengthfield.size = 4
 	};
 	cdk_handler_t handler = {
-		.tcp.on_connect = handle_connect,
-		.tcp.on_read = handle_read,
-		.tcp.on_close = handle_close,
-		.tcp.on_heartbeat = handle_heartbeat,
+		.tcp.on_connect = _connect_cb,
+		.tcp.on_read = _read_cb,
+		.tcp.on_close = _close_cb,
+		.tcp.on_heartbeat = _heartbeat_cb,
 		.tcp.wr_timeout = 10000,
 		.tcp.conn_timeout = 5000,
 		.tcp.hb_interval = 5000,
 		.tcp.unpacker = &unpacker
 	};
+	cdk_net_startup(&conf);
+	cdk_logger_create(NULL, false);
 	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 	cdk_net_cleanup();
 	cdk_logger_destroy();

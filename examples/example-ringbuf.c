@@ -26,18 +26,18 @@ int main(void) {
     bool isempty = cdk_ringbuf_empty(&ring);
     printf("ringbuffer is empty? %s\n", isempty ? "true" : "false");
 
-    people_t obj1 = { .name = "John", .age = 25 };
-    people_t obj2 = { .name = "Alice", .age = 30 };
-    people_t obj3 = { .name = "Bob", .age = 35 };
-    people_t obj4 = { .name = "Han", .age = 35 };
-    people_t obj5 = { .name = "Jun", .age = 35 };
+    people_t p1 = { .name = "John", .age = 25 };
+    people_t p2 = { .name = "Alice", .age = 30 };
+    people_t p3 = { .name = "Bob", .age = 35 };
+    people_t p4 = { .name = "Han", .age = 35 };
+    people_t p5 = { .name = "Jun", .age = 35 };
 
-    cdk_ringbuf_write(&ring, &obj1, 1);
-    cdk_ringbuf_write(&ring, &obj2, 1);
-    cdk_ringbuf_write(&ring, &obj3, 1);
-    cdk_ringbuf_write(&ring, &obj4, 1);
+    cdk_ringbuf_write(&ring, &p1, 1);
+    cdk_ringbuf_write(&ring, &p2, 1);
+    cdk_ringbuf_write(&ring, &p3, 1);
+    cdk_ringbuf_write(&ring, &p4, 1);
 
-    if (cdk_ringbuf_write(&ring, &obj5, 1) == 0) {
+    if (cdk_ringbuf_write(&ring, &p5, 1) == 0) {
         printf("write failed, because ringbuf is full\n");
     }
     printf("ringbuffer len: %u\n", cdk_ringbuf_len(&ring));

@@ -1,8 +1,7 @@
 #include "cdk.h"
 
 mtx_t mtx;
-
-void callback(void* p) {
+static inline void _routine_cb(void* p) {
 	mtx_lock(&mtx);
 	cdk_logi("[%d]timer task\n", (int)cdk_utils_systemtid());
 	mtx_unlock(&mtx);
@@ -15,7 +14,7 @@ int main(void) {
 	cdk_logger_create(NULL, true);
 	mtx_init(&mtx, mtx_plain);
 	
-	timer = cdk_timer_add(&mgr, callback, NULL, 1000, true);
+	timer = cdk_timer_add(&mgr, _routine_cb, NULL, 1000, true);
 	while (true) {
 		if (cdk_heap_empty(&mgr.heap)) {
 			break;

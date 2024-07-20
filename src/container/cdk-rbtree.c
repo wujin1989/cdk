@@ -26,7 +26,7 @@
 #define	RB_RED		0
 #define	RB_BLACK	1
 
-int default_keycmp_i8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_i8(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	if (k1->i8 < k2->i8) {
 		return -1;
 	}
@@ -36,7 +36,7 @@ int default_keycmp_i8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	return 0;
 }
 
-int default_keycmp_i16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_i16(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	if (k1->i16 < k2->i16) {
 		return -1;
 	}
@@ -46,7 +46,7 @@ int default_keycmp_i16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	return 0;
 }
 
-int default_keycmp_i32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_i32(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	if (k1->i32 < k2->i32) {
 		return -1;
 	}
@@ -56,7 +56,7 @@ int default_keycmp_i32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	return 0;
 }
 
-int default_keycmp_i64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_i64(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	if (k1->i64 < k2->i64) {
 		return -1;
 	}
@@ -66,7 +66,7 @@ int default_keycmp_i64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	return 0;
 }
 
-int default_keycmp_u8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_u8(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	if (k1->u8 < k2->u8) {
 		return -1;
 	}
@@ -76,7 +76,7 @@ int default_keycmp_u8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	return 0;
 }
 
-int default_keycmp_u16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_u16(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	if (k1->u16 < k2->u16) {
 		return -1;
 	}
@@ -86,7 +86,7 @@ int default_keycmp_u16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	return 0;
 }
 
-int default_keycmp_u32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_u32(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	if (k1->u32 < k2->u32) {
 		return -1;
 	}
@@ -96,7 +96,7 @@ int default_keycmp_u32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	return 0;
 }
 
-int default_keycmp_u64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_u64(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	if (k1->u64 < k2->u64) {
 		return -1;
 	}
@@ -106,7 +106,7 @@ int default_keycmp_u64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
 	return 0;
 }
 
-int default_keycmp_str(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2) {
+int default_keycmp_str(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2) {
 	return strcmp(k1->str, k2->str);
 }
 
@@ -155,7 +155,7 @@ static inline void _rbtree_rotate_right(cdk_rbtree_node_t* node, cdk_rbtree_t* t
 	node->parent = left;
 }
 
-void cdk_rbtree_init(cdk_rbtree_t* tree, int(*keycmp)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*)) {
+void cdk_rbtree_init(cdk_rbtree_t* tree, int(*keycmp)(cdk_rbtree_key_t*, cdk_rbtree_key_t*)) {
 	tree->root = NULL;
 	tree->compare = keycmp;
 }
@@ -376,7 +376,7 @@ void cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node) {
 	_rbtree_insert_color(tree, node);
 }
 
-cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_node_key_t key) {
+cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_key_t key) {
 	cdk_rbtree_node_t* n = tree->root;
 	while (n) {
 		int r = tree->compare(&key, &n->key);

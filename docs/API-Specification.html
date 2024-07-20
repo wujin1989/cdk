@@ -197,21 +197,21 @@ Copyright©2023 jin.wu. All rights reserved.
  * This function initializes a red-black tree with the specified comparison function.
  *
  * Note: CDK provides the following built-in functions for keycmp：
-    extern int default_keycmp_i8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_i16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_i32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_i64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_u8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_u16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_u32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_u64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_str(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_i8(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_i16(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_i32(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_i64(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_u8(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_u16(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_u32(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_u64(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_str(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
  *
  * @param tree    Pointer to the red-black tree structure
  * @param keycmp  Comparison function for the keys in the tree
  * @return N/A
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rbtree_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span><span class="token punctuation">(</span><span class="token operator">*</span>keycmp<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_node_key_t</span><span class="token operator">*</span><span class="token punctuation">,</span> <span class="token class-name">cdk_rbtree_node_key_t</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_rbtree_init</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">,</span> <span class="token keyword keyword-int">int</span><span class="token punctuation">(</span><span class="token operator">*</span>keycmp<span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_key_t</span><span class="token operator">*</span><span class="token punctuation">,</span> <span class="token class-name">cdk_rbtree_key_t</span><span class="token operator">*</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
  * @brief Insert a node into the red-black tree
  *
@@ -233,7 +233,7 @@ Copyright©2023 jin.wu. All rights reserved.
  * @param key   Key of the node to be found
  * @return Pointer to the found node, or NULL if not found
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> <span class="token function">cdk_rbtree_find</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">,</span> <span class="token class-name">cdk_rbtree_node_key_t</span> key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token class-name">cdk_rbtree_node_t</span><span class="token operator">*</span> <span class="token function">cdk_rbtree_find</span><span class="token punctuation">(</span><span class="token class-name">cdk_rbtree_t</span><span class="token operator">*</span> tree<span class="token punctuation">,</span> <span class="token class-name">cdk_rbtree_key_t</span> key<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
  * @brief Erase a node from the red-black tree
  *

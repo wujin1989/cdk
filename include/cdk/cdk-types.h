@@ -87,7 +87,7 @@ typedef enum cdk_event_type_e{
 
 typedef struct cdk_channel_s             cdk_channel_t;
 typedef struct cdk_handler_s             cdk_handler_t;
-typedef union  cdk_rbtree_node_key_u     cdk_rbtree_node_key_t;
+typedef union  cdk_rbtree_key_u          cdk_rbtree_key_t;
 typedef struct cdk_rbtree_node_s         cdk_rbtree_node_t;
 typedef struct cdk_rbtree_s              cdk_rbtree_t;
 typedef struct cdk_list_node_s           cdk_list_node_t;
@@ -140,7 +140,7 @@ typedef SSIZE_T                     ssize_t;
 typedef HANDLE                      cdk_pollfd_t;
 #endif
 
-union cdk_rbtree_node_key_u {
+union cdk_rbtree_key_u {
 	char*    str;
 	int8_t	 i8;
 	int16_t  i16;
@@ -155,7 +155,7 @@ union cdk_rbtree_node_key_u {
 
 struct cdk_rbtree_node_s
 {
-	cdk_rbtree_node_key_t key;
+	cdk_rbtree_key_t key;
 	struct cdk_rbtree_node_s* parent;
 	struct cdk_rbtree_node_s* right;
 	struct cdk_rbtree_node_s* left;
@@ -174,7 +174,7 @@ struct cdk_spinlock_s {
 struct cdk_rbtree_s
 {
 	cdk_rbtree_node_t* root;
-	int(*compare)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*);
+	int(*compare)(cdk_rbtree_key_t*, cdk_rbtree_key_t*);
 };
 
 struct cdk_list_node_s {

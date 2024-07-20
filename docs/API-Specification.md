@@ -210,21 +210,21 @@ extern bool cdk_queue_empty(cdk_queue_t* q);
  * This function initializes a red-black tree with the specified comparison function.
  *
  * Note: CDK provides the following built-in functions for keycmp：
-    extern int default_keycmp_i8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_i16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_i32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_i64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_u8(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_u16(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_u32(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_u64(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
-    extern int default_keycmp_str(cdk_rbtree_node_key_t* k1, cdk_rbtree_node_key_t* k2);
+    extern int default_keycmp_i8(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_i16(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_i32(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_i64(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_u8(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_u16(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_u32(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_u64(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
+    extern int default_keycmp_str(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
  *
  * @param tree    Pointer to the red-black tree structure
  * @param keycmp  Comparison function for the keys in the tree
  * @return N/A
  */
-extern void cdk_rbtree_init(cdk_rbtree_t* tree, int(*keycmp)(cdk_rbtree_node_key_t*, cdk_rbtree_node_key_t*));
+extern void cdk_rbtree_init(cdk_rbtree_t* tree, int(*keycmp)(cdk_rbtree_key_t*, cdk_rbtree_key_t*));
 ```
 ```c
 /**
@@ -250,7 +250,7 @@ extern void cdk_rbtree_insert(cdk_rbtree_t* tree, cdk_rbtree_node_t* node);
  * @param key   Key of the node to be found
  * @return Pointer to the found node, or NULL if not found
  */
-extern cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_node_key_t key);
+extern cdk_rbtree_node_t* cdk_rbtree_find(cdk_rbtree_t* tree, cdk_rbtree_key_t key);
 ```
 ```c
 /**
