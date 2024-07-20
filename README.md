@@ -10,11 +10,12 @@
 CDK is a clean and concise cross-platform C development kits that is a supplement and extension to the standard C library, rather than a replacement. It provides developers with powerful tools and functions to simplify the process of developing portable C applications. CDK is well-documented, designed to support best coding practices.
 
 # Feature
-- High-performance Asynchronous I/O (IOCP, epoll, kqueue)
+- High-performance Asynchronous I/O
 - Cross-platform Compatibility
 - Built-in TLS and DTLS Support
 - Built-in TCP Packet Reassembler
 - Receive side scaling Support
+- Concurrent UDP Server
 
 # Requirement
 The compiler needs to support C11.
