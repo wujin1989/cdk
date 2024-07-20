@@ -84,6 +84,7 @@ set(SRCS
 	src/net/channel.c
 	src/net/unpacker.c
 	src/net/tls.c
+	src/net/dtls.c
 	src/net/txlist.c
 	src/cdk-threadpool.c
 	src/cdk-loader.c
