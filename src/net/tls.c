@@ -36,15 +36,23 @@ static int _sni_select_cb(SSL* s, int* al, void* arg) {
 	return 0;
 }
 
-static int _gen_cookie_cb(SSL* ssl, unsigned char* cookie, size_t* cookie_len) {
+static int _gen_stateless_cookie_cb(SSL* ssl, unsigned char* cookie, size_t* cookie_len) {
 	return 0;
 }
 
-static int _verify_cookie_cb(SSL* ssl, const unsigned char* cookie, size_t cookie_len) {
+static int _verify_stateless_cookie_cb(SSL* ssl, const unsigned char* cookie, size_t cookie_len) {
 	return 0;
 }
 
-static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
+static int _gen_cookie_cb(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len) {
+	return 0;
+}
+
+static int _verify_cookie_cb(SSL* ssl, const unsigned char* cookie, unsigned int cookie_len) {
+	return 0;
+}
+
+static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf, ctrl_side_t side) {
 	SSL_CTX* ctx = NULL;
 
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
@@ -90,9 +98,14 @@ static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
 	 */
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT : SSL_VERIFY_NONE, NULL);
-	if (tlsconf->dtls) {
-		SSL_CTX_set_stateless_cookie_generate_cb(ctx, _gen_cookie_cb);
-		SSL_CTX_set_stateless_cookie_verify_cb(ctx, _verify_cookie_cb);
+	if (side == CTRL_SERVER) {
+		if (tlsconf->dtls) {
+			SSL_CTX_set_cookie_generate_cb(ctx, _gen_cookie_cb);
+			SSL_CTX_set_cookie_verify_cb(ctx, _verify_cookie_cb);
+		} else {
+			SSL_CTX_set_stateless_cookie_generate_cb(ctx, _gen_stateless_cookie_cb);
+			SSL_CTX_set_stateless_cookie_verify_cb(ctx, _verify_stateless_cookie_cb);
+		}
 	}
 	return ctx;
 }
@@ -109,11 +122,11 @@ const char* tls_ssl_error2string(int err) {
 	return buffer;
 }
 
-cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf) {
+cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf, ctrl_side_t side) {
 	if (!conf->cafile && !conf->capath && !conf->crtfile) {
 		return NULL;
 	}
-	SSL_CTX* ctx = _ctx_create(conf);
+	SSL_CTX* ctx = _ctx_create(conf, side);
 	if (!ctx) {
 		return NULL;
 	}
