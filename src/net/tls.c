@@ -52,7 +52,7 @@ static int _verify_cookie_cb(SSL* ssl, const unsigned char* cookie, unsigned int
 	return 0;
 }
 
-static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf, ctrl_side_t side) {
+static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
 	SSL_CTX* ctx = NULL;
 
 	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
@@ -98,7 +98,7 @@ static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf, ctrl_side_t side) {
 	 */
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT : SSL_VERIFY_NONE, NULL);
-	if (side == CTRL_SERVER) {
+	if (tlsconf->side == SIDE_SERVER) {
 		if (tlsconf->dtls) {
 			SSL_CTX_set_cookie_generate_cb(ctx, _gen_cookie_cb);
 			SSL_CTX_set_cookie_verify_cb(ctx, _verify_cookie_cb);
@@ -122,11 +122,11 @@ const char* tls_ssl_error2string(int err) {
 	return buffer;
 }
 
-cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf, ctrl_side_t side) {
+cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf) {
 	if (!conf->cafile && !conf->capath && !conf->crtfile) {
 		return NULL;
 	}
-	SSL_CTX* ctx = _ctx_create(conf, side);
+	SSL_CTX* ctx = _ctx_create(conf);
 	if (!ctx) {
 		return NULL;
 	}
@@ -220,12 +220,12 @@ void tls_ctx_sni_set(cdk_tls_ctx_t* ctx) {
 	SSL_CTX_set_tlsext_servername_callback(ctx, _sni_select_cb);
 }
 
-void tls_ctx_alpn_set(cdk_tls_ctx_t* ctx, const unsigned char* protos, unsigned int protos_len, ctrl_side_t side) {
+void tls_ctx_alpn_set(cdk_tls_ctx_t* ctx, const unsigned char* protos, unsigned int protos_len, cdk_tls_side_t side) {
 	/* used by dual side, support tls, dtls */
-	if (side == CTRL_CLIENT) {
+	if (side == SIDE_CLIENT) {
 		SSL_CTX_set_alpn_protos((SSL_CTX*)ctx, protos, protos_len);
 	}
-	if (side == CTRL_SERVER) {
+	if (side == SIDE_SERVER) {
 		SSL_CTX_set_alpn_select_cb((SSL_CTX*)ctx, _alpn_select_cb, (void*)protos);
 	}
 }

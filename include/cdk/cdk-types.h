@@ -109,6 +109,7 @@ typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_poller_manager_s      cdk_poller_manager_t;
 typedef struct cdk_event_s               cdk_event_t;
 typedef struct cdk_tls_conf_s            cdk_tls_conf_t;
+typedef enum cdk_tls_side_e             cdk_tls_side_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
@@ -291,6 +292,11 @@ struct cdk_event_s {
 	cdk_list_node_t node;
 };
 
+enum cdk_tls_side_e {
+	SIDE_CLIENT,
+	SIDE_SERVER,
+};
+
 struct cdk_tls_conf_s {
 	const char* cafile;    /* Path to a file containing trusted CA certificates in PEM format. This is used for verifying the peer's certificate during TLS/SSL handshakes. */
 	const char* capath;    /* Path to a directory containing multiple files, each with a single trusted CA certificate in PEM format. These are also used for verifying the peer's certificate. */
@@ -298,6 +304,7 @@ struct cdk_tls_conf_s {
 	const char* keyfile;   /* Path to the private key file in PEM format that corresponds to the certificate specified by crtfile. This is required for the TLS context to establish secure connections. */
 	bool verifypeer;       /* A boolean flag indicating whether the TLS context should verify the peer's certificate. If set to true, the TLS handshake will fail if the peer does not provide a valid certificate. */
 	bool dtls;
+	cdk_tls_side_t side;
 };
 
 struct cdk_net_conf_s {
