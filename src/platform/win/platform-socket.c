@@ -234,19 +234,16 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
         if (protocol == SOCK_DGRAM) {
             _disable_udp_connreset(sock);
         }
-        if (protocol == SOCK_STREAM) {
-            if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
-                if (WSAGetLastError() != WSAEWOULDBLOCK) {
-                    platform_socket_close(sock);
-                    continue;
-                }
-                if (WSAGetLastError() == WSAEWOULDBLOCK) {
-                    break;
-                }
+        if (connect(sock, rp->ai_addr, (int)rp->ai_addrlen)) {
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                platform_socket_close(sock);
+                continue;
             }
-            else {
-                *connected = true;
+            if (WSAGetLastError() == WSAEWOULDBLOCK) {
+                break;
             }
+        } else {
+            *connected = true;
         }
         break;
     }

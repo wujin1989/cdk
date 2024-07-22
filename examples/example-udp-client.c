@@ -17,12 +17,13 @@ static int _routine(void* p) {
 		char buffer[64] = { 0 };
 		sprintf(buffer, "%d", num++);
 		cdk_net_send(channel, buffer, sizeof(buffer));
+		cdk_time_sleep(100);
 	}
 	return 0;
 }
 
-static void _ready_cb(cdk_channel_t* channel) {
-	printf("udp ready\n");
+static void _connect_cb(cdk_channel_t* channel) {
+	printf("udp connected\n");
 	thrd_t tid;
 	thrd_create(&tid, _routine, channel);
 	thrd_detach(tid);
@@ -30,10 +31,19 @@ static void _ready_cb(cdk_channel_t* channel) {
 
 int main(void) {
 	cdk_net_conf_t conf = {
-		.nthrds = 4
+		.nthrds = 4,
+		.dtls = {
+			.cafile = "certs/ca.crt",
+			.capath = NULL,
+			.crtfile = NULL,
+			.keyfile = NULL,
+			.verifypeer = true,
+			.dtls = true,
+			.side = SIDE_CLIENT
+		}
 	};
 	cdk_handler_t handler = {
-		.udp.on_ready = _ready_cb,
+		.udp.on_connect = _connect_cb,
 		.udp.on_read = _read_cb,
 		.udp.on_close = _close_cb,
 	};

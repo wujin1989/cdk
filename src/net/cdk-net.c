@@ -159,14 +159,7 @@ static void _cb_listen(void* param) {
     cdk_sock_t sock = platform_socket_listen(ctx->host, ctx->port, ctx->protocol, ctx->idx, ctx->cores, true);
     cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
     if (channel) {
-        if (channel->type == SOCK_STREAM) {
-            channel_accepting(channel);
-        }
-        if (channel->type == SOCK_DGRAM) {
-            if (!channel_is_reading(channel)) {
-                channel_enable_read(channel);
-            }
-        }
+        channel_accepting(channel);
     }
     free(ctx);
     ctx = NULL;
@@ -191,21 +184,22 @@ static void _cb_dial(void* param) {
             }
         }
         if (channel->type == SOCK_DGRAM) {
+            (void)connected;
             cdk_net_make_address(sock, &channel->udp.peer.ss, ctx->host, ctx->port);
             /**
              * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage,
-             * the address length cannot use sizeof(struct sockaddr_storage). This seems to be a bug in MacOS.
+             * the address length cannot use sizeof(struct sockaddr_storage). 
+             * This seems to be a bug in MacOS.
              */
             channel->udp.peer.sslen = 
                 (platform_socket_extract_family(sock) == AF_INET) 
                 ? sizeof(struct sockaddr_in) 
                 : sizeof(struct sockaddr_in6);
             
-            if (channel->handler->udp.on_ready) {
-                channel->handler->udp.on_ready(channel);
-            }
-            if (!channel_is_reading(channel)) {
-                channel_enable_read(channel);
+            if (channel->udp.dtls_ssl) {
+                channel_tls_cli_handshake(channel);
+            } else {
+                channel_connected(channel);
             }
         }
     }
@@ -391,7 +385,7 @@ void cdk_net_startup(cdk_net_conf_t* conf) {
         return;
     }
     global_tls_ctx = tls_ctx_create(&conf->tls);
-    global_dtls_ctx = tls_ctx_create(&conf->tls);
+    global_dtls_ctx = tls_ctx_create(&conf->dtls);
     _manager_create(conf->nthrds);
 }
 

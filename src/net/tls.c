@@ -20,8 +20,15 @@
  */
 
 #include "tls.h"
+#include "cdk/net/cdk-net.h"
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/rand.h>
+
+#define COOKIE_SECRET_LENGTH    16
+
+static unsigned char cookie_secret[COOKIE_SECRET_LENGTH];
+static bool cookie_initialized;
 
 static int _alpn_select_cb(
 	SSL* ssl, 
@@ -36,20 +43,101 @@ static int _sni_select_cb(SSL* s, int* al, void* arg) {
 	return 0;
 }
 
-static int _gen_stateless_cookie_cb(SSL* ssl, unsigned char* cookie, size_t* cookie_len) {
-	return 0;
-}
+static BIO_ADDR* _bio_stm_get_peer(cdk_sock_t sock) {
+	struct sockaddr_storage ss;
+	socklen_t sslen = sizeof(struct sockaddr_storage);
+	BIO_ADDR* bio_addr = NULL;
 
-static int _verify_stateless_cookie_cb(SSL* ssl, const unsigned char* cookie, size_t cookie_len) {
-	return 0;
+	getpeername(sock, (struct sockaddr*)&ss, &sslen);
+
+	bio_addr = BIO_ADDR_new();
+	if (!bio_addr) {
+		return NULL;
+	}
+	if (ss.ss_family == AF_INET) {
+		struct sockaddr_in* sin = (struct sockaddr_in*)&ss;
+		if (!BIO_ADDR_rawmake(bio_addr, AF_INET, (const void*)&sin->sin_addr, sizeof(sin->sin_addr), sin->sin_port)) {
+			BIO_ADDR_free(bio_addr);
+			return NULL;
+		}
+	}
+	if (ss.ss_family == AF_INET6) {
+		struct sockaddr_in6* sin6 = (struct sockaddr_in6*)&ss;
+		if (!BIO_ADDR_rawmake(bio_addr, AF_INET6, (const void*)&sin6->sin6_addr, sizeof(sin6->sin6_addr), sin6->sin6_port)) {
+			BIO_ADDR_free(bio_addr);
+			return NULL;
+		}
+	}
+	return bio_addr;
 }
 
 static int _gen_cookie_cb(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len) {
-	return 0;
+	unsigned char* buf = NULL;
+	size_t buflen = 0;
+	BIO_ADDR* peer = NULL;
+	unsigned short port = 0;
+
+	if (!cookie_initialized) {
+		if (RAND_bytes(cookie_secret, COOKIE_SECRET_LENGTH) <= 0) {
+			return 0;
+		}
+		cookie_initialized = true;
+	}
+	if (SSL_is_dtls(ssl)) {
+		peer = BIO_ADDR_new();
+		if (!peer) {
+			return 0;
+		}
+		BIO_dgram_get_peer(SSL_get_rbio(ssl), peer);
+	} else {
+		cdk_sock_t sock = 0;
+		BIO_get_fd(SSL_get_rbio(ssl), &sock);
+		peer = _bio_stm_get_peer(sock);
+	}
+	if (!BIO_ADDR_rawaddress(peer, NULL, &buflen)) {
+		return 0;
+	}
+	port = BIO_ADDR_rawport(peer);
+	buflen += sizeof(BIO_ADDR_rawport(peer));
+	buf = malloc(buflen);
+	if (!buf) {
+		return 0;
+	}
+	memcpy(buf, &port, sizeof(port));
+	BIO_ADDR_rawaddress(peer, buf + sizeof(port), NULL);
+
+	HMAC(EVP_sha1(), cookie_secret, COOKIE_SECRET_LENGTH, buf, buflen, cookie, cookie_len);
+
+	free(buf);
+	buf = NULL;
+	BIO_ADDR_free(peer);
+	return 1;
 }
 
 static int _verify_cookie_cb(SSL* ssl, const unsigned char* cookie, unsigned int cookie_len) {
+	unsigned char result[EVP_MAX_MD_SIZE];
+	unsigned int resultlength;
+
+	if (cookie_initialized 
+		&& _gen_cookie_cb(ssl, result, &resultlength) 
+		&& cookie_len == resultlength 
+		&& !memcmp(result, cookie, resultlength)) {
+		return 1;
+	}
 	return 0;
+}
+
+static int _gen_stateless_cookie_cb(SSL* ssl, unsigned char* cookie, size_t* cookie_len) {
+	unsigned int tmp;
+	int ret = _gen_cookie_cb(ssl, cookie, &tmp);
+	if (ret) {
+		*cookie_len = tmp;
+	}
+	return ret;
+}
+
+static int _verify_stateless_cookie_cb(SSL* ssl, const unsigned char* cookie, size_t cookie_len) {
+	return _verify_cookie_cb(ssl, cookie, (unsigned int)cookie_len);
 }
 
 static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
@@ -98,6 +186,7 @@ static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
 	 */
 	SSL_CTX_set_mode(ctx, SSL_CTX_get_mode(ctx) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_CTX_set_verify(ctx, tlsconf->verifypeer ? SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT : SSL_VERIFY_NONE, NULL);
+	
 	if (tlsconf->side == SIDE_SERVER) {
 		if (tlsconf->dtls) {
 			SSL_CTX_set_cookie_generate_cb(ctx, _gen_cookie_cb);

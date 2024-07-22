@@ -66,7 +66,9 @@ int main(void) {
 			.capath = NULL,
 			.crtfile = "certs/cert.crt",
 			.keyfile = "certs/cert.key",
-			.verifypeer = false
+			.verifypeer = false,
+			.dtls = false,
+			.side = SIDE_SERVER
 		}
 	};
 	cdk_unpacker_t unpacker = {

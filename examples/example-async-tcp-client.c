@@ -73,7 +73,9 @@ int main(void) {
 			.capath = NULL,
 			.crtfile = NULL,
 			.keyfile = NULL,
-			.verifypeer = true
+			.verifypeer = true,
+			.dtls = false,
+			.side = SIDE_CLIENT
 		}
 	};
 	cdk_unpacker_t unpacker = {

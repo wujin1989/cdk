@@ -340,10 +340,12 @@ struct cdk_channel_s {
 			cdk_timer_t* hb_timer;
 		}tcp;
 		struct {
+			bool accepting;
 			struct {
 				struct sockaddr_storage ss;
 				socklen_t sslen;
 			}peer;
+			cdk_tls_ssl_t* dtls_ssl;
 		}udp;
 	};
 };
@@ -364,7 +366,7 @@ struct cdk_handler_s {
 			cdk_unpacker_t* unpacker;
 		}tcp;
 		struct {
-			void (*on_ready) (cdk_channel_t*);
+			void (*on_connect) (cdk_channel_t*);
 			void (*on_read)  (cdk_channel_t*, void* buf, size_t len);
 			void (*on_write) (cdk_channel_t*);
 			void (*on_close) (cdk_channel_t*, const char* error);

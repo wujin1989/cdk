@@ -49,18 +49,32 @@ static inline void _event_handle(cdk_poller_t* poller) {
 
 static void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
     if (mask & EVENT_RD) {
-        (channel->type == SOCK_STREAM)
-            ? ((channel->tcp.accepting)
-                ? channel_accept(channel)
-                : channel_recv(channel))
-            : channel_recv(channel);
+        if (channel->type == SOCK_STREAM) {
+            if (channel->tcp.accepting) {
+                channel_accept(channel);
+            } else {
+                channel_recv(channel);
+            }
+        }
+        if (channel->type == SOCK_DGRAM) {
+            if (channel->udp.accepting) {
+                channel_accept(channel);
+            } else {
+                channel_recv(channel);
+            }
+        }
     }
     if (mask & EVENT_WR) {
-        (channel->type == SOCK_STREAM)
-            ? ((channel->tcp.connecting)
-                ? channel_connect(channel)
-                : channel_send(channel))
-            : channel_send(channel);
+        if (channel->type == SOCK_STREAM) {
+            if (channel->tcp.connecting) {
+                channel_connect(channel);
+            } else {
+                channel_send(channel);
+            }
+        }
+        if (channel->type == SOCK_DGRAM) {
+            channel_send(channel);
+        }
     }
 }
 
