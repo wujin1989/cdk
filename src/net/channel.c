@@ -534,19 +534,13 @@ void channel_accept(cdk_channel_t* channel) {
         }
     }
     if (channel->type == SOCK_DGRAM) {
-        channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
-        int n = recvfrom(channel->fd, channel->rxbuf.buf, DEFAULT_IOBUF_SIZE, MSG_PEEK, (struct sockaddr*)&channel->udp.peer.ss, &channel->udp.peer.sslen);
-        if (n == PLATFORM_SO_ERROR_SOCKET_ERROR) {
-            int m = platform_socket_lasterror();
-            printf("------------%d\n", m);
-        }
-        BIO_ADDR* pstPeerAddr = BIO_ADDR_new();
-        int iRet = DTLSv1_listen(channel->udp.dtls_ssl, pstPeerAddr);
-        
-        connect(channel->fd, (const struct sockaddr*)&channel->udp.peer.ss, sizeof(channel->udp.peer.ss));
-        //-------------------
-
         if (channel->udp.dtls_ssl) {
+            channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
+            int n = recvfrom(channel->fd, channel->rxbuf.buf, DEFAULT_IOBUF_SIZE, MSG_PEEK, (struct sockaddr*)&channel->udp.peer.ss, &channel->udp.peer.sslen);
+
+           /* SSL_set_fd((SSL*)channel->udp.dtls_ssl, channel->fd);
+            int iRet = DTLSv1_listen((SSL*)channel->udp.dtls_ssl, NULL);*/
+            connect(channel->fd, (const struct sockaddr*)&channel->udp.peer.ss, sizeof(channel->udp.peer.ss));
             channel_tls_srv_handshake(channel);
         } else {
             channel_accepted(channel);
