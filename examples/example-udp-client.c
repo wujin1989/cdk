@@ -17,7 +17,7 @@ static int _routine(void* p) {
 		char buffer[64] = { 0 };
 		sprintf(buffer, "%d", num++);
 		cdk_net_send(channel, buffer, sizeof(buffer));
-		cdk_time_sleep(100);
+		cdk_time_sleep(1000);
 	}
 	return 0;
 }

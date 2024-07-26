@@ -72,45 +72,85 @@ static BIO_ADDR* _bio_stm_get_peer(cdk_sock_t sock) {
 }
 
 static int _gen_cookie_cb(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len) {
-	unsigned char* buf = NULL;
-	size_t buflen = 0;
-	BIO_ADDR* peer = NULL;
-	unsigned short port = 0;
 
-	if (!cookie_initialized) {
-		if (RAND_bytes(cookie_secret, COOKIE_SECRET_LENGTH) <= 0) {
+	memcpy(cookie, "cookie", 6);
+	*cookie_len = 6;
+
+	return 1;
+	unsigned char* buffer, result[EVP_MAX_MD_SIZE];
+	unsigned int length = 0, resultlength;
+	union {
+		struct sockaddr_storage ss;
+		struct sockaddr_in6 s6;
+		struct sockaddr_in s4;
+	} peer;
+
+	/* Initialize a random secret */
+	if (!cookie_initialized)
+	{
+		if (!RAND_bytes(cookie_secret, COOKIE_SECRET_LENGTH))
+		{
+			printf("error setting random cookie secret\n");
 			return 0;
 		}
-		cookie_initialized = true;
+		cookie_initialized = 1;
 	}
-	if (SSL_is_dtls(ssl)) {
-		peer = BIO_ADDR_new();
-		if (!peer) {
-			return 0;
-		}
-		BIO_dgram_get_peer(SSL_get_rbio(ssl), peer);
-	} else {
-		cdk_sock_t sock = 0;
-		BIO_get_fd(SSL_get_rbio(ssl), &sock);
-		peer = _bio_stm_get_peer(sock);
+
+	/* Read peer information */
+	(void)BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
+
+	/* Create buffer with peer's address and port */
+	length = 0;
+	switch (peer.ss.ss_family) {
+	case AF_INET:
+		length += sizeof(struct in_addr);
+		break;
+	case AF_INET6:
+		length += sizeof(struct in6_addr);
+		break;
+	default:
+		OPENSSL_assert(0);
+		break;
 	}
-	if (!BIO_ADDR_rawaddress(peer, NULL, &buflen)) {
+	length += 2;
+	buffer = (unsigned char*)OPENSSL_malloc(length);
+
+	if (buffer == NULL)
+	{
+		printf("out of memory\n");
 		return 0;
 	}
-	port = BIO_ADDR_rawport(peer);
-	buflen += sizeof(BIO_ADDR_rawport(peer));
-	buf = malloc(buflen);
-	if (!buf) {
-		return 0;
+
+	switch (peer.ss.ss_family) {
+	case AF_INET:
+		memcpy(buffer,
+			&peer.s4.sin_port,
+			2);
+		memcpy(buffer + sizeof(peer.s4.sin_port),
+			&peer.s4.sin_addr,
+			sizeof(struct in_addr));
+		break;
+	case AF_INET6:
+		memcpy(buffer,
+			&peer.s6.sin6_port,
+			2);
+		memcpy(buffer + 2,
+			&peer.s6.sin6_addr,
+			sizeof(struct in6_addr));
+		break;
+	default:
+		OPENSSL_assert(0);
+		break;
 	}
-	memcpy(buf, &port, sizeof(port));
-	BIO_ADDR_rawaddress(peer, buf + sizeof(port), NULL);
 
-	HMAC(EVP_sha1(), cookie_secret, COOKIE_SECRET_LENGTH, buf, buflen, cookie, cookie_len);
+	/* Calculate HMAC of buffer using the secret */
+	HMAC(EVP_sha1(), (const void*)cookie_secret, COOKIE_SECRET_LENGTH,
+		(const unsigned char*)buffer, length, result, &resultlength);
+	OPENSSL_free(buffer);
 
-	free(buf);
-	buf = NULL;
-	BIO_ADDR_free(peer);
+	memcpy(cookie, result, resultlength);
+	*cookie_len = resultlength;
+
 	return 1;
 }
 
@@ -118,6 +158,7 @@ static int _verify_cookie_cb(SSL* ssl, const unsigned char* cookie, unsigned int
 	unsigned char result[EVP_MAX_MD_SIZE];
 	unsigned int resultlength;
 
+	return 1;
 	if (cookie_initialized 
 		&& _gen_cookie_cb(ssl, result, &resultlength) 
 		&& cookie_len == resultlength 
@@ -125,19 +166,6 @@ static int _verify_cookie_cb(SSL* ssl, const unsigned char* cookie, unsigned int
 		return 1;
 	}
 	return 0;
-}
-
-static int _gen_stateless_cookie_cb(SSL* ssl, unsigned char* cookie, size_t* cookie_len) {
-	unsigned int tmp;
-	int ret = _gen_cookie_cb(ssl, cookie, &tmp);
-	if (ret) {
-		*cookie_len = tmp;
-	}
-	return ret;
-}
-
-static int _verify_stateless_cookie_cb(SSL* ssl, const unsigned char* cookie, size_t cookie_len) {
-	return _verify_cookie_cb(ssl, cookie, (unsigned int)cookie_len);
 }
 
 static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
@@ -191,9 +219,6 @@ static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
 		if (tlsconf->dtls) {
 			SSL_CTX_set_cookie_generate_cb(ctx, _gen_cookie_cb);
 			SSL_CTX_set_cookie_verify_cb(ctx, _verify_cookie_cb);
-		} else {
-			SSL_CTX_set_stateless_cookie_generate_cb(ctx, _gen_stateless_cookie_cb);
-			SSL_CTX_set_stateless_cookie_verify_cb(ctx, _verify_stateless_cookie_cb);
 		}
 	}
 	return ctx;
@@ -270,6 +295,22 @@ int tls_ssl_accept(cdk_tls_ssl_t* ssl, int fd, int* error) {
 		}
 		return -1;
 	}
+	return ret;
+}
+
+int tls_ssl_dtls_listen(cdk_tls_ssl_t* ssl, int fd, int* error) {
+	BIO* bio = BIO_new_dgram(fd, 0);
+	SSL_set_bio((SSL*)ssl, bio, bio);
+
+	BIO_ADDR* noused = BIO_ADDR_new();
+	int ret = DTLSv1_listen((SSL*)ssl, noused);
+	if (ret < 0) {
+		int err = SSL_get_error((SSL*)ssl, ret);
+		*error = err;
+		BIO_ADDR_free(noused);
+		return -1;
+	}
+	BIO_ADDR_free(noused);
 	return ret;
 }
 

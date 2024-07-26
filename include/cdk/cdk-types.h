@@ -172,8 +172,7 @@ struct cdk_spinlock_s {
 	atomic_bool locked;
 };
 
-struct cdk_rbtree_s
-{
+struct cdk_rbtree_s {
 	cdk_rbtree_node_t* root;
 	int(*compare)(cdk_rbtree_key_t*, cdk_rbtree_key_t*);
 };
@@ -331,7 +330,7 @@ struct cdk_channel_s {
 		struct {
 			bool accepting;
 			bool connecting;
-			cdk_tls_ssl_t* tls_ssl;
+			cdk_tls_ssl_t* ssl;
 			uint64_t latest_rd_time;
 			uint64_t latest_wr_time;
 			cdk_timer_t* conn_timer;
@@ -344,8 +343,10 @@ struct cdk_channel_s {
 			struct {
 				struct sockaddr_storage ss;
 				socklen_t sslen;
+				char human[INET6_ADDRSTRLEN + 6];
 			}peer;
-			cdk_tls_ssl_t* dtls_ssl;
+			cdk_rbtree_t* sslmap;
+			cdk_tls_ssl_t* ssl;
 		}udp;
 	};
 };

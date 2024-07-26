@@ -30,6 +30,7 @@ extern void tls_ctx_destroy(cdk_tls_ctx_t* ctx);
 extern void tls_ssl_destroy(cdk_tls_ssl_t* ssl);
 extern int tls_ssl_connect(cdk_tls_ssl_t* ssl, int fd, int* error);
 extern int tls_ssl_accept(cdk_tls_ssl_t* ssl, int fd, int* error);
+extern int tls_ssl_dtls_listen(cdk_tls_ssl_t* ssl, int fd, int* error);
 extern int tls_ssl_read(cdk_tls_ssl_t* ssl, void* buf, int size, int* error);
 extern int tls_ssl_write(cdk_tls_ssl_t* ssl, void* buf, int size, int* error);
 extern void tls_ssl_sni_set(cdk_tls_ssl_t* ssl, const char* sni);

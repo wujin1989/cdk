@@ -174,7 +174,7 @@ static void _cb_dial(void* param) {
     if (channel) {
         if (channel->type == SOCK_STREAM) {
             if (connected) {
-                if (channel->tcp.tls_ssl) {
+                if (channel->tcp.ssl) {
                     channel_tls_cli_handshake(channel);
                 } else {
                     channel_connected(channel);
@@ -196,7 +196,8 @@ static void _cb_dial(void* param) {
                 ? sizeof(struct sockaddr_in) 
                 : sizeof(struct sockaddr_in6);
             
-            if (channel->udp.dtls_ssl) {
+            if (channel->udp.sslmap) {
+                channel->udp.ssl = tls_ssl_create(global_dtls_ctx);
                 channel_tls_cli_handshake(channel);
             } else {
                 channel_connected(channel);
