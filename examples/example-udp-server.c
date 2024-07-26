@@ -1,7 +1,9 @@
 #include "cdk.h"
 
 static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
-	printf("[%d]\trecv %s\n", (int)cdk_utils_systemtid(), (char*)buf);
+	cdk_address_t addrinfo;
+	cdk_net_ntop(&channel->udp.peer.ss, &addrinfo);
+	printf("[%d]\trecv %s from %s:%d\n", (int)cdk_utils_systemtid(), (char*)buf, addrinfo.addr, addrinfo.port);
 	cdk_net_send(channel, buf, len);
 }
 
@@ -11,7 +13,6 @@ static void _close_cb(cdk_channel_t* channel, const char* error) {
 
 int main(void) {
 	cdk_net_conf_t conf = {
-		.nthrds = 4,
 		.dtls = {
 			.cafile = NULL,
 			.capath = NULL,

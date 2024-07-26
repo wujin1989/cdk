@@ -104,7 +104,7 @@ static int _routine(void* param) {
 static void _manager_create(int parallel) {
     platform_socket_startup();
     if (parallel <= 0) {
-        abort();
+        parallel = 1;
     }
     cdk_list_init(&global_poller_manager.poller_lst);
     mtx_init(&global_poller_manager.poller_mtx, mtx_plain);

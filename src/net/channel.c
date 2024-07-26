@@ -35,6 +35,24 @@ extern cdk_poller_manager_t global_poller_manager;
 extern cdk_tls_ctx_t* global_tls_ctx;
 extern cdk_tls_ctx_t* global_dtls_ctx;
 
+static inline void _dtls_sslmap_cleanup(cdk_channel_t* channel) {
+    if (channel->udp.sslmap) {
+        while (!cdk_rbtree_empty(channel->udp.sslmap)) {
+            dtls_sslmap_entry_t* entry = cdk_rbtree_data(cdk_rbtree_first(channel->udp.sslmap), dtls_sslmap_entry_t, node);
+            cdk_rbtree_erase(channel->udp.sslmap, &entry->node);
+
+            tls_ssl_destroy(entry->ssl);
+            free(entry->node.key.ptr);
+            entry->node.key.ptr = NULL;
+
+            free(entry);
+            entry = NULL;
+        }
+        free(channel->udp.sslmap);
+        channel->udp.sslmap = NULL;
+    }
+}
+
 static inline void _cb_write_complete(void* param) {
     cdk_channel_t* channel = param;
     
@@ -303,7 +321,7 @@ static inline void _cb_heartbeat(void* param) {
     }
 }
 
-static void _channel_timers_init(cdk_channel_t* channel) {
+static void _tcp_timers_create(cdk_channel_t* channel) {
     if (channel->handler->tcp.hb_interval) {
         channel->tcp.hb_timer = cdk_timer_add(&channel->poller->timermgr, _cb_heartbeat, channel, channel->handler->tcp.hb_interval, true);
     }
@@ -312,6 +330,21 @@ static void _channel_timers_init(cdk_channel_t* channel) {
     }
     if (channel->handler->tcp.wr_timeout) {
         channel->tcp.wr_timer = cdk_timer_add(&channel->poller->timermgr, _cb_wr_timeout, channel, channel->handler->tcp.wr_timeout, true);
+    }
+}
+
+static void _tcp_timers_destroy(cdk_channel_t* channel) {
+    if (channel->tcp.hb_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
+    }
+    if (channel->tcp.rd_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
+    }
+    if (channel->tcp.wr_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
+    }
+    if (channel->tcp.conn_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
     }
 }
 
@@ -324,7 +357,7 @@ void channel_connected(cdk_channel_t* channel) {
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
         }
-        _channel_timers_init(channel);
+        _tcp_timers_create(channel);
     }
     if (channel->type == SOCK_DGRAM) {
         if (channel->handler->udp.on_connect) {
@@ -361,7 +394,7 @@ void channel_accepted(cdk_channel_t* channel) {
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
         }
-        _channel_timers_init(channel);
+        _tcp_timers_create(channel);
     }
     if (channel->type == SOCK_DGRAM) {
         channel_recv(channel);
@@ -456,7 +489,9 @@ cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_handler
         if (channel->type == SOCK_DGRAM) {
             if (global_dtls_ctx) {
                 channel->udp.sslmap = malloc(sizeof(cdk_rbtree_t));
-                cdk_rbtree_init(channel->udp.sslmap, default_keycmp_str);
+                if (channel->udp.sslmap) {
+                    cdk_rbtree_init(channel->udp.sslmap, default_keycmp_str);
+                }
             }
         }
         cdk_list_insert_tail(&poller->chlist, &channel->node);
@@ -482,32 +517,13 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
 
     if (channel->type == SOCK_STREAM) {
         tls_ssl_destroy(channel->tcp.ssl);
-
         if (channel->handler->tcp.on_close) {
             channel->handler->tcp.on_close(channel, reason);
         }
-        if (channel->tcp.hb_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
-        }
-        if (channel->tcp.rd_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
-        }
-        if (channel->tcp.wr_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
-        }
-        if (channel->tcp.conn_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
-        }
+        _tcp_timers_destroy(channel);
     }
     if (channel->type == SOCK_DGRAM) {
-        while (!cdk_rbtree_empty(channel->udp.sslmap)) {
-            dtls_sslmap_entry_t* entry = cdk_rbtree_data(cdk_rbtree_first(channel->udp.sslmap), dtls_sslmap_entry_t, node);
-            cdk_rbtree_erase(channel->udp.sslmap, &entry->node); 
-            tls_ssl_destroy(entry->ssl);
-        }
-        free(channel->udp.sslmap);
-        channel->udp.sslmap = NULL;
-
+        _dtls_sslmap_cleanup(channel);
         if (channel->handler->udp.on_close) {
             channel->handler->udp.on_close(channel, reason);
         }
@@ -560,7 +576,26 @@ void channel_accept(cdk_channel_t* channel) {
         }
     }
     if (channel->type == SOCK_DGRAM) {
-        channel_tls_srv_handshake(channel);
+        channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
+        recvfrom(channel->fd,
+            channel->rxbuf.buf,
+            DEFAULT_IOBUF_SIZE, MSG_PEEK,
+            (struct sockaddr*)&channel->udp.peer.ss,
+            &channel->udp.peer.sslen);
+
+        cdk_address_t addrinfo = { 0 };
+        cdk_net_ntop(&channel->udp.peer.ss, &addrinfo);
+        sprintf(channel->udp.peer.human, "%s:%d", addrinfo.addr, addrinfo.port);
+
+        cdk_rbtree_key_t key = { .str = channel->udp.peer.human };
+        cdk_rbtree_node_t* n = cdk_rbtree_find(channel->udp.sslmap, key);
+        if (!n) {
+            channel_tls_srv_handshake(channel);
+        } else {
+            dtls_sslmap_entry_t* entry = cdk_rbtree_data(n, dtls_sslmap_entry_t, node);
+            channel->udp.ssl = entry->ssl;
+            channel_recv(channel);
+        }
     }
 }
 

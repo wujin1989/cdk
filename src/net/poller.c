@@ -61,27 +61,7 @@ static void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
         if (channel->type == SOCK_DGRAM) {
             if (channel->udp.sslmap) {
                 if (channel->udp.accepting) {
-                    channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
-                    recvfrom(channel->fd,
-                        channel->rxbuf.buf,
-                        DEFAULT_IOBUF_SIZE, MSG_PEEK,
-                        (struct sockaddr*)&channel->udp.peer.ss,
-                        &channel->udp.peer.sslen);
-
-                    cdk_address_t addrinfo = { 0 };
-                    cdk_net_ntop(&channel->udp.peer.ss, &addrinfo);
-                    sprintf(channel->udp.peer.human, "%s:%d", addrinfo.addr, addrinfo.port);
-
-                    cdk_rbtree_key_t key = { .str = channel->udp.peer.human };
-                    cdk_rbtree_node_t* n = cdk_rbtree_find(channel->udp.sslmap, key);
-
-                    if (!n) {
-                        channel_accept(channel);
-                    } else {
-                        dtls_sslmap_entry_t* entry = cdk_rbtree_data(n, dtls_sslmap_entry_t, node);
-                        channel->udp.ssl = entry->ssl;
-                        channel_recv(channel);
-                    }
+                    channel_accept(channel);
                 } else {
                     channel_recv(channel);
                 }

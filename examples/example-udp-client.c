@@ -31,7 +31,6 @@ static void _connect_cb(cdk_channel_t* channel) {
 
 int main(void) {
 	cdk_net_conf_t conf = {
-		.nthrds = 4,
 		.dtls = {
 			.cafile = "certs/ca.crt",
 			.capath = NULL,
