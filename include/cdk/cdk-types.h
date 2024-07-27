@@ -109,12 +109,13 @@ typedef struct cdk_poller_s              cdk_poller_t;
 typedef struct cdk_poller_manager_s      cdk_poller_manager_t;
 typedef struct cdk_event_s               cdk_event_t;
 typedef struct cdk_tls_conf_s            cdk_tls_conf_t;
-typedef enum cdk_tls_side_e             cdk_tls_side_t;
+typedef enum cdk_tls_side_e              cdk_tls_side_t;
 typedef struct cdk_sha256_s	             cdk_sha256_t;
 typedef struct cdk_sha1_s	             cdk_sha1_t;
 typedef struct cdk_rwlock_s              cdk_rwlock_t;
 typedef struct cdk_spinlock_s            cdk_spinlock_t;
 typedef struct cdk_net_conf_s            cdk_net_conf_t;
+typedef struct cdk_ssl_entry_s           cdk_ssl_entry_t;
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -312,6 +313,13 @@ struct cdk_net_conf_s {
 	cdk_tls_conf_t dtls;
 };
 
+struct cdk_ssl_entry_s {
+    cdk_tls_ssl_t* ssl;
+    uint64_t latest_rd_time;
+    uint64_t latest_wr_time;
+    cdk_rbtree_node_t node;
+};
+
 struct cdk_channel_s {
 	cdk_poller_t*  poller;
 	cdk_sock_t     fd;
@@ -343,10 +351,13 @@ struct cdk_channel_s {
 			struct {
 				struct sockaddr_storage ss;
 				socklen_t sslen;
-				char human[INET6_ADDRSTRLEN + 6];
 			}peer;
-			cdk_rbtree_t* sslmap;
-			cdk_tls_ssl_t* ssl;
+            /* used for DTLS */
+            char peer_human[INET6_ADDRSTRLEN + 6];
+            cdk_ssl_entry_t* active_ssl;
+            //used for DTLS Server.
+            cdk_rbtree_t* sslmap;
+            cdk_timer_t* ssl_cleanup_timer;
 		}udp;
 	};
 };

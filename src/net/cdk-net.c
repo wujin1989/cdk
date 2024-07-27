@@ -196,8 +196,19 @@ static void _cb_dial(void* param) {
                 ? sizeof(struct sockaddr_in) 
                 : sizeof(struct sockaddr_in6);
             
-            if (channel->udp.sslmap) {
-                channel->udp.ssl = tls_ssl_create(global_dtls_ctx);
+            if (global_dtls_ctx) {
+                cdk_tls_ssl_t* ssl = tls_ssl_create(global_dtls_ctx);
+                cdk_ssl_entry_t* entry = malloc(sizeof(cdk_ssl_entry_t));
+                if (entry) {
+                    entry->ssl = ssl;
+                    entry->latest_rd_time = 0;
+                    entry->latest_wr_time = 0;
+                    entry->node.key.str = malloc(sizeof(channel->udp.peer_human));
+                    if (entry->node.key.str) {
+                        sprintf(entry->node.key.str, "%s:%s", ctx->host, ctx->port);
+                    }
+                    channel->udp.active_ssl = entry;
+                }
                 channel_tls_cli_handshake(channel);
             } else {
                 channel_connected(channel);

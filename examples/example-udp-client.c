@@ -31,15 +31,15 @@ static void _connect_cb(cdk_channel_t* channel) {
 
 int main(void) {
 	cdk_net_conf_t conf = {
-		.dtls = {
-			.cafile = "certs/ca.crt",
-			.capath = NULL,
-			.crtfile = NULL,
-			.keyfile = NULL,
-			.verifypeer = true,
-			.dtls = true,
-			.side = SIDE_CLIENT
-		}
+//		.dtls = {
+//			.cafile = "certs/ca.crt",
+//			.capath = NULL,
+//			.crtfile = NULL,
+//			.keyfile = NULL,
+//			.verifypeer = true,
+//			.dtls = true,
+//			.side = SIDE_CLIENT
+//		}
 	};
 	cdk_handler_t handler = {
 		.udp.on_connect = _connect_cb,

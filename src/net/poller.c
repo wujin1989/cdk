@@ -59,12 +59,8 @@ static void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
             }
         }
         if (channel->type == SOCK_DGRAM) {
-            if (channel->udp.sslmap) {
-                if (channel->udp.accepting) {
-                    channel_accept(channel);
-                } else {
-                    channel_recv(channel);
-                }
+            if (channel->udp.accepting) {
+                channel_accept(channel);
             } else {
                 channel_recv(channel);
             }
