@@ -13,15 +13,15 @@ static void _close_cb(cdk_channel_t* channel, const char* error) {
 
 int main(void) {
 	cdk_net_conf_t conf = {
-//		.dtls = {
-//			.cafile = NULL,
-//			.capath = NULL,
-//			.crtfile = "certs/cert.crt",
-//			.keyfile = "certs/cert.key",
-//			.verifypeer = false,
-//			.dtls = true,
-//			.side = SIDE_SERVER
-//		}
+		.dtls = {
+			.cafile = NULL,
+			.capath = NULL,
+			.crtfile = "certs/cert.crt",
+			.keyfile = "certs/cert.key",
+			.verifypeer = false,
+			.dtls = true,
+			.side = SIDE_SERVER
+		}
 	};
 	cdk_handler_t handler = {
 		.udp.on_read = _read_cb,

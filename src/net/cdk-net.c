@@ -200,13 +200,8 @@ static void _cb_dial(void* param) {
                 cdk_tls_ssl_t* ssl = tls_ssl_create(global_dtls_ctx);
                 cdk_ssl_entry_t* entry = malloc(sizeof(cdk_ssl_entry_t));
                 if (entry) {
+                    memset(entry, 0, sizeof(cdk_ssl_entry_t));
                     entry->ssl = ssl;
-                    entry->latest_rd_time = 0;
-                    entry->latest_wr_time = 0;
-                    entry->node.key.str = malloc(sizeof(channel->udp.peer_human));
-                    if (entry->node.key.str) {
-                        sprintf(entry->node.key.str, "%s:%s", ctx->host, ctx->port);
-                    }
                     channel->udp.active_ssl = entry;
                 }
                 channel_tls_cli_handshake(channel);

@@ -44,9 +44,10 @@ static inline void _dtls_sslmap_cleanup(cdk_channel_t* channel) {
             cdk_rbtree_erase(channel->udp.sslmap, &entry->node);
 
             tls_ssl_destroy(entry->ssl);
-            free(entry->node.key.ptr);
-            entry->node.key.ptr = NULL;
-
+            if (entry->node.key.ptr) {
+                free(entry->node.key.ptr);
+                entry->node.key.ptr = NULL;
+            }
             free(entry);
             entry = NULL;
         }
@@ -325,9 +326,10 @@ static void _ssl_timeout_cb(void* param) {
         cdk_rbtree_erase(channel->udp.sslmap, &entry->node);
         
         tls_ssl_destroy(entry->ssl);
-        free(entry->node.key.ptr);
-        entry->node.key.ptr = NULL;
-
+        if (entry->node.key.ptr) {
+            free(entry->node.key.ptr);
+            entry->node.key.ptr = NULL;
+        }
         free(entry);
         entry = NULL;
     }
@@ -608,8 +610,8 @@ void channel_accept(cdk_channel_t* channel) {
                 }
             }
             if(!channel->udp.ssl_cleanup_timer){
-                channel->udp.ssl_cleanup_timer =
-                cdk_timer_add(&channel->poller->timermgr, _ssl_timeout_cb, channel, SSL_CLEANUP_PERIOD, true);
+                channel->udp.ssl_cleanup_timer = 
+                    cdk_timer_add(&channel->poller->timermgr, _ssl_timeout_cb, channel, SSL_CLEANUP_PERIOD, true);
             }
             channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
             recvfrom(channel->fd,
