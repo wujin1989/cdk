@@ -43,40 +43,7 @@ static int _sni_select_cb(SSL* s, int* al, void* arg) {
 	return 0;
 }
 
-static BIO_ADDR* _bio_stm_get_peer(cdk_sock_t sock) {
-	struct sockaddr_storage ss;
-	socklen_t sslen = sizeof(struct sockaddr_storage);
-	BIO_ADDR* bio_addr = NULL;
-
-	getpeername(sock, (struct sockaddr*)&ss, &sslen);
-
-	bio_addr = BIO_ADDR_new();
-	if (!bio_addr) {
-		return NULL;
-	}
-	if (ss.ss_family == AF_INET) {
-		struct sockaddr_in* sin = (struct sockaddr_in*)&ss;
-		if (!BIO_ADDR_rawmake(bio_addr, AF_INET, (const void*)&sin->sin_addr, sizeof(sin->sin_addr), sin->sin_port)) {
-			BIO_ADDR_free(bio_addr);
-			return NULL;
-		}
-	}
-	if (ss.ss_family == AF_INET6) {
-		struct sockaddr_in6* sin6 = (struct sockaddr_in6*)&ss;
-		if (!BIO_ADDR_rawmake(bio_addr, AF_INET6, (const void*)&sin6->sin6_addr, sizeof(sin6->sin6_addr), sin6->sin6_port)) {
-			BIO_ADDR_free(bio_addr);
-			return NULL;
-		}
-	}
-	return bio_addr;
-}
-
 static int _gen_cookie_cb(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len) {
-
-	memcpy(cookie, "cookie", 6);
-	*cookie_len = 6;
-
-	return 1;
 	unsigned char* buffer, result[EVP_MAX_MD_SIZE];
 	unsigned int length = 0, resultlength;
 	union {
@@ -86,11 +53,8 @@ static int _gen_cookie_cb(SSL* ssl, unsigned char* cookie, unsigned int* cookie_
 	} peer;
 
 	/* Initialize a random secret */
-	if (!cookie_initialized)
-	{
-		if (!RAND_bytes(cookie_secret, COOKIE_SECRET_LENGTH))
-		{
-			printf("error setting random cookie secret\n");
+	if (!cookie_initialized) {
+		if (!RAND_bytes(cookie_secret, COOKIE_SECRET_LENGTH)) {
 			return 0;
 		}
 		cookie_initialized = 1;
@@ -115,9 +79,7 @@ static int _gen_cookie_cb(SSL* ssl, unsigned char* cookie, unsigned int* cookie_
 	length += 2;
 	buffer = (unsigned char*)OPENSSL_malloc(length);
 
-	if (buffer == NULL)
-	{
-		printf("out of memory\n");
+	if (buffer == NULL) {
 		return 0;
 	}
 
@@ -158,7 +120,6 @@ static int _verify_cookie_cb(SSL* ssl, const unsigned char* cookie, unsigned int
 	unsigned char result[EVP_MAX_MD_SIZE];
 	unsigned int resultlength;
 
-	return 1;
 	if (cookie_initialized 
 		&& _gen_cookie_cb(ssl, result, &resultlength) 
 		&& cookie_len == resultlength 
