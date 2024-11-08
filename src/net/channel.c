@@ -31,30 +31,9 @@
 #include "cdk/net/cdk-net.h"
 #include "cdk/container/cdk-rbtree.h"
 
-#define SSL_CLEANUP_PERIOD (60 * 1000) //60s
-
 extern cdk_poller_manager_t global_poller_manager;
 extern cdk_tls_ctx_t* global_tls_ctx;
 extern cdk_tls_ctx_t* global_dtls_ctx;
-
-static inline void _dtls_sslmap_cleanup(cdk_channel_t* channel) {
-    if (channel->udp.sslmap) {
-        while (!cdk_rbtree_empty(channel->udp.sslmap)) {
-            cdk_ssl_entry_t* entry = cdk_rbtree_data(cdk_rbtree_first(channel->udp.sslmap), cdk_ssl_entry_t, node);
-            cdk_rbtree_erase(channel->udp.sslmap, &entry->node);
-
-            tls_ssl_destroy(entry->ssl);
-            if (entry->node.key.ptr) {
-                free(entry->node.key.ptr);
-                entry->node.key.ptr = NULL;
-            }
-            free(entry);
-            entry = NULL;
-        }
-        free(channel->udp.sslmap);
-        channel->udp.sslmap = NULL;
-    }
-}
 
 static inline void _cb_write_complete(void* param) {
     cdk_channel_t* channel = param;
@@ -310,31 +289,6 @@ static void _conn_timeout_cb(void* param) {
     cdk_net_close(channel);
 }
 
-static void _ssl_timeout_cb(void* param) {
-    cdk_channel_t* channel = param;
-    
-    for(cdk_rbtree_node_t* n = cdk_rbtree_first(channel->udp.sslmap); n != cdk_rbtree_last(channel->udp.sslmap); ){
-        cdk_ssl_entry_t* entry = cdk_rbtree_data(n, cdk_ssl_entry_t, node);
-        n = cdk_rbtree_next(n);
-        
-        if ((cdk_time_now() - entry->latest_rd_time) < SSL_CLEANUP_PERIOD) {
-            continue;
-        }
-        if ((cdk_time_now() - entry->latest_wr_time) < SSL_CLEANUP_PERIOD) {
-            continue;
-        }
-        cdk_rbtree_erase(channel->udp.sslmap, &entry->node);
-        
-        tls_ssl_destroy(entry->ssl);
-        if (entry->node.key.ptr) {
-            free(entry->node.key.ptr);
-            entry->node.key.ptr = NULL;
-        }
-        free(entry);
-        entry = NULL;
-    }
-}
-
 void channel_connecting(cdk_channel_t* channel) {
     channel->tcp.connecting = true;
     if (!channel_is_writing(channel)) {
@@ -549,7 +503,6 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
         _tcp_timers_destroy(channel);
     }
     if (channel->type == SOCK_DGRAM) {
-        _dtls_sslmap_cleanup(channel);
         if (channel->handler->udp.on_close) {
             channel->handler->udp.on_close(channel, reason);
         }
@@ -608,10 +561,6 @@ void channel_accept(cdk_channel_t* channel) {
                 if (channel->udp.sslmap) {
                     cdk_rbtree_init(channel->udp.sslmap, default_keycmp_str);
                 }
-            }
-            if(!channel->udp.ssl_cleanup_timer){
-                channel->udp.ssl_cleanup_timer = 
-                    cdk_timer_add(&channel->poller->timermgr, _ssl_timeout_cb, channel, SSL_CLEANUP_PERIOD, true);
             }
             channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
             recvfrom(channel->fd,

@@ -352,11 +352,9 @@ struct cdk_channel_s {
 				struct sockaddr_storage ss;
 				socklen_t sslen;
 			}peer;
-            cdk_ssl_entry_t* active_ssl;
-            //used for dtls server.
 			char peer_human[INET6_ADDRSTRLEN + 6];
-            cdk_rbtree_t* sslmap;
-            cdk_timer_t* ssl_cleanup_timer;
+            cdk_ssl_entry_t* active_ssl;
+            cdk_rbtree_t* sslmap; //be released by the application as required
 		}udp;
 	};
 };
