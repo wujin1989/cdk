@@ -36,8 +36,7 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events,
     epoll_ctl(pfd, EPOLL_CTL_ADD, sfd, (struct epoll_event *)&ee);
 }
 
-void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events,
-                        void *ud) {
+void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void *ud) {
     struct epoll_event ee = {0};
     if (events & EVENT_RD) {
         ee.events |= EPOLLIN;
@@ -80,7 +79,7 @@ int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t *events,
 
 #if defined(__APPLE__)
 void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) {
-	struct kevent ke;
+    struct kevent ke = {0};
 	if (events & EVENT_RD) {
 		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD, 0, 0, ud);
 		kevent(pfd, &ke, 1, NULL, 0, NULL);
@@ -92,7 +91,7 @@ void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) 
 }
 
 void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) {
-	struct kevent ke;
+    struct kevent ke = {0};
 	if (events & EVENT_RD) {
 		EV_SET(&ke, sfd, EVFILT_READ, EV_ADD, 0, 0, ud);
 		kevent(pfd, &ke, 1, NULL, 0, NULL);
@@ -104,8 +103,7 @@ void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) 
 }
 
 void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
-	struct kevent ke;
-
+    struct kevent ke = {0};
 	EV_SET(&ke, sfd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 	kevent(pfd, &ke, 1, NULL, 0, NULL);
 
