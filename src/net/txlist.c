@@ -22,37 +22,34 @@
 #include "txlist.h"
 #include "cdk/container/cdk-list.h"
 
-void txlist_create(cdk_list_t* list) {
-	cdk_list_init(list);
+void txlist_create(cdk_list_t *list) { cdk_list_init(list); }
+
+void txlist_destroy(cdk_list_t *list) {
+    while (!txlist_empty(list)) {
+        txlist_node_t *node =
+            cdk_list_data(cdk_list_head(list), txlist_node_t, n);
+        txlist_remove(node);
+    }
 }
 
-void txlist_destroy(cdk_list_t* list) {
-	while (!txlist_empty(list)) {
-		txlist_node_t* node = cdk_list_data(cdk_list_head(list), txlist_node_t, n);
-		txlist_remove(node);
-	}
+void txlist_insert(cdk_list_t *list, void *data, size_t size, bool totail) {
+    txlist_node_t *node = malloc(sizeof(txlist_node_t) + size);
+    if (node) {
+        memset(node, 0, sizeof(txlist_node_t) + size);
+        memcpy(node->buf, data, size);
+        node->len = size;
+        if (totail) {
+            cdk_list_insert_tail(list, &(node->n));
+        } else {
+            cdk_list_insert_head(list, &(node->n));
+        }
+    }
 }
 
-void txlist_insert(cdk_list_t* list, void* data, size_t size, bool totail) {
-	txlist_node_t* node = malloc(sizeof(txlist_node_t) + size);
-	if (node) {
-		memset(node, 0, sizeof(txlist_node_t) + size);
-		memcpy(node->buf, data, size);
-		node->len = size;
-		if (totail) {
-			cdk_list_insert_tail(list, &(node->n));
-		} else {
-			cdk_list_insert_head(list, &(node->n));
-		}
-	}
+void txlist_remove(txlist_node_t *node) {
+    cdk_list_remove(&(node->n));
+    free(node);
+    node = NULL;
 }
 
-void txlist_remove(txlist_node_t* node) {
-	cdk_list_remove(&(node->n));
-	free(node);
-	node = NULL;
-}
-
-bool txlist_empty(cdk_list_t* list) {
-	return cdk_list_empty(list);
-}
+bool txlist_empty(cdk_list_t *list) { return cdk_list_empty(list); }

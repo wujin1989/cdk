@@ -27,7 +27,8 @@ static atomic_flag initialized = ATOMIC_FLAG_INIT;
 static void _disable_udp_connreset(cdk_sock_t sock) {
     int on = 0;
     DWORD nouse;
-    WSAIoctl(sock, SIO_UDP_CONNRESET, &on, sizeof(int), NULL, 0, &nouse, NULL, NULL);
+    WSAIoctl(sock, SIO_UDP_CONNRESET, &on, sizeof(int), NULL, 0, &nouse, NULL,
+             NULL);
 }
 
 void platform_socket_nonblock(cdk_sock_t sock) {
@@ -36,23 +37,21 @@ void platform_socket_nonblock(cdk_sock_t sock) {
 }
 
 void platform_socket_setrecvbuf(cdk_sock_t sock, int val) {
-    setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&val, sizeof(int));
+    setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char *)&val, sizeof(int));
 }
 
 void platform_socket_setsendbuf(cdk_sock_t sock, int val) {
-    setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&val, sizeof(int));
+    setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char *)&val, sizeof(int));
 }
 
-void platform_socket_close(cdk_sock_t sock) {
-    closesocket(sock);
-}
+void platform_socket_close(cdk_sock_t sock) { closesocket(sock); }
 
 cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
     cdk_sock_t cli = accept(sock, NULL, NULL);
     if (cli == INVALID_SOCKET) {
         return INVALID_SOCKET;
     }
-    if(nonblocking) {
+    if (nonblocking) {
         platform_socket_nonblock(cli);
     }
     return cli;
@@ -60,7 +59,7 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
 
 void platform_socket_nodelay(cdk_sock_t sock, bool on) {
     int val = on ? 1 : 0;
-    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&val, sizeof(val));
+    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&val, sizeof(val));
 }
 
 void platform_socket_keepalive(cdk_sock_t sock) {
@@ -69,77 +68,86 @@ void platform_socket_keepalive(cdk_sock_t sock) {
     int i = 1;  /* 1 second; same as default on win32 */
     int c = 10; /* 10 retries; same as hardcoded on win32 since vista */
 
-    setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const char*)&on, sizeof(on));
-    setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (const char*)&d, sizeof(d));
-    setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const char*)&i, sizeof(i));
-    setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const char*)&c, sizeof(c));
+    setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const char *)&on, sizeof(on));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (const char *)&d, sizeof(d));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const char *)&i, sizeof(i));
+    setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const char *)&c, sizeof(c));
 }
 
 int platform_socket_getaddrfamily(cdk_sock_t sock) {
-    WSAPROTOCOL_INFOW info; /* using unicode name to avoiding ninja build warning */
+    WSAPROTOCOL_INFOW
+        info; /* using unicode name to avoiding ninja build warning */
     socklen_t len;
 
     len = sizeof(WSAPROTOCOL_INFOW);
-    getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len);
+    getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char *)&info, &len);
     return info.iAddressFamily;
 }
 
 void platform_socket_maxseg(cdk_sock_t sock) {
     int af = platform_socket_getaddrfamily(sock);
     /**
-     * windows doesn't support setting TCP_MAXSEG but IP_PMTUDISC_DONT forces the MSS to the protocol
-     * minimum which is what we want here. linux doesn't do this (disabling PMTUD just avoids setting DF).
+     * windows doesn't support setting TCP_MAXSEG but IP_PMTUDISC_DONT forces
+     * the MSS to the protocol minimum which is what we want here. linux doesn't
+     * do this (disabling PMTUD just avoids setting DF).
      */
     if (af == AF_INET) {
         int val = IP_PMTUDISC_DONT;
-        setsockopt(sock, IPPROTO_IP, IP_MTU_DISCOVER, (const char*)&val, sizeof(int));
+        setsockopt(sock, IPPROTO_IP, IP_MTU_DISCOVER, (const char *)&val,
+                   sizeof(int));
     }
     if (af == AF_INET6) {
         int val = IP_PMTUDISC_DONT;
-        setsockopt(sock, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (const char*)&val, sizeof(int));
+        setsockopt(sock, IPPROTO_IPV6, IPV6_MTU_DISCOVER, (const char *)&val,
+                   sizeof(int));
     }
 }
 
 void platform_socket_v6only(cdk_sock_t sock, bool on) {
     int val = on ? 1 : 0;
-    setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof(int));
+    setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char *)&val,
+               sizeof(int));
 }
 
 void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
     (void)(cores);
     DWORD nouse;
-    WSAIoctl(sock, SIO_CPU_AFFINITY, &idx, sizeof(uint16_t), NULL, 0, &nouse, NULL, NULL);
+    WSAIoctl(sock, SIO_CPU_AFFINITY, &idx, sizeof(uint16_t), NULL, 0, &nouse,
+             NULL, NULL);
 }
 
 void platform_socket_reuse_addr(cdk_sock_t sock) {
     int on = 1;
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on));
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&on, sizeof(on));
 }
 
 int platform_socket_extract_family(cdk_sock_t sock) {
 
-    WSAPROTOCOL_INFOW info; /* using unicode name to avoiding ninja build warning */
+    WSAPROTOCOL_INFOW
+        info; /* using unicode name to avoiding ninja build warning */
     socklen_t len;
 
     len = sizeof(WSAPROTOCOL_INFOW);
-    getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char*)&info, &len);
+    getsockopt(sock, SOL_SOCKET, SO_PROTOCOL_INFO, (char *)&info, &len);
     return info.iAddressFamily;
 }
 
-cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores, bool nonblocking) {
+cdk_sock_t platform_socket_listen(const char *restrict host,
+                                  const char *restrict port, int protocol,
+                                  int idx, int cores, bool nonblocking) {
     cdk_sock_t sock;
-    struct addrinfo  hints;
-    struct addrinfo* res;
-    struct addrinfo* rp;
+    struct addrinfo hints;
+    struct addrinfo *res;
+    struct addrinfo *rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family    = AF_UNSPEC;
-    hints.ai_socktype  = protocol;
-    hints.ai_flags     = AI_PASSIVE;
-    hints.ai_protocol  = 0;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = protocol;
+    hints.ai_flags = AI_PASSIVE;
+    hints.ai_protocol = 0;
     hints.ai_canonname = NULL;
-    hints.ai_addr      = NULL;
-    hints.ai_next      = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
 
     if (getaddrinfo(host, port, &hints, &res)) {
         abort();
@@ -173,7 +181,7 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
         }
-        if(nonblocking){
+        if (nonblocking) {
             platform_socket_nonblock(sock);
         }
         break;
@@ -187,7 +195,7 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
 
 void platform_socket_startup(void) {
     if (!atomic_flag_test_and_set(&initialized)) {
-        WSADATA  d;
+        WSADATA d;
         if (WSAStartup(MAKEWORD(2, 2), &d)) {
             abort();
         }
@@ -201,20 +209,22 @@ void platform_socket_cleanup(void) {
     }
 }
 
-cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected, bool nonblocking) {
+cdk_sock_t platform_socket_dial(const char *restrict host,
+                                const char *restrict port, int protocol,
+                                bool *connected, bool nonblocking) {
     cdk_sock_t sock;
-    struct addrinfo  hints;
-    struct addrinfo* res;
-    struct addrinfo* rp;
+    struct addrinfo hints;
+    struct addrinfo *res;
+    struct addrinfo *rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family    = AF_UNSPEC;
-    hints.ai_socktype  = protocol;
-    hints.ai_flags     = 0;
-    hints.ai_protocol  = 0;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = protocol;
+    hints.ai_flags = 0;
+    hints.ai_protocol = 0;
     hints.ai_canonname = NULL;
-    hints.ai_addr      = NULL;
-    hints.ai_next      = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
     if (getaddrinfo(host, port, &hints, &res)) {
         abort();
     }
@@ -223,7 +233,7 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
         if (sock == INVALID_SOCKET) {
             continue;
         }
-        if(nonblocking){
+        if (nonblocking) {
             platform_socket_nonblock(sock);
         }
         if (protocol == SOCK_STREAM) {
@@ -257,32 +267,32 @@ cdk_sock_t  platform_socket_dial(const char* restrict host, const char* restrict
 int platform_socket_getsocktype(cdk_sock_t sock) {
     int type;
     int len = sizeof(int);
-    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&type, &len)) {
+    if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char *)&type, &len)) {
         abort();
     }
     return type;
 }
 
 void platform_socket_recvtimeo(cdk_sock_t sock, int timeout_ms) {
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout_ms, sizeof(int));
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout_ms, sizeof(int));
 }
 
 void platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms) {
-    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout_ms, sizeof(int));
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout_ms, sizeof(int));
 }
 
-ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size) {
+ssize_t platform_socket_recv(cdk_sock_t sock, void *buf, int size) {
     return recv(sock, buf, size, 0);
 }
 
-ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size) {
+ssize_t platform_socket_send(cdk_sock_t sock, void *buf, int size) {
     return send(sock, buf, size, 0);
 }
 
-ssize_t platform_socket_recvall(cdk_sock_t sock, void* buf, int size) {
+ssize_t platform_socket_recvall(cdk_sock_t sock, void *buf, int size) {
     ssize_t off = 0;
     while (off < size) {
-        ssize_t tmp = recv(sock, (char*)buf + (int)off, size - (int)off, 0);
+        ssize_t tmp = recv(sock, (char *)buf + (int)off, size - (int)off, 0);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;
         }
@@ -294,10 +304,11 @@ ssize_t platform_socket_recvall(cdk_sock_t sock, void* buf, int size) {
     return off;
 }
 
-ssize_t platform_socket_sendall(cdk_sock_t sock, void* buf, int size) {
+ssize_t platform_socket_sendall(cdk_sock_t sock, void *buf, int size) {
     ssize_t off = 0;
     while (off < size) {
-        ssize_t tmp = send(sock, (const char*)buf + (int)off, size - (int)off, 0);
+        ssize_t tmp =
+            send(sock, (const char *)buf + (int)off, size - (int)off, 0);
         if (tmp == SOCKET_ERROR) {
             return SOCKET_ERROR;
         }
@@ -306,15 +317,19 @@ ssize_t platform_socket_sendall(cdk_sock_t sock, void* buf, int size) {
     return off;
 }
 
-ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen) {
-    return recvfrom(sock, buf, size, 0, (struct sockaddr*)ss, sslen);
+ssize_t platform_socket_recvfrom(cdk_sock_t sock, void *buf, int size,
+                                 struct sockaddr_storage *ss,
+                                 socklen_t *sslen) {
+    return recvfrom(sock, buf, size, 0, (struct sockaddr *)ss, sslen);
 }
 
-ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t sslen) {
-    return sendto(sock, buf, size, 0, (struct sockaddr*)ss, sslen);
+ssize_t platform_socket_sendto(cdk_sock_t sock, void *buf, int size,
+                               struct sockaddr_storage *ss, socklen_t sslen) {
+    return sendto(sock, buf, size, 0, (struct sockaddr *)ss, sslen);
 }
 
-int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]) {
+int platform_socket_socketpair(int domain, int type, int protocol,
+                               cdk_sock_t socks[2]) {
     SOCKADDR_IN addr;
     SOCKET srv;
     SOCKET cli;
@@ -330,11 +345,11 @@ int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t so
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = 0;
-    if (bind(srv, (SOCKADDR*)&addr, addrlen) == SOCKET_ERROR) {
+    if (bind(srv, (SOCKADDR *)&addr, addrlen) == SOCKET_ERROR) {
         closesocket(srv);
         return -1;
     }
-    if (getsockname(srv, (SOCKADDR*)&addr, &addrlen) == SOCKET_ERROR) {
+    if (getsockname(srv, (SOCKADDR *)&addr, &addrlen) == SOCKET_ERROR) {
         closesocket(srv);
         return -1;
     }
@@ -347,7 +362,7 @@ int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t so
         closesocket(srv);
         return -1;
     }
-    if (connect(cli, (SOCKADDR*)&addr, addrlen) == SOCKET_ERROR) {
+    if (connect(cli, (SOCKADDR *)&addr, addrlen) == SOCKET_ERROR) {
         closesocket(srv);
         closesocket(cli);
         return -1;
@@ -363,22 +378,16 @@ int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t so
     return 0;
 }
 
-const char* platform_socket_error2string(int error) {
+const char *platform_socket_error2string(int error) {
     static char buffer[512];
     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        buffer, sizeof(buffer), NULL);
+                  NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                  buffer, sizeof(buffer), NULL);
     return buffer;
 }
 
-int platform_socket_lasterror(void) {
-    return WSAGetLastError();
-}
+int platform_socket_lasterror(void) { return WSAGetLastError(); }
 
-cdk_pollfd_t platform_socket_pollfd_create(void) {
-    return epoll_create1(0);
-}
+cdk_pollfd_t platform_socket_pollfd_create(void) { return epoll_create1(0); }
 
-void platform_socket_pollfd_destroy(cdk_pollfd_t pfd) {
-    epoll_close(pfd);
-}
+void platform_socket_pollfd_destroy(cdk_pollfd_t pfd) { epoll_close(pfd); }
