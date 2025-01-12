@@ -24,6 +24,7 @@
 #include "cdk/cdk-time.h"
 #include "platform/platform-io.h"
 #include "platform/platform-utils.h"
+#include "cdk/deprecated/c11-threads.h"
 #include <stdarg.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -44,6 +45,7 @@
 typedef struct logger_s {
     FILE *out;
     _Bool async;
+    mtx_t mtx;
     cdk_logger_level_t level;
     cdk_logger_cb_t callback;
     cdk_thrdpool_t pool;
@@ -71,6 +73,8 @@ static inline void _syncbase(cdk_logger_level_t level,
     }
     cdk_time_localtime(&tsc.tv_sec, &tm);
 
+    mtx_lock(&global_logger.mtx);
+
     fprintf(global_logger.out,
             "%04d-%02d-%02d %02d:%02d:%02d.%03d %8d %5s %s:%d ",
             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
@@ -78,6 +82,8 @@ static inline void _syncbase(cdk_logger_level_t level,
             (int)platform_utils_systemtid(), levels[level], file, line);
     vfprintf(global_logger.out, fmt, v);
     fflush(global_logger.out);
+
+    mtx_unlock(&global_logger.mtx);
 }
 
 static inline void _asyncbase(cdk_logger_level_t level,
@@ -131,6 +137,9 @@ void cdk_logger_create(cdk_logger_config_t* config) {
             global_logger.callback = config->callback;
             return;
         }
+        if (!config->async) {
+            mtx_init(&global_logger.mtx, mtx_plain);
+        }
         if (config->async) {
             global_logger.async = true;
             cdk_thrdpool_create(&global_logger.pool, DEFAULT_LOGGER_THREAD_NUM);
@@ -147,6 +156,9 @@ void cdk_logger_destroy(void) {
     if (atomic_flag_test_and_set(&initialized)) {
         if (global_logger.async) {
             cdk_thrdpool_destroy(&global_logger.pool);
+        }
+        if (!global_logger.async) {
+            mtx_destroy(&global_logger.mtx);
         }
         if (global_logger.out) {
             fclose(global_logger.out);

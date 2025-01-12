@@ -247,7 +247,7 @@ int tls_ssl_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
 }
 
 int tls_ssl_accept(cdk_tls_ssl_t* ssl, int fd, int* error) {
-	//SSL_set_fd((SSL*)ssl, fd); //tlsÓÃ
+	SSL_set_fd((SSL*)ssl, fd);
 
 	int ret = SSL_accept((SSL*)ssl);
 	if (ret <= 0) {
