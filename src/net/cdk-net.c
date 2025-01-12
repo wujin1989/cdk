@@ -23,6 +23,7 @@
 #include "platform/platform-event.h"
 #include "cdk/net/cdk-net.h"
 #include "cdk/container/cdk-list.h"
+#include "cdk/cdk-threadpool.h"
 #include "channel.h"
 #include "txlist.h"
 #include "poller.h"
@@ -90,7 +91,7 @@ static void _manager_del_poller(cdk_poller_t* poller) {
     mtx_unlock(&global_poller_manager.poller_mtx);
 }
 
-static int _routine(void* param) {
+static void _routine(void* param) {
     cdk_poller_t* poller = poller_create();
     if (poller) {
         _manager_add_poller(poller);
@@ -98,7 +99,7 @@ static int _routine(void* param) {
         _manager_del_poller(poller);
         poller_destroy(poller);
     }
-    return 0;
+    return;
 }
 
 static void _manager_create(int parallel) {
@@ -109,25 +110,17 @@ static void _manager_create(int parallel) {
     cdk_list_init(&global_poller_manager.poller_lst);
     mtx_init(&global_poller_manager.poller_mtx, mtx_plain);
     cnd_init(&global_poller_manager.poller_cnd);
+    cdk_thrdpool_create(&global_poller_manager.poller_pool, parallel);
 
     global_poller_manager.poller_roundrobin = _roundrobin;
-    global_poller_manager.thrdcnt = parallel;
-    global_poller_manager.thrdids = malloc(global_poller_manager.thrdcnt * sizeof(thrd_t));
-    if (!global_poller_manager.thrdids) {
-        return;
-    }
-    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
-        thrd_create((global_poller_manager.thrdids + i), _routine, NULL);
+
+    for (int i = 0; i < global_poller_manager.poller_pool.thrdcnt; i++) {
+        cdk_thrdpool_post(&global_poller_manager.poller_pool, _routine, NULL);
     }
 }
 
 static void _manager_destroy(void) {
-    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
-        thrd_join(global_poller_manager.thrdids[i], NULL);
-    }
-    free(global_poller_manager.thrdids);
-    global_poller_manager.thrdids = NULL;
-    
+    cdk_thrdpool_destroy(&global_poller_manager.poller_pool);
     mtx_destroy(&global_poller_manager.poller_mtx);
     cnd_destroy(&global_poller_manager.poller_cnd);
     platform_socket_cleanup();
@@ -330,8 +323,10 @@ int cdk_net_getsocktype(cdk_sock_t sock) {
 }
 
 void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler) {
-    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
-        socket_ctx_t* ctx = _socket_ctx_allocate(protocol, host, port, i, global_poller_manager.thrdcnt, handler);
+    for (int i = 0; i < global_poller_manager.poller_pool.thrdcnt; i++) {
+        socket_ctx_t *ctx = _socket_ctx_allocate(
+            protocol, host, port, i, global_poller_manager.poller_pool.thrdcnt,
+            handler);
         if (ctx) {
             cdk_net_postevent(ctx->poller, _cb_listen, ctx, true);
         }
