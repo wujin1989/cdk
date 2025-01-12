@@ -23,55 +23,58 @@
 
 #if defined(__linux__)
 
-void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) {
-	struct epoll_event ee;
-	if (events & EVENT_RD) {
-		ee.events |= EPOLLIN;
-	}
-	if (events & EVENT_WR) {
-		ee.events |= EPOLLOUT;
-	}
-	ee.data.ptr = ud;
-	epoll_ctl(pfd, EPOLL_CTL_ADD, sfd, (struct epoll_event*)&ee);
+void platform_event_add(cdk_pollfd_t pfd, cdk_sock_t sfd, int events,
+                        void *ud) {
+    struct epoll_event ee = {0};
+    if (events & EVENT_RD) {
+        ee.events |= EPOLLIN;
+    }
+    if (events & EVENT_WR) {
+        ee.events |= EPOLLOUT;
+    }
+    ee.data.ptr = ud;
+    epoll_ctl(pfd, EPOLL_CTL_ADD, sfd, (struct epoll_event *)&ee);
 }
 
-void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events, void* ud) {
-	struct epoll_event ee;
-	if (events & EVENT_RD) {
-		ee.events |= EPOLLIN;
-	}
-	if (events & EVENT_WR) {
-		ee.events |= EPOLLOUT;
-	}
-	ee.data.ptr = ud;
-	epoll_ctl(pfd, EPOLL_CTL_MOD, sfd, (struct epoll_event*)&ee);
+void platform_event_mod(cdk_pollfd_t pfd, cdk_sock_t sfd, int events,
+                        void *ud) {
+    struct epoll_event ee = {0};
+    if (events & EVENT_RD) {
+        ee.events |= EPOLLIN;
+    }
+    if (events & EVENT_WR) {
+        ee.events |= EPOLLOUT;
+    }
+    ee.data.ptr = ud;
+    epoll_ctl(pfd, EPOLL_CTL_MOD, sfd, (struct epoll_event *)&ee);
 }
 
 void platform_event_del(cdk_pollfd_t pfd, cdk_sock_t sfd) {
-	epoll_ctl(pfd, EPOLL_CTL_DEL, sfd, NULL);
+    epoll_ctl(pfd, EPOLL_CTL_DEL, sfd, NULL);
 }
 
-int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t* events, int timeout) {
-	struct epoll_event __events[MAX_PROCESS_EVENTS];
-	int n;
-	memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
-	do {
-		n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, timeout);
-	} while (n == -1 && errno == EINTR);
+int platform_event_wait(cdk_pollfd_t pfd, cdk_pollevent_t *events,
+                        int timeout) {
+    int n;
+    struct epoll_event __events[MAX_PROCESS_EVENTS] = {0};
+    memset(events, 0, sizeof(cdk_pollevent_t) * MAX_PROCESS_EVENTS);
+    do {
+        n = epoll_wait(pfd, __events, MAX_PROCESS_EVENTS, timeout);
+    } while (n == -1 && errno == EINTR);
 
-	if (n < 0) {
-		abort();
-	}
-	for (int i = 0; i < n; i++) {
-		events[i].ptr = __events[i].data.ptr;
-		if (__events[i].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
-			events[i].events |= EVENT_RD;
-		}
-		if (__events[i].events & (EPOLLOUT | EPOLLHUP | EPOLLERR)) {
-			events[i].events |= EVENT_WR;
-		}
-	}
-	return n;
+    if (n < 0) {
+        abort();
+    }
+    for (int i = 0; i < n; i++) {
+        events[i].ptr = __events[i].data.ptr;
+        if (__events[i].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
+            events[i].events |= EVENT_RD;
+        }
+        if (__events[i].events & (EPOLLOUT | EPOLLHUP | EPOLLERR)) {
+            events[i].events |= EVENT_WR;
+        }
+    }
+    return n;
 }
 #endif
 

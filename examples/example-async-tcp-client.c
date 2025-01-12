@@ -67,8 +67,8 @@ static void _heartbeat_cb(cdk_channel_t* channel) {
 
 int main(void) {
 	cdk_net_conf_t conf = {
-		.nthrds = 4,
-		.tls = {
+		.nthrds = 1,
+		/*.tls = {
 			.cafile = "certs/ca.crt",
 			.capath = NULL,
 			.crtfile = NULL,
@@ -76,7 +76,7 @@ int main(void) {
 			.verifypeer = true,
 			.dtls = false,
 			.side = SIDE_CLIENT
-		}
+		}*/
 	};
 	cdk_unpacker_t unpacker = {
 		.type = TYPE_LENGTHFIELD,
@@ -90,14 +90,13 @@ int main(void) {
 		.tcp.on_connect = _connect_cb,
 		.tcp.on_read = _read_cb,
 		.tcp.on_close = _close_cb,
-		.tcp.on_heartbeat = _heartbeat_cb,
+		/*.tcp.on_heartbeat = _heartbeat_cb,
 		.tcp.wr_timeout = 10000,
 		.tcp.conn_timeout = 5000,
-		.tcp.hb_interval = 5000,
+		.tcp.hb_interval = 5000,*/
 		.tcp.unpacker = &unpacker
 	};
 	cdk_net_startup(&conf);
-    cdk_net_startup(&conf);
     cdk_logger_config_t config = {
         .async = false,
     };
