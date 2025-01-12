@@ -95,7 +95,7 @@ static inline void _asyncbase(cdk_logger_level_t level,
     ret = sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d.%03d %8d %5s %s:%d ",
                   tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour,
                   tm.tm_min, tm.tm_sec, (int)(tsc.tv_nsec / 1000000UL),
-                  (int)cdk_utils_systemtid(), levels[level], file, line);
+                  (int)platform_utils_systemtid(), levels[level], file, line);
     if (ret > sizeof(buf)) {
         abort();
     }
