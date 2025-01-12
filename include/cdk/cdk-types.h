@@ -280,7 +280,8 @@ struct cdk_poller_s {
 };
 
 struct cdk_poller_manager_s {
-    cdk_thrdpool_t poller_pool;
+	thrd_t* thrdids;
+	int thrdcnt;
 	atomic_flag initialized;
 	cdk_list_t poller_lst;
 	mtx_t poller_mtx;
