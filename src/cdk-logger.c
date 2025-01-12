@@ -23,6 +23,7 @@
 #include "cdk/cdk-threadpool.h"
 #include "cdk/cdk-time.h"
 #include "platform/platform-io.h"
+#include "platform/platform-utils.h"
 #include <stdarg.h>
 #include <stdatomic.h>
 #include <stdio.h>
