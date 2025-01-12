@@ -300,6 +300,13 @@ enum cdk_tls_side_e {
 	SIDE_SERVER,
 };
 
+enum cdk_logger_level_e {
+    LEVEL_DEBUG = 0,
+    LEVEL_INFO = 1,
+    LEVEL_WARN = 2,
+    LEVEL_ERROR = 3,
+};
+
 struct cdk_tls_conf_s {
 	const char* cafile;    /* Path to a file containing trusted CA certificates in PEM format. This is used for verifying the peer's certificate during TLS/SSL handshakes. */
 	const char* capath;    /* Path to a directory containing multiple files, each with a single trusted CA certificate in PEM format. These are also used for verifying the peer's certificate. */
@@ -408,11 +415,4 @@ struct cdk_logger_config_s {
 		cdk_logger_cb_t callback;
 	};
 	cdk_logger_level_t level;
-};
-
-enum cdk_logger_level_e {
-	LEVEL_DEBUG = 0,
-	LEVEL_INFO = 1,
-	LEVEL_WARN = 2,
-	LEVEL_ERROR = 3,
 };
