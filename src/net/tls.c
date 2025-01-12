@@ -230,7 +230,9 @@ void tls_ssl_destroy(cdk_tls_ssl_t* ssl) {
 }
 
 int tls_ssl_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
-	SSL_set_fd((SSL*)ssl, fd);
+	BIO* bio = BIO_new_dgram(fd, 0);
+	SSL_set_bio((SSL*)ssl, bio, bio);
+	//SSL_set_fd((SSL*)ssl, fd);
 	
 	int ret = SSL_connect((SSL*)ssl);
 	if (ret <= 0) {
@@ -245,7 +247,7 @@ int tls_ssl_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
 }
 
 int tls_ssl_accept(cdk_tls_ssl_t* ssl, int fd, int* error) {
-	SSL_set_fd((SSL*)ssl, fd);
+	//SSL_set_fd((SSL*)ssl, fd); //tlsÓÃ
 
 	int ret = SSL_accept((SSL*)ssl);
 	if (ret <= 0) {

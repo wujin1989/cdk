@@ -33,7 +33,7 @@ static uint32_t _rounddown_pow_of_two(uint32_t n) {
 }
 
 static void _internal_write(cdk_ringbuf_t* ring, const void* src, uint32_t len, uint32_t off) {
-    uint32_t size  = ring->mask + 1;
+    uint32_t size = ring->mask + 1;
     uint32_t esize = ring->esz;
     uint32_t l;
 
@@ -44,7 +44,7 @@ static void _internal_write(cdk_ringbuf_t* ring, const void* src, uint32_t len, 
         len  *= esize;
     }
     l = (len) < (size - off) ? (len) : (size - off);
-
+    
     memcpy(ring->buf + off, src, l);
     memcpy(ring->buf, (uint8_t*)src + l, len - l);
 }

@@ -3,6 +3,7 @@
 OHOS_NDK_HOME=${HOME}/AppData/Local/OpenHarmony/Sdk/12/native
 export PATH=${OHOS_NDK_HOME}/build-tools/cmake/bin:$PATH
 set CMAKE_SYSTEM_NAME="Harmony"
+set CMAKE_HOST_SYSTEM_PROCESSOR="aarch64"
 
 cmake.exe 																		\
 	-G Ninja 																	\

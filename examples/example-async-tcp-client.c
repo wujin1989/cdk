@@ -97,7 +97,11 @@ int main(void) {
 		.tcp.unpacker = &unpacker
 	};
 	cdk_net_startup(&conf);
-	cdk_logger_create(NULL, false);
+    cdk_net_startup(&conf);
+    cdk_logger_config_t config = {
+        .async = false,
+    };
+    cdk_logger_create(&config);
 	cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 	cdk_net_cleanup();
 	cdk_logger_destroy();

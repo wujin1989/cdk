@@ -22,6 +22,7 @@
 #include "cdk/cdk-types.h"
 #include "cdk/cdk-time.h"
 #include "cdk/container/cdk-heap.h"
+#include "cdk/cdk-logger.h"
 
 static int _min_heapcmp(cdk_heap_node_t* a, cdk_heap_node_t* b) {
 	cdk_timer_t* ta = cdk_heap_data(a, cdk_timer_t, node);

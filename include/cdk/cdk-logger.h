@@ -21,22 +21,17 @@
 
 _Pragma("once")
 
-enum {
-	LEVEL_INFO    = 0,
-	LEVEL_DEBUG   = 1,
-	LEVEL_WARN    = 2,
-	LEVEL_ERROR   = 3,
-};
+#include "cdk/cdk-types.h"
 
 #define cdk_logi(...)    cdk_logger_log(LEVEL_INFO,  __FILE__, __LINE__, __VA_ARGS__)
 #define cdk_logd(...)    cdk_logger_log(LEVEL_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
 #define cdk_logw(...)    cdk_logger_log(LEVEL_WARN,  __FILE__, __LINE__, __VA_ARGS__)
 #define cdk_loge(...)    cdk_logger_log(LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 
-extern void cdk_logger_create(const char* restrict out, bool async);
+extern void cdk_logger_create(cdk_logger_config_t* config);
 extern void cdk_logger_destroy(void);
 
 /**
  * for internal use by the logger, not to be used by users.
  */
-extern void cdk_logger_log(int level, const char* restrict file, int line, const char* restrict fmt, ...);
+extern void cdk_logger_log(cdk_logger_level_t level, const char *restrict file, int line, const char *restrict fmt, ...);

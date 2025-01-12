@@ -116,6 +116,9 @@ typedef struct cdk_rwlock_s              cdk_rwlock_t;
 typedef struct cdk_spinlock_s            cdk_spinlock_t;
 typedef struct cdk_net_conf_s            cdk_net_conf_t;
 typedef struct cdk_ssl_entry_s           cdk_ssl_entry_t;
+typedef struct cdk_logger_config_s       cdk_logger_config_t;
+typedef enum cdk_logger_level_e          cdk_logger_level_t;
+typedef void (*cdk_logger_cb_t)(cdk_logger_level_t level, char* msg);
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -396,5 +399,20 @@ struct cdk_sha1_s {
 	uint8_t  buffer[64];
 };
 
+struct cdk_logger_config_s {
+	union {
+		struct {
+			char* out;
+			_Bool async;
+		};
+		cdk_logger_cb_t callback;
+	};
+	cdk_logger_level_t level;
+};
 
-
+enum cdk_logger_level_e {
+	LEVEL_DEBUG = 0,
+	LEVEL_INFO = 1,
+	LEVEL_WARN = 2,
+	LEVEL_ERROR = 3,
+};

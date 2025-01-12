@@ -437,6 +437,7 @@ void channel_tls_srv_handshake(void* param) {
                 channel->udp.active_ssl = entry;
                 cdk_rbtree_insert(channel->udp.sslmap, &entry->node);
             }
+            tls_ssl_accept(ssl, channel->fd, &err);
         }
     }
 	if (n <= 0) {

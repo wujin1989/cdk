@@ -10,8 +10,12 @@ static inline void _routine_cb(void* p) {
 int main(void) {
 	cdk_timermgr_t mgr;
 	cdk_timer_t* timer;
+	
+	cdk_logger_config_t config = {
+		.async = false,
+	};
+	cdk_logger_create(&config);
 	cdk_timer_manager_init(&mgr);
-	cdk_logger_create(NULL, true);
 	mtx_init(&mtx, mtx_plain);
 	
 	timer = cdk_timer_add(&mgr, _routine_cb, NULL, 1000, true);

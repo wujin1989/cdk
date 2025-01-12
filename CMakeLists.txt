@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.16)
 
 project(cdk VERSION 1.0.0 LANGUAGES C)
 
@@ -20,54 +20,8 @@ if(WIN32)
 	endif()
 endif()
 
-if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "AMD64" OR CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
-	if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/amd64/win32")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/amd64/linux")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/amd64/macos")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "Android")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/amd64/android")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "iOS")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/amd64/ios")
-	endif()
-endif()		
-
-if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
-	if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/aarch64/win32")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/aarch64/linux")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/aarch64/macos")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "Android")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/aarch64/android")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "iOS")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/aarch64/ios")
-	endif()
-	if (CMAKE_SYSTEM_NAME MATCHES "Harmony")
-		set(OPENSSL_ROOT_DIR "third-party/openssl3/aarch64/harmony")
-	endif()
-endif()
-
-find_package(OpenSSL 3.0 REQUIRED)
-
-include_directories(${OPENSSL_INCLUDE_DIR})
-include_directories(include)
-include_directories(src)
-
-if(WIN32)
-	list(APPEND OPENSSL_LIBRARIES Crypt32.lib)
-endif()
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(SRCS
 	src/crypto/cdk-sha1.c
@@ -122,13 +76,39 @@ if(UNIX)
 	)
 endif()
 
+if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
+	set(CMAKE_HOST_SYSTEM_PROCESSOR "AMD64")
+endif()
+
+add_library(ssl IMPORTED STATIC)
+add_library(crypto IMPORTED STATIC)
+
+if(WIN32)
+	set_target_properties(ssl PROPERTIES
+		IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3/lib/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_SYSTEM_NAME}/ssl.lib"
+		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3//include")
+
+	set_target_properties(crypto PROPERTIES
+		IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3/lib/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_SYSTEM_NAME}/crypto.lib"
+		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3//include" 
+		INTERFACE_LINK_LIBRARIES "Crypt32.lib")
+else()
+	set_target_properties(ssl PROPERTIES
+		IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3/lib/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_SYSTEM_NAME}/libssl.a"
+		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3//include")
+
+	set_target_properties(crypto PROPERTIES
+		IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3/lib/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_SYSTEM_NAME}/libcrypto.a"
+		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3//include")
+endif()
+
 if(BUILD_DYNAMIC_LIBRARY)
     add_library(cdk SHARED ${SRCS})
-	target_link_libraries(cdk PUBLIC ${OPENSSL_LIBRARIES} ${CMAKE_DL_LIBS})
+	target_link_libraries(cdk PRIVATE ssl crypto ${CMAKE_DL_LIBS})
 	set_target_properties(cdk PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
 else()
     add_library(cdk STATIC ${SRCS})
-	target_link_libraries(cdk PUBLIC ${OPENSSL_LIBRARIES} ${CMAKE_DL_LIBS})
+	target_link_libraries(cdk PRIVATE ssl crypto ${CMAKE_DL_LIBS})
 endif()
 
 add_subdirectory(examples)
