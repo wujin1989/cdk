@@ -4,7 +4,7 @@ html:
 print_background: true
 --- 
 <center>
-Copyright©2023 jin.wu. All rights reserved.
+Copyright©2025 jin.wu. All rights reserved.
 </center>
 
 # CDK API Specification

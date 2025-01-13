@@ -307,25 +307,38 @@ enum cdk_logger_level_e {
 };
 
 struct cdk_tls_conf_s {
-    const char* cafile; /* Path to a file containing trusted CA certificates in
-                           PEM format. This is used for verifying the peer's
-                           certificate during TLS/SSL handshakes. */
-    const char*
-        capath; /* Path to a directory containing multiple files, each with a
-                   single trusted CA certificate in PEM format. These are also
-                   used for verifying the peer's certificate. */
-    const char* crtfile; /* Path to the certificate file in PEM format for this
-                            TLS context. This is typically the server's
-                            certificate when acting as a server or the client's
-                            certificate for client authentication. */
-    const char*
-        keyfile; /* Path to the private key file in PEM format that corresponds
-                    to the certificate specified by crtfile. This is required
-                    for the TLS context to establish secure connections. */
-    bool verifypeer; /* A boolean flag indicating whether the TLS context should
-                        verify the peer's certificate. If set to true, the TLS
-                        handshake will fail if the peer does not provide a valid
-                        certificate. */
+    /**
+     * Path to a file containing trusted CA certificates in
+     * PEM format. This is used for verifying the peer's
+     * certificate during TLS/SSL handshakes.
+     */
+    const char* cafile;
+    /**
+     * Path to a directory containing multiple files, each with a
+     * single trusted CA certificate in PEM format. These are also
+     * used for verifying the peer's certificate.
+     */
+    const char* capath;
+    /**
+     * Path to the certificate file in PEM format for this
+     * TLS context. This is typically the server's
+     * certificate when acting as a server or the client's
+     * certificate for client authentication.
+     */
+    const char* crtfile;
+    /**
+     * Path to the private key file in PEM format that corresponds
+     * to the certificate specified by crtfile. This is required
+     * for the TLS context to establish secure connections.
+     */
+    const char* keyfile;
+    /**
+     * A boolean flag indicating whether the TLS context should
+     * verify the peer's certificate. If set to true, the TLS
+     * handshake will fail if the peer does not provide a valid
+     * certificate.
+     */
+    bool           verifypeer;
     bool           dtls;
     cdk_tls_side_t side;
 };
