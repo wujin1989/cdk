@@ -63,14 +63,17 @@ static void _heartbeat_cb(cdk_channel_t* channel) {
 }
 
 int main(void) {
-    cdk_net_conf_t conf = {.nthrds = 4,
-                           /*.tls = {.cafile = NULL,
-                                   .capath = NULL,
-                                   .crtfile = "certs/cert.crt",
-                                   .keyfile = "certs/cert.key",
-                                   .verifypeer = false,
-                                   .dtls = false,
-                                   .side = SIDE_SERVER}*/};
+    cdk_net_conf_t conf = {
+        .nthrds = 4,
+        .tls = {
+            .cafile = NULL,
+            .capath = NULL,
+            .crtfile = "certs/cert.crt",
+            .keyfile = "certs/cert.key",
+            .verifypeer = false,
+            .dtls = false,
+            .side = SIDE_SERVER}};
+
     cdk_unpacker_t unpacker = {
         .type = TYPE_LENGTHFIELD,
         .lengthfield.adj = 0,

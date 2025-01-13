@@ -70,16 +70,15 @@ static void _heartbeat_cb(cdk_channel_t* channel) {
 int main(void) {
     cdk_net_conf_t conf = {
         .nthrds = 4,
-        /*.tls = {
+        .tls = {
             .cafile = "certs/ca.crt",
             .capath = NULL,
             .crtfile = NULL,
             .keyfile = NULL,
             .verifypeer = true,
             .dtls = false,
-            .side = SIDE_CLIENT
-        }*/
-    };
+            .side = SIDE_CLIENT}};
+
     cdk_unpacker_t unpacker = {
         .type = TYPE_LENGTHFIELD,
         .lengthfield.adj = 0,

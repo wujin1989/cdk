@@ -19,52 +19,57 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform/platform-socket.h"
-#include "platform/platform-event.h"
 #include "cdk/net/cdk-net.h"
-#include "cdk/container/cdk-list.h"
-#include "channel.h"
-#include "txlist.h"
-#include "poller.h"
-#include "tls.h"
+#include "cdk/cdk-logger.h"
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
-#include "cdk/cdk-logger.h"
+#include "cdk/container/cdk-list.h"
+#include "channel.h"
+#include "platform/platform-event.h"
+#include "platform/platform-socket.h"
+#include "poller.h"
+#include "tls.h"
+#include "txlist.h"
 
-cdk_poller_manager_t global_poller_manager = {.initialized = ATOMIC_FLAG_INIT };
-cdk_tls_ctx_t* global_tls_ctx;
-cdk_tls_ctx_t* global_dtls_ctx;
+cdk_poller_manager_t global_poller_manager = {.initialized = ATOMIC_FLAG_INIT};
+cdk_tls_ctx_t*       global_tls_ctx;
+cdk_tls_ctx_t*       global_dtls_ctx;
 
-typedef struct channel_send_ctx_s{
+typedef struct channel_send_ctx_s {
     cdk_channel_t* channel;
-    size_t size;
-    char data[];
+    size_t         size;
+    char           data[];
 } channel_send_ctx_t;
 
 typedef struct socket_ctx_s {
-    char host[INET6_ADDRSTRLEN];
-    char port[6];
-    int protocol;
-    int idx;
-    int cores;
-    cdk_poller_t* poller;
+    char           host[INET6_ADDRSTRLEN];
+    char           port[6];
+    int            protocol;
+    int            idx;
+    int            cores;
+    cdk_poller_t*  poller;
     cdk_handler_t* handler;
 } socket_ctx_t;
 
 static void _cb_inactive(void* param) {
     cdk_poller_t* poller = param;
-    poller->active = false;
+    poller->active       = false;
 }
 
 static inline cdk_poller_t* _roundrobin(void) {
     mtx_lock(&global_poller_manager.poller_mtx);
     while (cdk_list_empty(&global_poller_manager.poller_lst)) {
-        cnd_wait(&global_poller_manager.poller_cnd, &global_poller_manager.poller_mtx);
+        cnd_wait(
+            &global_poller_manager.poller_cnd,
+            &global_poller_manager.poller_mtx);
     }
     static cdk_poller_t* curr;
     if (curr == NULL) {
-        curr = cdk_list_data(cdk_list_head(&global_poller_manager.poller_lst), cdk_poller_t, node);
+        curr = cdk_list_data(
+            cdk_list_head(&global_poller_manager.poller_lst),
+            cdk_poller_t,
+            node);
     } else {
         cdk_list_node_t* n = cdk_list_next(&curr->node);
         if (n != cdk_list_sentinel(&global_poller_manager.poller_lst)) {
@@ -111,8 +116,9 @@ static void _manager_create(int parallel) {
     cnd_init(&global_poller_manager.poller_cnd);
 
     global_poller_manager.poller_roundrobin = _roundrobin;
-    global_poller_manager.thrdcnt = parallel;
-    global_poller_manager.thrdids = malloc(global_poller_manager.thrdcnt * sizeof(thrd_t));
+    global_poller_manager.thrdcnt           = parallel;
+    global_poller_manager.thrdids =
+        malloc(global_poller_manager.thrdcnt * sizeof(thrd_t));
     if (!global_poller_manager.thrdids) {
         return;
     }
@@ -127,13 +133,19 @@ static void _manager_destroy(void) {
     }
     free(global_poller_manager.thrdids);
     global_poller_manager.thrdids = NULL;
-    
+
     mtx_destroy(&global_poller_manager.poller_mtx);
     cnd_destroy(&global_poller_manager.poller_cnd);
     platform_socket_cleanup();
 }
 
-static socket_ctx_t* _socket_ctx_allocate(const char* protocol, const char* host, const char* port, int idx, int cores, cdk_handler_t* handler) {
+static socket_ctx_t* _socket_ctx_allocate(
+    const char*    protocol,
+    const char*    host,
+    const char*    port,
+    int            idx,
+    int            cores,
+    cdk_handler_t* handler) {
     socket_ctx_t* ctx = malloc(sizeof(socket_ctx_t));
     if (ctx) {
         memset(ctx, 0, sizeof(socket_ctx_t));
@@ -145,10 +157,10 @@ static socket_ctx_t* _socket_ctx_allocate(const char* protocol, const char* host
         if (!strcmp(protocol, "udp")) {
             ctx->protocol = SOCK_DGRAM;
         }
-        ctx->idx = idx;
-        ctx->cores = cores;
+        ctx->idx     = idx;
+        ctx->cores   = cores;
         ctx->handler = handler;
-        ctx->poller = global_poller_manager.poller_roundrobin();
+        ctx->poller  = global_poller_manager.poller_roundrobin();
     }
     return ctx;
 }
@@ -156,7 +168,8 @@ static socket_ctx_t* _socket_ctx_allocate(const char* protocol, const char* host
 static void _cb_listen(void* param) {
     socket_ctx_t* ctx = param;
 
-    cdk_sock_t sock = platform_socket_listen(ctx->host, ctx->port, ctx->protocol, ctx->idx, ctx->cores, true);
+    cdk_sock_t sock = platform_socket_listen(
+        ctx->host, ctx->port, ctx->protocol, ctx->idx, ctx->cores, true);
     cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
     if (channel) {
         channel_accepting(channel);
@@ -166,10 +179,11 @@ static void _cb_listen(void* param) {
 }
 
 static void _cb_dial(void* param) {
-    socket_ctx_t* ctx = param;
-    bool connected = false;
+    socket_ctx_t* ctx       = param;
+    bool          connected = false;
 
-    cdk_sock_t sock = platform_socket_dial(ctx->host, ctx->port, ctx->protocol, &connected, true);
+    cdk_sock_t sock = platform_socket_dial(
+        ctx->host, ctx->port, ctx->protocol, &connected, true);
     cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
     if (channel) {
         if (channel->type == SOCK_STREAM) {
@@ -185,24 +199,25 @@ static void _cb_dial(void* param) {
         }
         if (channel->type == SOCK_DGRAM) {
             (void)connected;
-            cdk_net_make_address(sock, &channel->udp.peer.ss, ctx->host, ctx->port);
+            cdk_net_make_address(
+                sock, &channel->udp.peer.ss, ctx->host, ctx->port);
             /**
-             * In MacOS, when the destination address parameter of the sendto function is of type struct sockaddr_storage,
-             * the address length cannot use sizeof(struct sockaddr_storage). 
-             * This seems to be a bug in MacOS.
+             * In MacOS, when the destination address parameter of the sendto
+             * function is of type struct sockaddr_storage, the address length
+             * cannot use sizeof(struct sockaddr_storage). This seems to be a
+             * bug in MacOS.
              */
-            channel->udp.peer.sslen = 
-                (platform_socket_extract_family(sock) == AF_INET) 
-                ? sizeof(struct sockaddr_in) 
-                : sizeof(struct sockaddr_in6);
-            
+            channel->udp.peer.sslen =
+                (platform_socket_extract_family(sock) == AF_INET)
+                    ? sizeof(struct sockaddr_in)
+                    : sizeof(struct sockaddr_in6);
+
             if (global_dtls_ctx) {
-                cdk_tls_ssl_t* ssl = tls_ssl_create(global_dtls_ctx);
-                cdk_ssl_entry_t* entry = malloc(sizeof(cdk_ssl_entry_t));
-                if (entry) {
-                    memset(entry, 0, sizeof(cdk_ssl_entry_t));
-                    entry->ssl = ssl;
-                    channel->udp.active_ssl = entry;
+                channel->udp.ssl = malloc(sizeof(cdk_dtls_ssl_t));
+                if (channel->udp.ssl) {
+                    memset(channel->udp.ssl, 0, sizeof(cdk_dtls_ssl_t));
+                    channel->udp.ssl->dtls_ssl =
+                        tls_ssl_create(global_dtls_ctx);
                 }
                 channel_tls_cli_handshake(channel);
             } else {
@@ -221,15 +236,17 @@ static void _cb_channel_send_explicit(void* param) {
     ctx = NULL;
 }
 
-static void _channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
+static void
+_channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
     channel_send_ctx_t* ctx = malloc(sizeof(channel_send_ctx_t) + size);
     if (ctx) {
         memset(ctx, 0, sizeof(channel_send_ctx_t) + size);
         ctx->channel = channel;
-        ctx->size = size;
+        ctx->size    = size;
         memcpy(ctx->data, data, size);
 
-        cdk_net_postevent(channel->poller, _cb_channel_send_explicit, ctx, true);
+        cdk_net_postevent(
+            channel->poller, _cb_channel_send_explicit, ctx, true);
     }
 }
 
@@ -255,23 +272,20 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai) {
     char addr[INET6_ADDRSTRLEN];
     memset(addr, 0, sizeof(addr));
 
-    switch (ss->ss_family)
-    {
-    case AF_INET:
-    {
+    switch (ss->ss_family) {
+    case AF_INET: {
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
         _inet_ntop(AF_INET, &si->sin_addr, addr);
-        ai->port = ntohs(si->sin_port);
+        ai->port   = ntohs(si->sin_port);
         ai->family = AF_INET;
         break;
     }
-    case AF_INET6:
-    {
+    case AF_INET6: {
         struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
 
         _inet_ntop(AF_INET6, &si6->sin6_addr, addr);
-        ai->port = ntohs(si6->sin6_port);
+        ai->port   = ntohs(si6->sin6_port);
         ai->family = AF_INET6;
         break;
     }
@@ -284,14 +298,14 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai) {
 void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss) {
     memset(ss, 0, sizeof(struct sockaddr_storage));
 
-    if (ai->family == AF_INET6){
+    if (ai->family == AF_INET6) {
         struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
 
         si6->sin6_family = AF_INET6;
         si6->sin6_port   = htons(ai->port);
         inet_pton(AF_INET6, ai->addr, &(si6->sin6_addr));
     }
-    if (ai->family == AF_INET){
+    if (ai->family == AF_INET) {
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
         si->sin_family = AF_INET;
@@ -300,11 +314,12 @@ void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss) {
     }
 }
 
-void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port) {
-    cdk_address_t ai = { 0 };
+void cdk_net_make_address(
+    cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port) {
+    cdk_address_t ai = {0};
 
     memcpy(ai.addr, host, strlen(host));
-    ai.port = (uint16_t)strtoul(port, NULL, 10);
+    ai.port   = (uint16_t)strtoul(port, NULL, 10);
     ai.family = platform_socket_extract_family(sock);
 
     cdk_net_pton(&ai, ss);
@@ -312,7 +327,7 @@ void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, char* ho
 
 void cdk_net_extract_address(cdk_sock_t sock, cdk_address_t* ai, bool peer) {
     struct sockaddr_storage ss;
-    socklen_t len;
+    socklen_t               len;
 
     len = sizeof(struct sockaddr_storage);
 
@@ -329,24 +344,34 @@ int cdk_net_getsocktype(cdk_sock_t sock) {
     return platform_socket_getsocktype(sock);
 }
 
-void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler) {
+void cdk_net_listen(
+    const char*    protocol,
+    const char*    host,
+    const char*    port,
+    cdk_handler_t* handler) {
     for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
-        socket_ctx_t* ctx = _socket_ctx_allocate(protocol, host, port, i, global_poller_manager.thrdcnt, handler);
+        socket_ctx_t* ctx = _socket_ctx_allocate(
+            protocol, host, port, i, global_poller_manager.thrdcnt, handler);
         if (ctx) {
             cdk_net_postevent(ctx->poller, _cb_listen, ctx, true);
         }
     }
 }
 
-void cdk_net_dial(const char* protocol, const char* host, const char* port, cdk_handler_t* handler) {
-    socket_ctx_t* ctx = _socket_ctx_allocate(protocol, host, port, 0, 0, handler);
+void cdk_net_dial(
+    const char*    protocol,
+    const char*    host,
+    const char*    port,
+    cdk_handler_t* handler) {
+    socket_ctx_t* ctx =
+        _socket_ctx_allocate(protocol, host, port, 0, 0, handler);
     if (ctx) {
         cdk_net_postevent(ctx->poller, _cb_dial, ctx, true);
     }
 }
 
 void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
-	if (thrd_equal(channel->poller->tid, thrd_current())) {
+    if (thrd_equal(channel->poller->tid, thrd_current())) {
         channel_send_explicit(channel, data, size);
     } else {
         _channel_send_explicit(channel, data, size);
@@ -361,10 +386,11 @@ void cdk_net_close(cdk_channel_t* channel) {
     }
 }
 
-void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail) {
+void cdk_net_postevent(
+    cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail) {
     cdk_event_t* event = malloc(sizeof(cdk_event_t));
     if (event) {
-        event->cb = cb;
+        event->cb  = cb;
         event->arg = arg;
 
         mtx_lock(&poller->evmtx);
@@ -380,7 +406,9 @@ void cdk_net_postevent(cdk_poller_t* poller, void (*cb)(void*), void* arg, bool 
 
 void cdk_net_exit(void) {
     mtx_lock(&global_poller_manager.poller_mtx);
-    for (cdk_list_node_t* n = cdk_list_head(&global_poller_manager.poller_lst); n != cdk_list_sentinel(&global_poller_manager.poller_lst); n = cdk_list_next(n)) {
+    for (cdk_list_node_t* n = cdk_list_head(&global_poller_manager.poller_lst);
+         n != cdk_list_sentinel(&global_poller_manager.poller_lst);
+         n = cdk_list_next(n)) {
         cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
         cdk_net_postevent(poller, _cb_inactive, poller, true);
     }
@@ -391,7 +419,7 @@ void cdk_net_startup(cdk_net_conf_t* conf) {
     if (atomic_flag_test_and_set(&global_poller_manager.initialized)) {
         return;
     }
-    global_tls_ctx = tls_ctx_create(&conf->tls);
+    global_tls_ctx  = tls_ctx_create(&conf->tls);
     global_dtls_ctx = tls_ctx_create(&conf->dtls);
     _manager_create(conf->nthrds);
 }
@@ -401,15 +429,12 @@ void cdk_net_cleanup(void) {
     tls_ctx_destroy(global_tls_ctx);
 }
 
-void cdk_net_startup2(void) {
-    platform_socket_startup();
-}
+void cdk_net_startup2(void) { platform_socket_startup(); }
 
-void cdk_net_cleanup2(void) {
-    platform_socket_cleanup();
-}
+void cdk_net_cleanup2(void) { platform_socket_cleanup(); }
 
-cdk_sock_t cdk_net_listen2(const char* protocol, const char* host, const char* port){
+cdk_sock_t
+cdk_net_listen2(const char* protocol, const char* host, const char* port) {
     int proto = 0;
     if (!strcmp(protocol, "tcp")) {
         proto = SOCK_STREAM;
@@ -420,12 +445,13 @@ cdk_sock_t cdk_net_listen2(const char* protocol, const char* host, const char* p
     return platform_socket_listen(host, port, proto, 0, 0, false);
 }
 
-cdk_sock_t cdk_net_accept2(cdk_sock_t sock){
+cdk_sock_t cdk_net_accept2(cdk_sock_t sock) {
     return platform_socket_accept(sock, false);
 }
 
-cdk_sock_t cdk_net_dial2(const char* protocol, const char* host, const char* port){
-    int proto = 0;
+cdk_sock_t
+cdk_net_dial2(const char* protocol, const char* host, const char* port) {
+    int  proto = 0;
     bool unused;
     if (!strcmp(protocol, "tcp")) {
         proto = SOCK_STREAM;
@@ -436,11 +462,11 @@ cdk_sock_t cdk_net_dial2(const char* protocol, const char* host, const char* por
     return platform_socket_dial(host, port, proto, &unused, false);
 }
 
-ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size){
+ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size) {
     return platform_socket_recv(sock, buf, size);
 }
 
-ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size){
+ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size) {
     return platform_socket_send(sock, buf, size);
 }
 
@@ -452,17 +478,25 @@ ssize_t cdk_net_sendall2(cdk_sock_t sock, void* buf, int size) {
     return platform_socket_sendall(sock, buf, size);
 }
 
-ssize_t cdk_net_recvfrom2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* sslen){
+ssize_t cdk_net_recvfrom2(
+    cdk_sock_t               sock,
+    void*                    buf,
+    int                      size,
+    struct sockaddr_storage* ss,
+    socklen_t*               sslen) {
     return platform_socket_recvfrom(sock, buf, size, ss, sslen);
 }
 
-ssize_t cdk_net_sendto2(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t sslen){
+ssize_t cdk_net_sendto2(
+    cdk_sock_t               sock,
+    void*                    buf,
+    int                      size,
+    struct sockaddr_storage* ss,
+    socklen_t                sslen) {
     return platform_socket_sendto(sock, buf, size, ss, sslen);
 }
 
-void cdk_net_close2(cdk_sock_t sock){
-    platform_socket_close(sock);
-}
+void cdk_net_close2(cdk_sock_t sock) { platform_socket_close(sock); }
 
 void cdk_net_recvtimeo2(cdk_sock_t sock, int timeout_ms) {
     platform_socket_recvtimeo(sock, timeout_ms);

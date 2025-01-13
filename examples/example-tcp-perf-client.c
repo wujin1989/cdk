@@ -3,25 +3,26 @@
 #define BUFFERSIZE 4096
 #define RUNTIME 10 // s
 
-int total_clients = 100;
-char buffer[BUFFERSIZE];
-atomic_int connected_clients;
-atomic_int disconnected_clients;
-atomic_int total_readcnt;
+int           total_clients = 100;
+char          buffer[BUFFERSIZE];
+atomic_int    connected_clients;
+atomic_int    disconnected_clients;
+atomic_int    total_readcnt;
 atomic_size_t total_readbytes;
 
-static void _finished(void *param) {
-    cdk_channel_t *channel = param;
+static void _finished(void* param) {
+    cdk_channel_t* channel = param;
     cdk_net_close(channel);
 }
 
 static void _statistic_info_printf() {
     cdk_logi("qps:\t %d Q/s\n", atomic_load(&total_readcnt) / RUNTIME);
-    cdk_logi("throughput:\t %zu MB/s\n",
-             (atomic_load(&total_readbytes) / (RUNTIME * 1024 * 1024)));
+    cdk_logi(
+        "throughput:\t %zu MB/s\n",
+        (atomic_load(&total_readbytes) / (RUNTIME * 1024 * 1024)));
 }
 
-static void _connect_cb(cdk_channel_t *channel) {
+static void _connect_cb(cdk_channel_t* channel) {
     cdk_timer_add(&channel->poller->timermgr, _finished, channel, 10000, false);
 
     atomic_fetch_add(&connected_clients, 1);
@@ -31,13 +32,13 @@ static void _connect_cb(cdk_channel_t *channel) {
     cdk_net_send(channel, buffer, sizeof(buffer));
 }
 
-static void _read_cb(cdk_channel_t *channel, void *buf, size_t len) {
+static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     atomic_fetch_add(&total_readcnt, 1);
     atomic_fetch_add(&total_readbytes, len);
     cdk_net_send(channel, buf, len);
 }
 
-static void _close_cb(cdk_channel_t *channel, const char *error) {
+static void _close_cb(cdk_channel_t* channel, const char* error) {
     atomic_fetch_add(&disconnected_clients, 1);
     if (atomic_load(&disconnected_clients) == total_clients) {
         cdk_logi("%d clients has disconnected.\n", total_clients);
@@ -52,10 +53,12 @@ int main(void) {
     cdk_unpacker_t unpacker = {
         .fixedlen.len = BUFFERSIZE,
     };
-    cdk_handler_t handler = {.tcp.on_connect = _connect_cb,
-                             .tcp.on_read = _read_cb,
-                             .tcp.on_close = _close_cb,
-                             .tcp.unpacker = &unpacker};
+    cdk_handler_t handler = {
+        .tcp.on_connect = _connect_cb,
+        .tcp.on_read = _read_cb,
+        .tcp.on_close = _close_cb,
+        .tcp.unpacker = &unpacker};
+
     cdk_net_startup(&conf);
     cdk_logger_config_t config = {
         .async = false,

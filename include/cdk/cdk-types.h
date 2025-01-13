@@ -84,6 +84,7 @@ typedef enum cdk_event_type_e {
 
 #define cdk_tls_ssl_t void
 #define cdk_tls_ctx_t void
+#define cdk_tls_bio_t void
 
 typedef struct cdk_channel_s        cdk_channel_t;
 typedef struct cdk_handler_s        cdk_handler_t;
@@ -115,7 +116,7 @@ typedef struct cdk_sha1_s           cdk_sha1_t;
 typedef struct cdk_rwlock_s         cdk_rwlock_t;
 typedef struct cdk_spinlock_s       cdk_spinlock_t;
 typedef struct cdk_net_conf_s       cdk_net_conf_t;
-typedef struct cdk_ssl_entry_s      cdk_ssl_entry_t;
+typedef struct cdk_dtls_ssl_s       cdk_dtls_ssl_t;
 typedef struct cdk_logger_config_s  cdk_logger_config_t;
 typedef enum cdk_logger_level_e     cdk_logger_level_t;
 typedef void (*cdk_logger_cb_t)(cdk_logger_level_t level, char* msg);
@@ -301,8 +302,8 @@ enum cdk_tls_side_e {
 
 enum cdk_logger_level_e {
     LEVEL_DEBUG = 0,
-    LEVEL_INFO = 1,
-    LEVEL_WARN = 2,
+    LEVEL_INFO  = 1,
+    LEVEL_WARN  = 2,
     LEVEL_ERROR = 3,
 };
 
@@ -349,8 +350,9 @@ struct cdk_net_conf_s {
     cdk_tls_conf_t dtls;
 };
 
-struct cdk_ssl_entry_s {
-    cdk_tls_ssl_t*    ssl;
+struct cdk_dtls_ssl_s {
+    cdk_tls_ssl_t*    dtls_ssl;
+    cdk_tls_bio_t*    dtls_bio;
     uint64_t          latest_rd_time;
     uint64_t          latest_wr_time;
     cdk_rbtree_node_t node;
@@ -388,8 +390,8 @@ struct cdk_channel_s {
                 struct sockaddr_storage ss;
                 socklen_t               sslen;
             } peer;
-            char             peer_human[INET6_ADDRSTRLEN + 6];
-            cdk_ssl_entry_t* active_ssl;
+            char            peer_human[INET6_ADDRSTRLEN + 6];
+            cdk_dtls_ssl_t* ssl;  // current ssl
             cdk_rbtree_t* sslmap; // be released by the application as required
         } udp;
     };
