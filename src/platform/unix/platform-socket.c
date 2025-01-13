@@ -21,8 +21,8 @@
 
 #include "cdk/cdk-types.h"
 
-#define TCPv4_MSS       536
-#define TCPv6_MSS       1220
+#define TCPv4_MSS 536
+#define TCPv6_MSS 1220
 
 void platform_socket_nonblock(cdk_sock_t sock) {
     int flag = fcntl(sock, F_GETFL, 0);
@@ -40,9 +40,7 @@ void platform_socket_setsendbuf(cdk_sock_t sock, int val) {
     setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const void*)&val, sizeof(int));
 }
 
-void platform_socket_close(cdk_sock_t sock) {
-    close(sock);
-}
+void platform_socket_close(cdk_sock_t sock) { close(sock); }
 
 cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
     cdk_sock_t cli;
@@ -52,7 +50,7 @@ cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking) {
     if (cli == -1) {
         return -1;
     }
-    if(nonblocking){
+    if (nonblocking) {
         platform_socket_nonblock(cli);
     }
     return cli;
@@ -75,18 +73,24 @@ void platform_socket_v6only(cdk_sock_t sock, bool on) {
 
 void platform_socket_recvtimeo(cdk_sock_t sock, int timeout_ms) {
     struct timeval tv = {
-        .tv_sec = timeout_ms / 1000,
-        .tv_usec = (timeout_ms % 1000) * 1000
-    };
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const void*)&tv, sizeof(struct timeval));
+        .tv_sec = timeout_ms / 1000, .tv_usec = (timeout_ms % 1000) * 1000};
+    setsockopt(
+        sock,
+        SOL_SOCKET,
+        SO_RCVTIMEO,
+        (const void*)&tv,
+        sizeof(struct timeval));
 }
 
 void platform_socket_sendtimeo(cdk_sock_t sock, int timeout_ms) {
     struct timeval tv = {
-        .tv_sec = timeout_ms / 1000,
-        .tv_usec = (timeout_ms % 1000) * 1000
-    };
-    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const void*)&tv, sizeof(struct timeval));
+        .tv_sec = timeout_ms / 1000, .tv_usec = (timeout_ms % 1000) * 1000};
+    setsockopt(
+        sock,
+        SOL_SOCKET,
+        SO_SNDTIMEO,
+        (const void*)&tv,
+        sizeof(struct timeval));
 }
 
 #if defined(__linux__)
@@ -95,17 +99,21 @@ void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
     struct sock_filter bpf_code[] = {
         {BPF_LD | BPF_W | BPF_ABS, 0, 0, SKF_AD_OFF | SKF_AD_CPU},
         {BPF_ALU | BPF_MOD, 0, 0, cores},
-        {BPF_RET | BPF_A, 0, 0, 0}
-    };
-    struct sock_fprog bpf_config = { 0 };
+        {BPF_RET | BPF_A, 0, 0, 0}};
+    struct sock_fprog bpf_config = {0};
     bpf_config.len = (sizeof(bpf_code) / sizeof(bpf_code[0]));
     bpf_config.filter = bpf_code;
 
-    setsockopt(sock, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (const void*)&bpf_config, sizeof(bpf_config));
+    setsockopt(
+        sock,
+        SOL_SOCKET,
+        SO_ATTACH_REUSEPORT_CBPF,
+        (const void*)&bpf_config,
+        sizeof(bpf_config));
 }
 
 int platform_socket_getaddrfamily(cdk_sock_t sock) {
-    int af;
+    int       af;
     socklen_t len;
     len = sizeof(int);
     getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &af, &len);
@@ -131,13 +139,11 @@ void platform_socket_maxseg(cdk_sock_t sock) {
     setsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, (const void*)&mss, sizeof(int));
 }
 
-cdk_pollfd_t platform_socket_pollfd_create(void) {
-    return epoll_create1(0);
-}
+cdk_pollfd_t platform_socket_pollfd_create(void) { return epoll_create1(0); }
 
 int platform_socket_extract_family(cdk_sock_t sock) {
 
-    int af;
+    int       af;
     socklen_t len;
 
     len = sizeof(int);
@@ -157,7 +163,7 @@ void platform_socket_rss(cdk_sock_t sock, uint16_t idx, int cores) {
 
 int platform_socket_getaddrfamily(cdk_sock_t sock) {
     struct sockaddr_storage ss;
-    socklen_t len;
+    socklen_t               len;
 
     len = sizeof(struct sockaddr_storage);
     getsockname(sock, (struct sockaddr*)&ss, &len);
@@ -179,22 +185,21 @@ void platform_socket_keepalive(cdk_sock_t sock) {
 
 void platform_socket_maxseg(cdk_sock_t sock) {
     /**
-     * on macos, TCP_NOOPT seems to be the only way to restrict MSS to the minimum.
-     * it strips all options out of the SYN packet which forces the remote party to fall back to the minimum MSS.
-     * TCP_MAXSEG doesn't seem to work correctly for outbound connections on macOS/iOS.
+     * on macos, TCP_NOOPT seems to be the only way to restrict MSS to the
+     * minimum. it strips all options out of the SYN packet which forces the
+     * remote party to fall back to the minimum MSS. TCP_MAXSEG doesn't seem to
+     * work correctly for outbound connections on macOS/iOS.
      */
     int val = 1;
     setsockopt(sock, IPPROTO_TCP, TCP_NOOPT, (const void*)&val, sizeof(int));
 }
 
-cdk_pollfd_t platform_socket_pollfd_create(void) {
-    return kqueue();
-}
+cdk_pollfd_t platform_socket_pollfd_create(void) { return kqueue(); }
 
 int platform_socket_extract_family(cdk_sock_t sock) {
 
     struct sockaddr_storage ss;
-    socklen_t len;
+    socklen_t               len;
 
     len = sizeof(struct sockaddr_storage);
     getsockname(sock, (struct sockaddr*)&ss, &len);
@@ -203,29 +208,33 @@ int platform_socket_extract_family(cdk_sock_t sock) {
 }
 #endif
 
-void platform_socket_pollfd_destroy(cdk_pollfd_t pfd) {
-    close(pfd);
-}
+void platform_socket_pollfd_destroy(cdk_pollfd_t pfd) { close(pfd); }
 
 void platform_socket_reuse_port(cdk_sock_t sock) {
     int on = 1;
     setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const void*)&on, sizeof(on));
 }
 
-cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores, bool nonblocking) {
-    cdk_sock_t sock;
+cdk_sock_t platform_socket_listen(
+    const char* restrict host,
+    const char* restrict port,
+    int  protocol,
+    int  idx,
+    int  cores,
+    bool nonblocking) {
+    cdk_sock_t       sock;
     struct addrinfo  hints;
     struct addrinfo* res;
     struct addrinfo* rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family    = AF_UNSPEC;
-    hints.ai_socktype  = protocol;
-    hints.ai_flags     = AI_PASSIVE;
-    hints.ai_protocol  = 0;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = protocol;
+    hints.ai_flags = AI_PASSIVE;
+    hints.ai_protocol = 0;
     hints.ai_canonname = NULL;
-    hints.ai_addr      = NULL;
-    hints.ai_next      = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
 
     if (getaddrinfo(host, port, &hints, &res)) {
         abort();
@@ -261,7 +270,8 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
             }
             platform_socket_maxseg(sock);
             /**
-             * must be after _tcp_maxseg. due to _tcp_maxseg set TCP_NOOPT on macos.
+             * must be after _tcp_maxseg. due to _tcp_maxseg set TCP_NOOPT on
+             * macos.
              */
             platform_socket_nodelay(sock, true);
             platform_socket_keepalive(sock);
@@ -269,7 +279,7 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
         /**
          * this option not inherited by connection-socket.
          */
-        if(nonblocking){
+        if (nonblocking) {
             platform_socket_nonblock(sock);
         }
         break;
@@ -281,27 +291,30 @@ cdk_sock_t platform_socket_listen(const char* restrict host, const char* restric
     return sock;
 }
 
-void platform_socket_startup(void) {
-}
+void platform_socket_startup(void) {}
 
-void platform_socket_cleanup(void) {
-}
+void platform_socket_cleanup(void) {}
 
-cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected, bool nonblocking) {
-    int ret;
-    cdk_sock_t sock;
+cdk_sock_t platform_socket_dial(
+    const char* restrict host,
+    const char* restrict port,
+    int   protocol,
+    bool* connected,
+    bool  nonblocking) {
+    int              ret;
+    cdk_sock_t       sock;
     struct addrinfo  hints;
     struct addrinfo* res;
     struct addrinfo* rp;
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family    = AF_UNSPEC;
-    hints.ai_socktype  = protocol;
-    hints.ai_flags     = 0;
-    hints.ai_protocol  = 0;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = protocol;
+    hints.ai_flags = 0;
+    hints.ai_protocol = 0;
     hints.ai_canonname = NULL;
-    hints.ai_addr      = NULL;
-    hints.ai_next      = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
     if (getaddrinfo(host, port, &hints, &res)) {
         abort();
     }
@@ -310,7 +323,7 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
         if (sock == -1) {
             continue;
         }
-        if(nonblocking){
+        if (nonblocking) {
             platform_socket_nonblock(sock);
         }
         if (protocol == SOCK_STREAM) {
@@ -342,7 +355,7 @@ cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict 
 }
 
 int platform_socket_getsocktype(cdk_sock_t sock) {
-    int type;
+    int       type;
     socklen_t len;
 
     len = sizeof(int);
@@ -405,7 +418,12 @@ ssize_t platform_socket_sendall(cdk_sock_t sock, void* buf, int size) {
     return off;
 }
 
-ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* lenptr) {
+ssize_t platform_socket_recvfrom(
+    cdk_sock_t               sock,
+    void*                    buf,
+    int                      size,
+    struct sockaddr_storage* ss,
+    socklen_t*               lenptr) {
     ssize_t n;
     do {
         n = recvfrom(sock, buf, size, 0, (struct sockaddr*)ss, lenptr);
@@ -416,7 +434,12 @@ ssize_t platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct so
     return n;
 }
 
-ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len) {
+ssize_t platform_socket_sendto(
+    cdk_sock_t               sock,
+    void*                    buf,
+    int                      size,
+    struct sockaddr_storage* ss,
+    socklen_t                len) {
     ssize_t n;
     do {
         n = sendto(sock, buf, size, 0, (struct sockaddr*)ss, len);
@@ -427,14 +450,11 @@ ssize_t platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sock
     return n;
 }
 
-int platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]) {
+int platform_socket_socketpair(
+    int domain, int type, int protocol, cdk_sock_t socks[2]) {
     return socketpair(AF_LOCAL, type, protocol, socks);
 }
 
-const char* platform_socket_error2string(int error) {
-    return strerror(error);
-}
+const char* platform_socket_error2string(int error) { return strerror(error); }
 
-int platform_socket_lasterror(void) {
-    return errno;
-}
+int platform_socket_lasterror(void) { return errno; }

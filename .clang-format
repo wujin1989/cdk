@@ -6,5 +6,4 @@ PointerAlignment: Left
 BinPackArguments: false
 BinPackParameters: false
 AlignConsecutiveDeclarations: true
-AlignConsecutiveAssignments: true
 AlignAfterOpenBracket: AlwaysBreak

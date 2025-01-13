@@ -18,7 +18,7 @@ static void _close_cb(cdk_channel_t* channel, const char* error) {
 
 int main(void) {
     cdk_net_conf_t conf = {
-        .nthrds = 4,
+        .nthrds = 2,
         .dtls   = {
               .cafile     = NULL,
               .capath     = NULL,
