@@ -120,6 +120,7 @@ else()
 endif()
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION . FILES_MATCHING PATTERN "*")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/docs DESTINATION . FILES_MATCHING PATTERN "*")
 install(TARGETS cdk DESTINATION lib)
 
 add_subdirectory(examples)

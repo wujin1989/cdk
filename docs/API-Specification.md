@@ -1,8 +1,7 @@
 ---
 html:
-    toc: true
-print_background: true
---- 
+  toc: true
+---
 <center>
 Copyright©2025 jin.wu. All rights reserved.
 </center>
@@ -1288,16 +1287,26 @@ extern void  cdk_loader_destroy(void* m);
 ### cdk-logger
 ```c
 /**
- * @brief Create a logger
+ * @brief Create a logger instance.
  *
- * This function creates an internal logger and initializes its internal state. It specifies the output destination
- * for log messages and whether asynchronous logging is enabled.
+ * This function creates an internal logger and initializes its internal state based on the provided configuration.
+ * It specifies how log messages are handled, including the output destination, whether asynchronous logging is enabled,
+ * and the logging level. The logger can operate in two modes: direct output to a specified destination or through a callback function.
  *
- * @param out The output destination for log messages
- * @param async Enable asynchronous logging if true, otherwise disable it
+ * @param[in] config Pointer to a cdk_logger_config_t structure that contains the configuration for the logger.
+ *                   The configuration includes:
+ *                   - Output destination (`out`) or a logging callback (`callback`)
+ *                   - Whether asynchronous logging is enabled (`async`)
+ *                   - Log level filter (`level`)
+ *
+ * @note Only one of the union members (`out` and `async` or `callback`) should be used at any given time.
+ *       Using both simultaneously will lead to undefined behavior.
+ *
+ * @warning If the config pointer is NULL or invalid, the behavior is undefined.
+ *
  * @return N/A
  */
-extern void cdk_logger_create(const char* restrict out, bool async);
+extern void cdk_logger_create(cdk_logger_config_t* config);
 ```
 ```c
 /**
