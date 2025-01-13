@@ -595,7 +595,7 @@ void channel_accept(cdk_channel_t *channel) {
             return;
         }
         cdk_channel_t *nchannel = channel_create(
-            global_poller_manager.poller_roundrobin(), cli, channel->handler);
+            global_poller_manager.poller_roundrobin(), cli, channel->handler);            
         if (nchannel) {
             if (nchannel->tcp.ssl) {
                 channel_tls_srv_handshake(nchannel);
