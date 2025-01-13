@@ -302,8 +302,8 @@ enum cdk_tls_side_e {
 
 enum cdk_logger_level_e {
     LEVEL_DEBUG = 0,
-    LEVEL_INFO  = 1,
-    LEVEL_WARN  = 2,
+    LEVEL_INFO = 1,
+    LEVEL_WARN = 2,
     LEVEL_ERROR = 3,
 };
 
@@ -359,13 +359,13 @@ struct cdk_dtls_ssl_s {
 };
 
 struct cdk_channel_s {
-    cdk_poller_t*  poller;
-    cdk_sock_t     fd;
-    int            events;
-    cdk_handler_t* handler;
-    int            type;
-    atomic_bool    closing;
-    cdk_list_t     txlist;
+    cdk_poller_t*    poller;
+    cdk_sock_t       fd;
+    int              events;
+    cdk_handler_t*   handler;
+    int              type;
+    atomic_bool      closing;
+    cdk_list_t       txlist;
     struct {
         void*   buf;
         ssize_t len;
@@ -385,6 +385,7 @@ struct cdk_channel_s {
             cdk_timer_t*   hb_timer;
         } tcp;
         struct {
+            bool connected;
             bool accepting;
             struct {
                 struct sockaddr_storage ss;

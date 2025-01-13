@@ -54,7 +54,7 @@ typedef struct socket_ctx_s {
 
 static void _cb_inactive(void* param) {
     cdk_poller_t* poller = param;
-    poller->active       = false;
+    poller->active = false;
 }
 
 static inline cdk_poller_t* _roundrobin(void) {
@@ -116,7 +116,7 @@ static void _manager_create(int parallel) {
     cnd_init(&global_poller_manager.poller_cnd);
 
     global_poller_manager.poller_roundrobin = _roundrobin;
-    global_poller_manager.thrdcnt           = parallel;
+    global_poller_manager.thrdcnt = parallel;
     global_poller_manager.thrdids =
         malloc(global_poller_manager.thrdcnt * sizeof(thrd_t));
     if (!global_poller_manager.thrdids) {
@@ -157,10 +157,10 @@ static socket_ctx_t* _socket_ctx_allocate(
         if (!strcmp(protocol, "udp")) {
             ctx->protocol = SOCK_DGRAM;
         }
-        ctx->idx     = idx;
-        ctx->cores   = cores;
+        ctx->idx = idx;
+        ctx->cores = cores;
         ctx->handler = handler;
-        ctx->poller  = global_poller_manager.poller_roundrobin();
+        ctx->poller = global_poller_manager.poller_roundrobin();
     }
     return ctx;
 }
@@ -170,7 +170,7 @@ static void _cb_listen(void* param) {
 
     cdk_sock_t sock = platform_socket_listen(
         ctx->host, ctx->port, ctx->protocol, ctx->idx, ctx->cores, true);
-    cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
+    cdk_channel_t* channel = channel_create(ctx->poller, sock, false, ctx->handler);
     if (channel) {
         channel_accepting(channel);
     }
@@ -179,12 +179,13 @@ static void _cb_listen(void* param) {
 }
 
 static void _cb_dial(void* param) {
-    socket_ctx_t* ctx       = param;
+    socket_ctx_t* ctx = param;
     bool          connected = false;
 
     cdk_sock_t sock = platform_socket_dial(
         ctx->host, ctx->port, ctx->protocol, &connected, true);
-    cdk_channel_t* channel = channel_create(ctx->poller, sock, ctx->handler);
+    cdk_channel_t* channel =
+        channel_create(ctx->poller, sock, connected, ctx->handler);
     if (channel) {
         if (channel->type == SOCK_STREAM) {
             if (connected) {
@@ -242,7 +243,7 @@ _channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
     if (ctx) {
         memset(ctx, 0, sizeof(channel_send_ctx_t) + size);
         ctx->channel = channel;
-        ctx->size    = size;
+        ctx->size = size;
         memcpy(ctx->data, data, size);
 
         cdk_net_postevent(
@@ -277,7 +278,7 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai) {
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
         _inet_ntop(AF_INET, &si->sin_addr, addr);
-        ai->port   = ntohs(si->sin_port);
+        ai->port = ntohs(si->sin_port);
         ai->family = AF_INET;
         break;
     }
@@ -285,7 +286,7 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai) {
         struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
 
         _inet_ntop(AF_INET6, &si6->sin6_addr, addr);
-        ai->port   = ntohs(si6->sin6_port);
+        ai->port = ntohs(si6->sin6_port);
         ai->family = AF_INET6;
         break;
     }
@@ -302,14 +303,14 @@ void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss) {
         struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
 
         si6->sin6_family = AF_INET6;
-        si6->sin6_port   = htons(ai->port);
+        si6->sin6_port = htons(ai->port);
         inet_pton(AF_INET6, ai->addr, &(si6->sin6_addr));
     }
     if (ai->family == AF_INET) {
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
         si->sin_family = AF_INET;
-        si->sin_port   = htons(ai->port);
+        si->sin_port = htons(ai->port);
         inet_pton(AF_INET, ai->addr, &(si->sin_addr));
     }
 }
@@ -319,7 +320,7 @@ void cdk_net_make_address(
     cdk_address_t ai = {0};
 
     memcpy(ai.addr, host, strlen(host));
-    ai.port   = (uint16_t)strtoul(port, NULL, 10);
+    ai.port = (uint16_t)strtoul(port, NULL, 10);
     ai.family = platform_socket_extract_family(sock);
 
     cdk_net_pton(&ai, ss);
@@ -390,7 +391,7 @@ void cdk_net_postevent(
     cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail) {
     cdk_event_t* event = malloc(sizeof(cdk_event_t));
     if (event) {
-        event->cb  = cb;
+        event->cb = cb;
         event->arg = arg;
 
         mtx_lock(&poller->evmtx);
@@ -419,7 +420,7 @@ void cdk_net_startup(cdk_net_conf_t* conf) {
     if (atomic_flag_test_and_set(&global_poller_manager.initialized)) {
         return;
     }
-    global_tls_ctx  = tls_ctx_create(&conf->tls);
+    global_tls_ctx = tls_ctx_create(&conf->tls);
     global_dtls_ctx = tls_ctx_create(&conf->dtls);
     _manager_create(conf->nthrds);
 }
