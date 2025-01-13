@@ -9,6 +9,8 @@ if (CMAKE_SIZEOF_VOID_P LESS 8)
 	message(FATAL_ERROR "only 64bit supported")
 endif()
 
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install")
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
@@ -96,7 +98,9 @@ if(WIN32)
 		IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3/lib/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_SYSTEM_NAME}/crypto.lib"
 		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3//include" 
 		INTERFACE_LINK_LIBRARIES "Crypt32.lib")
-else()
+endif()
+
+if(UNIX)
 	set_target_properties(ssl PROPERTIES
 		IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3/lib/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_SYSTEM_NAME}/libssl.a"
 		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl3//include")
@@ -114,5 +118,8 @@ else()
     add_library(cdk STATIC ${SRCS})
 	target_link_libraries(cdk PRIVATE ssl crypto ${CMAKE_DL_LIBS})
 endif()
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION . FILES_MATCHING PATTERN "*")
+install(TARGETS cdk DESTINATION lib)
 
 add_subdirectory(examples)

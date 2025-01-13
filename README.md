@@ -21,8 +21,9 @@ The compiler needs to support C11.
 
 
 # Compile
-    cmake -B build
-    cmake --build build --config Release -j 8
+    cmake -B out
+    cmake --build out --config Release -j 8
+    cmake --install out 
 
 # Documentation
 Reference docs/API-Specification.html
