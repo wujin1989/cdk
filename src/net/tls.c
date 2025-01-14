@@ -41,7 +41,9 @@ static int _alpn_select_cb(
     return 0;
 }
 
-static int _sni_select_cb(SSL* s, int* al, void* arg) { return 0; }
+static int _sni_select_cb(SSL* s, int* al, void* arg) {
+    return 0;
+}
 
 static int
 _gen_cookie_cb(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len) {
@@ -218,7 +220,9 @@ cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf) {
     return ctx;
 }
 
-void tls_ctx_destroy(cdk_tls_ctx_t* ctx) { _ctx_destroy((SSL_CTX*)ctx); }
+void tls_ctx_destroy(cdk_tls_ctx_t* ctx) {
+    _ctx_destroy((SSL_CTX*)ctx);
+}
 
 cdk_tls_ssl_t* tls_ssl_create(cdk_tls_ctx_t* ctx) {
     SSL* ssl = SSL_new((SSL_CTX*)ctx);
@@ -237,9 +241,13 @@ void tls_ssl_destroy(cdk_tls_ssl_t* ssl) {
     }
 }
 
-cdk_tls_bio_t* tls_bio_create(int fd) { return BIO_new_dgram(fd, 0); }
+cdk_tls_bio_t* tls_bio_create(int fd) {
+    return BIO_new_dgram(fd, 0);
+}
 
-void tls_bio_destroy(cdk_tls_bio_t* bio) { BIO_free((BIO*)bio); }
+void tls_bio_destroy(cdk_tls_bio_t* bio) {
+    BIO_free((BIO*)bio);
+}
 
 int tls_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
     /**
@@ -252,7 +260,7 @@ int tls_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
     int ret = SSL_connect((SSL*)ssl);
     if (ret <= 0) {
         int err = SSL_get_error((SSL*)ssl, ret);
-        *error  = err;
+        *error = err;
         if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
             return 0;
         }
@@ -268,7 +276,7 @@ int tls_accept(cdk_tls_ssl_t* ssl, int fd, bool tcp, int* error) {
     int ret = SSL_accept((SSL*)ssl);
     if (ret <= 0) {
         int err = SSL_get_error((SSL*)ssl, ret);
-        *error  = err;
+        *error = err;
         if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
             return 0;
         }
@@ -286,10 +294,10 @@ int tls_listen(cdk_tls_ssl_t* ssl, int fd, cdk_tls_bio_t* bio, int* error) {
     SSL_set_bio((SSL*)ssl, (BIO*)bio, bio);
 
     BIO_ADDR* noused = BIO_ADDR_new();
-    int       ret    = DTLSv1_listen((SSL*)ssl, noused);
+    int       ret = DTLSv1_listen((SSL*)ssl, noused);
     if (ret <= 0) {
         int err = SSL_get_error((SSL*)ssl, ret);
-        *error  = err;
+        *error = err;
         BIO_ADDR_free(noused);
         return ret;
     }
@@ -301,7 +309,7 @@ int tls_ssl_read(cdk_tls_ssl_t* ssl, void* buf, int size, int* error) {
     int n = SSL_read((SSL*)ssl, buf, size);
     if (n <= 0) {
         int err = SSL_get_error((SSL*)ssl, n);
-        *error  = err;
+        *error = err;
         if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
             return 0;
         }
@@ -314,7 +322,7 @@ int tls_ssl_write(cdk_tls_ssl_t* ssl, void* buf, int size, int* error) {
     int n = SSL_write((SSL*)ssl, buf, size);
     if (n <= 0) {
         int err = SSL_get_error((SSL*)ssl, n);
-        *error  = err;
+        *error = err;
         if ((err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)) {
             return 0;
         }
