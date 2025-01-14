@@ -166,7 +166,7 @@ void poller_destroy(cdk_poller_t* poller) {
     }
     while (!cdk_list_empty(&poller->chlist)) {
         cdk_channel_t* ch = cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);
-        channel_destroy(ch, "");
+        channel_destroy(ch, CHANNEL_DESTROY_REASON_POLLER_SHUTDOWN);
     }
     mtx_destroy(&poller->evmtx);
     free(poller);

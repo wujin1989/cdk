@@ -341,7 +341,7 @@ static void _rd_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
     if ((cdk_time_now() - channel->tcp.latest_rd_time) >
         channel->handler->tcp.rd_timeout) {
-        cdk_net_close(channel);
+        channel_destroy(channel, CHANNEL_DESTROY_REASON_RD_TIMEOUT);
     }
 }
 
@@ -349,13 +349,13 @@ static void _wr_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
     if ((cdk_time_now() - channel->tcp.latest_wr_time) >
         channel->handler->tcp.wr_timeout) {
-        cdk_net_close(channel);
+        channel_destroy(channel, CHANNEL_DESTROY_REASON_WR_TIMEOUT);
     }
 }
 
 static void _conn_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
-    cdk_net_close(channel);
+    channel_destroy(channel, CHANNEL_DESTROY_REASON_CONN_TIMEOUT);
 }
 
 void channel_connecting(cdk_channel_t* channel) {

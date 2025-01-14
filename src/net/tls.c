@@ -21,6 +21,7 @@
 
 #include "tls.h"
 #include "cdk/net/cdk-net.h"
+#include "platform/platform-socket.h"
 #include <openssl/err.h>
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
@@ -205,7 +206,61 @@ static void _ctx_destroy(SSL_CTX* ctx) {
 
 const char* tls_error2string(int err) {
     static char buffer[512];
-    ERR_error_string(err, buffer);
+    const char* error_str = "Unknown SSL error code";
+    const char* sys_error_str = NULL;
+
+    memset(buffer, 0, sizeof(buffer));
+
+    switch (err) {
+    case SSL_ERROR_NONE:
+        error_str = "SSL_ERROR_NONE: No error";
+        break;
+    case SSL_ERROR_ZERO_RETURN:
+        error_str = "SSL_ERROR_ZERO_RETURN: Connection closed cleanly";
+        break;
+    case SSL_ERROR_WANT_READ:
+        error_str = "SSL_ERROR_WANT_READ: Operation needs to read more data";
+        break;
+    case SSL_ERROR_WANT_WRITE:
+        error_str = "SSL_ERROR_WANT_WRITE: Operation needs to write more data";
+        break;
+    case SSL_ERROR_WANT_CONNECT:
+        error_str =
+            "SSL_ERROR_WANT_CONNECT: Non-blocking connect() in progress";
+        break;
+    case SSL_ERROR_WANT_ACCEPT:
+        error_str = "SSL_ERROR_WANT_ACCEPT: Non-blocking accept() in progress";
+        break;
+    case SSL_ERROR_WANT_X509_LOOKUP:
+        error_str = "SSL_ERROR_WANT_X509_LOOKUP: Operation needs X.509 certificate lookup";
+        break;
+    case SSL_ERROR_WANT_ASYNC:
+        error_str = "SSL_ERROR_WANT_ASYNC: Async operation in progress";
+        break;
+    case SSL_ERROR_WANT_ASYNC_JOB:
+        error_str = "SSL_ERROR_WANT_ASYNC_JOB: Async job in progress";
+        break;
+    case SSL_ERROR_WANT_CLIENT_HELLO_CB:
+        error_str =
+            "SSL_ERROR_WANT_CLIENT_HELLO_CB: Client Hello callback in progress";
+        break;
+    case SSL_ERROR_SYSCALL:
+        error_str = "SSL_ERROR_SYSCALL: A system call failed";
+        sys_error_str =
+            platform_socket_error2string(platform_socket_lasterror());
+        if (sys_error_str != NULL) {
+            snprintf(
+                buffer, sizeof(buffer), "%s (%s)", error_str, sys_error_str);
+            return buffer;
+        }
+        break;
+    case SSL_ERROR_SSL:
+        error_str = "SSL_ERROR_SSL: An SSL library error occurred";
+        break;
+    default:
+        break;
+    }
+    memcpy(buffer, error_str, strlen(error_str));
     return buffer;
 }
 

@@ -25,6 +25,17 @@ _Pragma("once")
 
 #define DEFAULT_IOBUF_SIZE 16384
 
+#define CHANNEL_DESTROY_REASON_USER                                            \
+    "Channel destroyed due to User-triggered (normal behavior)"
+#define CHANNEL_DESTROY_REASON_WR_TIMEOUT                                      \
+    "Channel destroyed due to write operation timeout"
+#define CHANNEL_DESTROY_REASON_RD_TIMEOUT                                      \
+    "Channel destroyed due to read operation timeout"
+#define CHANNEL_DESTROY_REASON_CONN_TIMEOUT                                    \
+    "Channel destroyed due to connection establishment timeout"
+#define CHANNEL_DESTROY_REASON_POLLER_SHUTDOWN                                 \
+    "Channel destroyed due to poller shutdown"
+
 extern cdk_channel_t* channel_create(
         cdk_poller_t*  poller,
         cdk_sock_t     sock,
