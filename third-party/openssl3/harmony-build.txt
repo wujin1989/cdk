@@ -15,3 +15,6 @@ export CXXFLAGS="-fPIC -D__MUSL__=1";
 
 
 ./Configure linux-aarch64 --prefix=/home/wujin/openssl-3.2.0/out
+
+
+####  https://gitee.com/openharmony-sig/tpc_c_cplusplus/blob/master/lycium/doc/ohos_use_sdk/OHOS_SDK-Usage.md
