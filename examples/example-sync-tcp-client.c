@@ -13,6 +13,7 @@ int main(void) {
 		if (cdk_net_recv2(cli, rbuf, sizeof(rbuf)) <= 0) {
 			break;
 		}
+		cdk_time_sleep(500);
 		printf("recv %s\n", rbuf);
 	}
 	cdk_net_close2(cli);
