@@ -119,6 +119,7 @@ typedef struct cdk_net_conf_s       cdk_net_conf_t;
 typedef struct cdk_dtls_ssl_s       cdk_dtls_ssl_t;
 typedef struct cdk_logger_config_s  cdk_logger_config_t;
 typedef enum cdk_logger_level_e     cdk_logger_level_t;
+typedef enum cdk_channel_reason_e   cdk_channel_reason_t;
 typedef void (*cdk_logger_cb_t)(cdk_logger_level_t level, char* msg);
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -307,6 +308,16 @@ enum cdk_logger_level_e {
     LEVEL_ERROR = 3,
 };
 
+enum cdk_channel_reason_e {
+    REASON_USER_TRIGGERED,
+    REASON_WR_TIMEOUT,
+    REASON_RD_TIMEOUT,
+    REASON_CONN_TIMEOUT,
+    REASON_POLLER_SHUTDOWN,
+    REASON_SYSCALL_FAIL,
+    REASON_TLS_FAIL,
+};
+
 struct cdk_tls_conf_s {
     /**
      * Path to a file containing trusted CA certificates in
@@ -359,13 +370,13 @@ struct cdk_dtls_ssl_s {
 };
 
 struct cdk_channel_s {
-    cdk_poller_t*    poller;
-    cdk_sock_t       fd;
-    int              events;
-    cdk_handler_t*   handler;
-    int              type;
-    atomic_bool      closing;
-    cdk_list_t       txlist;
+    cdk_poller_t*  poller;
+    cdk_sock_t     fd;
+    int            events;
+    cdk_handler_t* handler;
+    int            type;
+    atomic_bool    closing;
+    cdk_list_t     txlist;
     struct {
         void*   buf;
         ssize_t len;
@@ -401,11 +412,12 @@ struct cdk_channel_s {
 struct cdk_handler_s {
     union {
         struct {
-            void            (*on_accept)(cdk_channel_t*);
-            void            (*on_connect)(cdk_channel_t*);
-            void            (*on_read)(cdk_channel_t*, void* buf, size_t len);
-            void            (*on_write)(cdk_channel_t*);
-            void            (*on_close)(cdk_channel_t*, const char* error);
+            void (*on_accept)(cdk_channel_t*);
+            void (*on_connect)(cdk_channel_t*);
+            void (*on_read)(cdk_channel_t*, void* buf, size_t len);
+            void (*on_write)(cdk_channel_t*);
+            void (*on_close)(
+                cdk_channel_t*, cdk_channel_reason_t code, const char* error);
             void            (*on_heartbeat)(cdk_channel_t*);
             int             conn_timeout;
             int             wr_timeout;
@@ -417,7 +429,8 @@ struct cdk_handler_s {
             void (*on_connect)(cdk_channel_t*);
             void (*on_read)(cdk_channel_t*, void* buf, size_t len);
             void (*on_write)(cdk_channel_t*);
-            void (*on_close)(cdk_channel_t*, const char* error);
+            void (*on_close)(
+                cdk_channel_t*, cdk_channel_reason_t code, const char* error);
         } udp;
     };
 };

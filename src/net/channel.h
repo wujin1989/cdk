@@ -41,7 +41,8 @@ extern cdk_channel_t* channel_create(
         cdk_sock_t     sock,
         bool           udp_connected,
         cdk_handler_t* handler);
-extern void channel_destroy(cdk_channel_t* channel, const char* reason);
+extern void channel_destroy(
+    cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
 extern void channel_recv(cdk_channel_t* channel);
 extern void channel_send(cdk_channel_t* channel);
 extern void

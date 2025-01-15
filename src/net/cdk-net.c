@@ -253,7 +253,7 @@ _channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
 
 static void _cb_channel_destroy(void* param) {
     cdk_channel_t* channel = param;
-    channel_destroy(channel, CHANNEL_DESTROY_REASON_USER);
+    channel_destroy(channel, REASON_USER_TRIGGERED, CHANNEL_DESTROY_REASON_USER);
 }
 
 static void _channel_destroy(cdk_channel_t* channel) {
@@ -381,7 +381,8 @@ void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
 
 void cdk_net_close(cdk_channel_t* channel) {
     if (thrd_equal(channel->poller->tid, thrd_current())) {
-        channel_destroy(channel, CHANNEL_DESTROY_REASON_USER);
+        channel_destroy(
+            channel, REASON_USER_TRIGGERED, CHANNEL_DESTROY_REASON_USER);
     } else {
         _channel_destroy(channel);
     }

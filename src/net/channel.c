@@ -78,7 +78,10 @@ static void _unencrypted_send(cdk_channel_t* channel) {
             return;
         }
         channel_destroy(
-            channel, platform_socket_error2string(platform_socket_lasterror()));
+            channel,
+            REASON_SYSCALL_FAIL,
+            platform_socket_error2string(
+                platform_socket_lasterror()));
         return;
     }
     if (n < e->len) {
@@ -118,7 +121,7 @@ static void _encrypted_send(cdk_channel_t* channel) {
         if (n == 0) {
             return;
         }
-        channel_destroy(channel, tls_error2string(err));
+        channel_destroy(channel, REASON_TLS_FAIL, tls_error2string(err));
         return;
     }
     if (n < e->len) {
@@ -158,7 +161,7 @@ _encrypted_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
                 }
                 return;
             }
-            channel_destroy(channel, tls_error2string(err));
+            channel_destroy(channel, REASON_TLS_FAIL, tls_error2string(err));
             return;
         }
     }
@@ -217,6 +220,7 @@ _unencrypted_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
             }
             channel_destroy(
                 channel,
+                REASON_SYSCALL_FAIL,
                 platform_socket_error2string(platform_socket_lasterror()));
             return;
         }
@@ -263,7 +267,7 @@ static void _encrypted_recv(cdk_channel_t* channel) {
         if (n == 0) {
             return;
         }
-        channel_destroy(channel, tls_error2string(err));
+        channel_destroy(channel, REASON_TLS_FAIL, tls_error2string(err));
         return;
     }
     if (channel->type == SOCK_STREAM) {
@@ -308,12 +312,15 @@ static void _unencrypted_recv(cdk_channel_t* channel) {
             return;
         }
         channel_destroy(
-            channel, platform_socket_error2string(platform_socket_lasterror()));
+            channel,
+            REASON_SYSCALL_FAIL,
+            platform_socket_error2string(platform_socket_lasterror()));
         return;
     }
     if (n == 0) {
         channel_destroy(
             channel,
+            REASON_SYSCALL_FAIL,
             platform_socket_error2string(PLATFORM_SO_ERROR_ECONNRESET));
         return;
     }
@@ -341,7 +348,8 @@ static void _rd_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
     if ((cdk_time_now() - channel->tcp.latest_rd_time) >
         channel->handler->tcp.rd_timeout) {
-        channel_destroy(channel, CHANNEL_DESTROY_REASON_RD_TIMEOUT);
+        channel_destroy(
+            channel, REASON_RD_TIMEOUT, CHANNEL_DESTROY_REASON_RD_TIMEOUT);
     }
 }
 
@@ -349,13 +357,15 @@ static void _wr_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
     if ((cdk_time_now() - channel->tcp.latest_wr_time) >
         channel->handler->tcp.wr_timeout) {
-        channel_destroy(channel, CHANNEL_DESTROY_REASON_WR_TIMEOUT);
+        channel_destroy(
+            channel, REASON_WR_TIMEOUT,CHANNEL_DESTROY_REASON_WR_TIMEOUT);
     }
 }
 
 static void _conn_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
-    channel_destroy(channel, CHANNEL_DESTROY_REASON_CONN_TIMEOUT);
+    channel_destroy(
+        channel, REASON_CONN_TIMEOUT, CHANNEL_DESTROY_REASON_CONN_TIMEOUT);
 }
 
 void channel_connecting(cdk_channel_t* channel) {
@@ -502,7 +512,7 @@ void channel_tls_cli_handshake(void* param) {
                 channel->poller, channel_tls_cli_handshake, channel, true);
             return;
         }
-        channel_destroy(channel, tls_error2string(err));
+        channel_destroy(channel, REASON_TLS_FAIL, tls_error2string(err));
         return;
     }
     channel_connected(channel);
@@ -531,7 +541,7 @@ void channel_tls_srv_handshake(void* param) {
                 channel->poller, channel_tls_srv_handshake, channel, true);
             return;
         }
-        channel_destroy(channel, tls_error2string(err));
+        channel_destroy(channel, REASON_TLS_FAIL, tls_error2string(err));
         return;
     }
     channel_accepted(channel);
@@ -573,7 +583,8 @@ cdk_channel_t* channel_create(
     return NULL;
 }
 
-void channel_destroy(cdk_channel_t* channel, const char* reason) {
+void channel_destroy(
+    cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
     if (atomic_load(&channel->closing)) {
         return;
     }
@@ -591,13 +602,13 @@ void channel_destroy(cdk_channel_t* channel, const char* reason) {
     if (channel->type == SOCK_STREAM) {
         tls_ssl_destroy(channel->tcp.ssl);
         if (channel->handler->tcp.on_close) {
-            channel->handler->tcp.on_close(channel, reason);
+            channel->handler->tcp.on_close(channel, code, reason);
         }
         _tcp_timers_destroy(channel);
     }
     if (channel->type == SOCK_DGRAM) {
         if (channel->handler->udp.on_close) {
-            channel->handler->udp.on_close(channel, reason);
+            channel->handler->udp.on_close(channel, code, reason);
         }
     }
     if (channel->poller->active) {
@@ -638,6 +649,7 @@ void channel_accept(cdk_channel_t* channel) {
             }
             channel_destroy(
                 channel,
+                REASON_SYSCALL_FAIL,
                 platform_socket_error2string(platform_socket_lasterror()));
             return;
         }
@@ -722,7 +734,8 @@ void channel_connect(cdk_channel_t* channel) {
     }
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
-        channel_destroy(channel, platform_socket_error2string(err));
+        channel_destroy(
+            channel, REASON_SYSCALL_FAIL, platform_socket_error2string(err));
     } else {
         if (channel->tcp.ssl) {
             channel_tls_cli_handshake(channel);

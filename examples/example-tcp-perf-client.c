@@ -38,7 +38,8 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     cdk_net_send(channel, buf, len);
 }
 
-static void _close_cb(cdk_channel_t* channel, const char* error) {
+static void _close_cb(
+    cdk_channel_t* channel, cdk_channel_reason_t code, const char* error) {
     atomic_fetch_add(&disconnected_clients, 1);
     if (atomic_load(&disconnected_clients) == total_clients) {
         cdk_logi("%d clients has disconnected.\n", total_clients);

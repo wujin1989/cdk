@@ -12,7 +12,8 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     cdk_net_send(channel, buf, len);
 }
 
-static void _close_cb(cdk_channel_t* channel, const char* error) {
+static void _close_cb(
+    cdk_channel_t* channel, cdk_channel_reason_t code, const char* error) {
     printf("channel closed, reason: %s\n", error);
 }
 
