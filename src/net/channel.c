@@ -707,11 +707,11 @@ void channel_accept(cdk_channel_t* channel) {
 
             if (!n) {
                 channel->udp.ssl = malloc(sizeof(cdk_dtls_ssl_t));
-                if (channel->udp.ssl) {
-                    memset(channel->udp.ssl, 0, sizeof(cdk_dtls_ssl_t));
-                    channel->udp.ssl->dtls_ssl =
-                        tls_ssl_create(global_dtls_ctx);
+                if (!channel->udp.ssl) {
+                    return;
                 }
+                memset(channel->udp.ssl, 0, sizeof(cdk_dtls_ssl_t));
+                channel->udp.ssl->dtls_ssl = tls_ssl_create(global_dtls_ctx);
                 channel->udp.ssl->dtls_bio = tls_bio_create(channel->fd);
                 if (!channel->udp.ssl->dtls_bio) {
                     return;
