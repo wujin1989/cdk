@@ -134,7 +134,6 @@ static void _encrypted_send(cdk_channel_t* channel) {
         }
     }
     if (channel->type == SOCK_DGRAM) {
-        channel->udp.ssl->latest_wr_time = cdk_time_now();
         if (channel->handler->udp.on_write) {
             channel->handler->udp.on_write(channel);
         }
@@ -179,7 +178,6 @@ _encrypted_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
         }
     }
     if (channel->type == SOCK_DGRAM) {
-        channel->udp.ssl->latest_wr_time = cdk_time_now();
         if (n > 0 && channel->handler->udp.on_write) {
             cdk_net_postevent(
                 channel->poller, _cb_write_complete, channel, true);
@@ -276,7 +274,6 @@ static void _encrypted_recv(cdk_channel_t* channel) {
         unpacker_unpack(channel);
     }
     if (channel->type == SOCK_DGRAM) {
-        channel->udp.ssl->latest_rd_time = cdk_time_now();
         if (channel->handler->udp.on_read) {
             channel->handler->udp.on_read(channel, channel->rxbuf.buf, n);
         }

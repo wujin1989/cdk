@@ -364,8 +364,6 @@ struct cdk_net_conf_s {
 struct cdk_dtls_ssl_s {
     cdk_tls_ssl_t*    dtls_ssl;
     cdk_tls_bio_t*    dtls_bio;
-    uint64_t          latest_rd_time;
-    uint64_t          latest_wr_time;
     cdk_rbtree_node_t node;
 };
 
