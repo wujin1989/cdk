@@ -341,7 +341,7 @@ static inline void _channel_destroy_cb(void* param) {
     }
 }
 
-static void _rd_timeout_cb(void* param) {
+static inline void _rd_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
     if ((cdk_time_now() - channel->tcp.latest_rd_time) >
         channel->handler->tcp.rd_timeout) {
@@ -350,7 +350,7 @@ static void _rd_timeout_cb(void* param) {
     }
 }
 
-static void _wr_timeout_cb(void* param) {
+static inline void _wr_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
     if ((cdk_time_now() - channel->tcp.latest_wr_time) >
         channel->handler->tcp.wr_timeout) {
@@ -359,10 +359,26 @@ static void _wr_timeout_cb(void* param) {
     }
 }
 
-static void _conn_timeout_cb(void* param) {
+static inline void _conn_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
     channel_destroy(
         channel, REASON_CONN_TIMEOUT, CHANNEL_DESTROY_REASON_CONN_TIMEOUT);
+}
+
+static void _channel_sslmap_destroy(cdk_channel_t* channel) {
+    for (cdk_rbtree_node_t* n = cdk_rbtree_first(channel->udp.sslmap);;
+         n = cdk_rbtree_next(n)) {
+        cdk_dtls_ssl_t* ssl = cdk_rbtree_data(n, cdk_dtls_ssl_t, node);
+
+        tls_ssl_destroy(ssl->dtls_ssl);
+        tls_bio_destroy(ssl->dtls_bio);
+
+        cdk_rbtree_erase(channel->udp.sslmap, &ssl->node);
+        free(ssl);
+        ssl = NULL;
+    }
+    free(channel->udp.sslmap);
+    channel->udp.sslmap = NULL;
 }
 
 void channel_connecting(cdk_channel_t* channel) {
@@ -604,6 +620,7 @@ void channel_destroy(
         _tcp_timers_destroy(channel);
     }
     if (channel->type == SOCK_DGRAM) {
+        _channel_sslmap_destroy(channel);
         if (channel->handler->udp.on_close) {
             channel->handler->udp.on_close(channel, code, reason);
         }
