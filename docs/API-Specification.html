@@ -688,7 +688,7 @@ Copyright©2025 jin.wu. All rights reserved.
  * @param port Pointer to a null-terminated string containing the port number as text.
  * @return N/A
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_make_address</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">,</span> <span class="token keyword keyword-struct">struct</span> <span class="token class-name">sockaddr_storage</span><span class="token operator">*</span> ss<span class="token punctuation">,</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_address_make</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">,</span> <span class="token keyword keyword-struct">struct</span> <span class="token class-name">sockaddr_storage</span><span class="token operator">*</span> ss<span class="token punctuation">,</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
  * @brief Obtain the local or peer address associated with a socket
  *
@@ -702,7 +702,7 @@ Copyright©2025 jin.wu. All rights reserved.
  * @param peer Flag indicating whether to obtain the peer address (`true`) or local address (`false`)
  * @return N/A
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_extract_address</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">,</span> <span class="token class-name">cdk_address_t</span><span class="token operator">*</span> ai<span class="token punctuation">,</span> bool peer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_address_retrieve</span><span class="token punctuation">(</span><span class="token class-name">cdk_sock_t</span> sock<span class="token punctuation">,</span> <span class="token class-name">cdk_address_t</span><span class="token operator">*</span> ai<span class="token punctuation">,</span> bool peer<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
  * @brief Get the socket type of a socket
  *

@@ -26,8 +26,8 @@ _Pragma("once")
 /** common */
 extern void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai);
 extern void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss);
-extern void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port);
-extern void cdk_net_extract_address(cdk_sock_t sock, cdk_address_t* ai, bool peer);
+extern void cdk_net_address_make(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port);
+extern void cdk_net_address_retrieve(cdk_sock_t sock, cdk_address_t* ai, bool peer);
 /** async */
 extern void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler);
 extern void cdk_net_dial(const char* protocol, const char* host, const char* port, cdk_handler_t* handler);

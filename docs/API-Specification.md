@@ -784,7 +784,7 @@ extern void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss);
  * @param port Pointer to a null-terminated string containing the port number as text.
  * @return N/A
  */
-extern void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port);
+extern void cdk_net_address_make(cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port);
 ```
 ```c
 /**
@@ -800,7 +800,7 @@ extern void cdk_net_make_address(cdk_sock_t sock, struct sockaddr_storage* ss, c
  * @param peer Flag indicating whether to obtain the peer address (`true`) or local address (`false`)
  * @return N/A
  */
-extern void cdk_net_extract_address(cdk_sock_t sock, cdk_address_t* ai, bool peer);
+extern void cdk_net_address_retrieve(cdk_sock_t sock, cdk_address_t* ai, bool peer);
 ```
 ```c
 /**

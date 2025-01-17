@@ -35,7 +35,7 @@ static void _connect_cb(cdk_channel_t* channel) {
 static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     msg_t*        rmsg = buf;
     cdk_address_t addrinfo;
-    cdk_net_extract_address(channel->fd, &addrinfo, true);
+    cdk_net_address_retrieve(channel->fd, &addrinfo, true);
     cdk_logi(
         "recv %s from %s:%d. type: %d, len: %d.\n", rmsg->data, addrinfo.addr,
         addrinfo.port, ntohl(rmsg->hdr.type), ntohl(rmsg->hdr.size));

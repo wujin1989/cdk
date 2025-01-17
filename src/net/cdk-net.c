@@ -200,7 +200,7 @@ static void _cb_dial(void* param) {
         }
         if (channel->type == SOCK_DGRAM) {
             (void)connected;
-            cdk_net_make_address(
+            cdk_net_address_make(
                 sock, &channel->udp.peer.ss, ctx->host, ctx->port);
             /**
              * In MacOS, when the destination address parameter of the sendto
@@ -315,7 +315,7 @@ void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss) {
     }
 }
 
-void cdk_net_make_address(
+void cdk_net_address_make(
     cdk_sock_t sock, struct sockaddr_storage* ss, char* host, char* port) {
     cdk_address_t ai = {0};
 
@@ -326,7 +326,7 @@ void cdk_net_make_address(
     cdk_net_pton(&ai, ss);
 }
 
-void cdk_net_extract_address(cdk_sock_t sock, cdk_address_t* ai, bool peer) {
+void cdk_net_address_retrieve(cdk_sock_t sock, cdk_address_t* ai, bool peer) {
     struct sockaddr_storage ss;
     socklen_t               len;
 
