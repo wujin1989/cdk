@@ -179,7 +179,7 @@ struct cdk_spinlock_s {
 
 struct cdk_rbtree_s {
     cdk_rbtree_node_t* root;
-    int                (*compare)(cdk_rbtree_key_t*, cdk_rbtree_key_t*);
+    int                (*compare)(cdk_rbtree_key_t* k1, cdk_rbtree_key_t* k2);
 };
 
 struct cdk_list_node_s {
@@ -291,7 +291,7 @@ struct cdk_poller_manager_s {
 };
 
 struct cdk_event_s {
-    void            (*cb)(void*);
+    void            (*cb)(void* param);
     void*           arg;
     cdk_list_node_t node;
 };
@@ -410,13 +410,13 @@ struct cdk_channel_s {
 struct cdk_handler_s {
     union {
         struct {
-            void (*on_accept)(cdk_channel_t*);
-            void (*on_connect)(cdk_channel_t*);
-            void (*on_read)(cdk_channel_t*, void* buf, size_t len);
-            void (*on_write)(cdk_channel_t*);
+            void (*on_accept)(cdk_channel_t* channel);
+            void (*on_connect)(cdk_channel_t* channel);
+            void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
+            void (*on_write)(cdk_channel_t* channel);
             void (*on_close)(
-                cdk_channel_t*, cdk_channel_reason_t code, const char* error);
-            void            (*on_heartbeat)(cdk_channel_t*);
+                cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
+            void            (*on_heartbeat)(cdk_channel_t* channel);
             int             conn_timeout;
             int             wr_timeout;
             int             rd_timeout;
@@ -424,11 +424,11 @@ struct cdk_handler_s {
             cdk_unpacker_t* unpacker;
         } tcp;
         struct {
-            void (*on_connect)(cdk_channel_t*);
-            void (*on_read)(cdk_channel_t*, void* buf, size_t len);
-            void (*on_write)(cdk_channel_t*);
+            void (*on_connect)(cdk_channel_t* channel);
+            void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
+            void (*on_write)(cdk_channel_t* channel);
             void (*on_close)(
-                cdk_channel_t*, cdk_channel_reason_t code, const char* error);
+                cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
         } udp;
     };
 };

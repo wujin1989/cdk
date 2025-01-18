@@ -13,8 +13,8 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
 }
 
 static void _close_cb(
-    cdk_channel_t* channel, cdk_channel_reason_t code, const char* error) {
-    printf("channel closed, reason: %s\n", error);
+    cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
+    printf("channel closed, reason: %s\n", reason);
 }
 
 int main(void) {

@@ -6,8 +6,8 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     printf("recv %s from %s:%d\n", (char*)buf, addrinfo.addr, addrinfo.port);
 }
 
-static void _close_cb(cdk_channel_t* channel, cdk_channel_reason_t code, const char* error) {
-    printf("channel closed, reason: %s\n", error);
+static void _close_cb(cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
+    printf("channel closed, reason: %s\n", reason);
 }
 
 static int _routine(void* p) {

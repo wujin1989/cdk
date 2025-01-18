@@ -52,8 +52,8 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
 }
 
 static void _close_cb(
-    cdk_channel_t* channel, cdk_channel_reason_t code, const char* error) {
-    cdk_loge("connection closed, reason: %s\n", error);
+    cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
+    cdk_loge("connection closed, reason: %s\n", reason);
 }
 
 static void _heartbeat_cb(cdk_channel_t* channel) {

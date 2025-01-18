@@ -251,14 +251,14 @@ static void _encrypted_recv(cdk_channel_t* channel) {
         n = tls_ssl_read(
             channel->tcp.ssl,
             (char*)(channel->rxbuf.buf) + channel->rxbuf.off,
-            DEFAULT_IOBUF_SIZE / 2,
+            MAX_TCP_RECVBUF_SIZE,
             &err);
     }
     if (channel->type == SOCK_DGRAM) {
         n = tls_ssl_read(
             channel->udp.ssl->dtls_ssl,
             channel->rxbuf.buf,
-            DEFAULT_IOBUF_SIZE,
+            MAX_UDP_RECVBUF_SIZE,
             &err);
     }
     if (n <= 0) {
@@ -271,6 +271,9 @@ static void _encrypted_recv(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
         channel->tcp.latest_rd_time = cdk_time_now();
         channel->rxbuf.off += n;
+        if (channel->rxbuf.off > MAX_TCP_RECVBUF_SIZE) {
+            abort();
+        }
         unpacker_unpack(channel);
     }
     if (channel->type == SOCK_DGRAM) {
@@ -286,19 +289,19 @@ static void _unencrypted_recv(cdk_channel_t* channel) {
         n = platform_socket_recv(
             channel->fd,
             (char*)(channel->rxbuf.buf) + channel->rxbuf.off,
-            DEFAULT_IOBUF_SIZE / 2);
+            MAX_TCP_RECVBUF_SIZE);
     }
     if (channel->type == SOCK_DGRAM) {
         if (channel->udp.connected) {
             n = platform_socket_recv(
-                channel->fd, channel->rxbuf.buf, DEFAULT_IOBUF_SIZE);
+                channel->fd, channel->rxbuf.buf, MAX_UDP_RECVBUF_SIZE);
         }
         if (!channel->udp.connected) {
             channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
             n = platform_socket_recvfrom(
                 channel->fd,
                 channel->rxbuf.buf,
-                DEFAULT_IOBUF_SIZE,
+                MAX_UDP_RECVBUF_SIZE,
                 &channel->udp.peer.ss,
                 &channel->udp.peer.sslen);
         }
@@ -575,11 +578,16 @@ cdk_channel_t* channel_create(
         channel->type = platform_socket_getsocktype(sock);
         atomic_init(&channel->closing, false);
 
-        channel->rxbuf.len = DEFAULT_IOBUF_SIZE;
+        if (channel->type == SOCK_STREAM) {
+            channel->rxbuf.len = MAX_TCP_RECVBUF_SIZE;
+        }
+        if (channel->type == SOCK_DGRAM) {
+            channel->rxbuf.len = MAX_UDP_RECVBUF_SIZE;
+        }
         channel->rxbuf.off = 0;
-        channel->rxbuf.buf = malloc(DEFAULT_IOBUF_SIZE);
+        channel->rxbuf.buf = malloc(channel->rxbuf.len);
         if (channel->rxbuf.buf) {
-            memset(channel->rxbuf.buf, 0, DEFAULT_IOBUF_SIZE);
+            memset(channel->rxbuf.buf, 0, channel->rxbuf.len);
         }
         txlist_create(&channel->txlist);
         if (channel->type == SOCK_STREAM) {
@@ -692,7 +700,7 @@ void channel_accept(cdk_channel_t* channel) {
             recvfrom(
                 channel->fd,
                 channel->rxbuf.buf,
-                DEFAULT_IOBUF_SIZE,
+                MAX_UDP_RECVBUF_SIZE,
                 MSG_PEEK,
                 (struct sockaddr*)&channel->udp.peer.ss,
                 &channel->udp.peer.sslen);

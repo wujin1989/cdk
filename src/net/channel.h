@@ -23,7 +23,8 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-#define DEFAULT_IOBUF_SIZE 16384
+#define MAX_TCP_RECVBUF_SIZE 1048576   //1M
+#define MAX_UDP_RECVBUF_SIZE 65535     //64K
 
 #define CHANNEL_DESTROY_REASON_USER                                            \
     "Channel destroyed due to User-triggered (normal behavior)"
