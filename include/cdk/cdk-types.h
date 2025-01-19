@@ -222,6 +222,13 @@ struct cdk_ringbuf_s {
     uint32_t esz;  /* entry size */
 };
 
+enum cdk_unpacker_type_e {
+    UNPACKER_TYPE_FIXEDLEN,
+    UNPACKER_TYPE_DELIMITER,
+    UNPACKER_TYPE_LENGTHFIELD,
+    UNPACKER_TYPE_USERDEFINED,
+};
+
 struct cdk_unpacker_s {
     cdk_unpacker_type_t type;
     union {
@@ -292,13 +299,6 @@ enum cdk_tls_side_e {
 enum cdk_event_e {
     EVENT_RD = 1,
     EVENT_WR = 2,
-};
-
-enum cdk_unpacker_type_e {
-    UNPACKER_TYPE_FIXEDLEN,
-    UNPACKER_TYPE_DELIMITER,
-    UNPACKER_TYPE_LENGTHFIELD,
-    UNPACKER_TYPE_USERDEFINED,
 };
 
 enum cdk_logger_level_e {

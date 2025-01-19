@@ -24,6 +24,7 @@ static void _close_cb(cdk_channel_t* channel, cdk_channel_reason_t code, const c
 
 int main(void) {
     cdk_unpacker_t unpacker = {
+        .type = UNPACKER_TYPE_FIXEDLEN,
         .fixedlen.len = BUFFERSIZE,
     };
     cdk_handler_t handler = {

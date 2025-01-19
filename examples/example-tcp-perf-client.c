@@ -50,6 +50,7 @@ static void _close_cb(
 
 int main(void) {
     cdk_unpacker_t unpacker = {
+        .type = UNPACKER_TYPE_FIXEDLEN,
         .fixedlen.len = BUFFERSIZE,
     };
     cdk_handler_t handler = {
