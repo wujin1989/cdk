@@ -49,9 +49,6 @@ static void _close_cb(
 }
 
 int main(void) {
-    cdk_net_conf_t conf = {
-        .nthrds = 4,
-    };
     cdk_unpacker_t unpacker = {
         .fixedlen.len = BUFFERSIZE,
     };
@@ -61,7 +58,6 @@ int main(void) {
         .tcp.on_close = _close_cb,
         .tcp.unpacker = &unpacker};
 
-    cdk_net_startup(&conf);
     cdk_logger_config_t config = {
         .async = false,
     };
@@ -72,9 +68,9 @@ int main(void) {
     atomic_init(&total_readbytes, 0);
 
     for (int i = 0; i < total_clients; i++) {
-        cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
+        cdk_net_dial("tcp", "127.0.0.1", "9999", &handler, 4, NULL);
     }
-    cdk_net_cleanup();
+    getchar();
     cdk_logger_destroy();
     return 0;
 }

@@ -70,56 +70,44 @@ _Pragma("once")
 #endif
 #endif
 
-    typedef enum cdk_unpacker_type_e {
-        TYPE_FIXEDLEN,
-        TYPE_DELIMITER,
-        TYPE_LENGTHFIELD,
-        TYPE_USERDEFINED,
-    } cdk_unpacker_type_t;
-
-typedef enum cdk_event_type_e {
-    EVENT_RD = 1,
-    EVENT_WR = 2,
-} cdk_event_type_t;
-
 #define cdk_tls_ssl_t void
 #define cdk_tls_ctx_t void
 #define cdk_tls_bio_t void
 
-typedef struct cdk_channel_s        cdk_channel_t;
-typedef struct cdk_handler_s        cdk_handler_t;
-typedef union cdk_rbtree_key_u      cdk_rbtree_key_t;
-typedef struct cdk_rbtree_node_s    cdk_rbtree_node_t;
-typedef struct cdk_rbtree_s         cdk_rbtree_t;
-typedef struct cdk_list_node_s      cdk_list_node_t;
-typedef struct cdk_list_node_s      cdk_list_t;
-typedef struct cdk_list_node_s      cdk_queue_t;
-typedef struct cdk_list_node_s      cdk_queue_node_t;
-typedef struct cdk_list_node_s      cdk_stack_t;
-typedef struct cdk_list_node_s      cdk_stack_node_t;
-typedef struct cdk_heap_node_s      cdk_heap_node_t;
-typedef struct cdk_heap_s           cdk_heap_t;
-typedef struct cdk_thrdpool_s       cdk_thrdpool_t;
-typedef struct cdk_timer_s          cdk_timer_t;
-typedef struct cdk_timermgr_s       cdk_timermgr_t;
-typedef struct cdk_ringbuf_s        cdk_ringbuf_t;
-typedef enum cdk_unpacker_type_e    cdk_unpacker_type_t;
-typedef struct cdk_unpacker_s       cdk_unpacker_t;
-typedef struct cdk_address_s        cdk_address_t;
-typedef struct cdk_poller_s         cdk_poller_t;
-typedef struct cdk_poller_manager_s cdk_poller_manager_t;
-typedef struct cdk_event_s          cdk_event_t;
-typedef struct cdk_tls_conf_s       cdk_tls_conf_t;
-typedef enum cdk_tls_side_e         cdk_tls_side_t;
-typedef struct cdk_sha256_s         cdk_sha256_t;
-typedef struct cdk_sha1_s           cdk_sha1_t;
-typedef struct cdk_rwlock_s         cdk_rwlock_t;
-typedef struct cdk_spinlock_s       cdk_spinlock_t;
-typedef struct cdk_net_conf_s       cdk_net_conf_t;
-typedef struct cdk_dtls_ssl_s       cdk_dtls_ssl_t;
-typedef struct cdk_logger_config_s  cdk_logger_config_t;
-typedef enum cdk_logger_level_e     cdk_logger_level_t;
-typedef enum cdk_channel_reason_e   cdk_channel_reason_t;
+typedef struct cdk_channel_s       cdk_channel_t;
+typedef struct cdk_handler_s       cdk_handler_t;
+typedef union cdk_rbtree_key_u     cdk_rbtree_key_t;
+typedef struct cdk_rbtree_node_s   cdk_rbtree_node_t;
+typedef struct cdk_rbtree_s        cdk_rbtree_t;
+typedef struct cdk_list_node_s     cdk_list_node_t;
+typedef struct cdk_list_node_s     cdk_list_t;
+typedef struct cdk_list_node_s     cdk_queue_t;
+typedef struct cdk_list_node_s     cdk_queue_node_t;
+typedef struct cdk_list_node_s     cdk_stack_t;
+typedef struct cdk_list_node_s     cdk_stack_node_t;
+typedef struct cdk_heap_node_s     cdk_heap_node_t;
+typedef struct cdk_heap_s          cdk_heap_t;
+typedef struct cdk_thrdpool_s      cdk_thrdpool_t;
+typedef struct cdk_timer_s         cdk_timer_t;
+typedef struct cdk_timermgr_s      cdk_timermgr_t;
+typedef struct cdk_ringbuf_s       cdk_ringbuf_t;
+typedef enum cdk_unpacker_type_e   cdk_unpacker_type_t;
+typedef struct cdk_unpacker_s      cdk_unpacker_t;
+typedef struct cdk_address_s       cdk_address_t;
+typedef struct cdk_poller_s        cdk_poller_t;
+typedef struct cdk_net_engine_s    cdk_net_engine_t;
+typedef enum cdk_event_e           cdk_event_t;
+typedef struct cdk_async_task_s    cdk_async_task_t;
+typedef struct cdk_tls_conf_s      cdk_tls_conf_t;
+typedef enum cdk_tls_side_e        cdk_tls_side_t;
+typedef struct cdk_sha256_s        cdk_sha256_t;
+typedef struct cdk_sha1_s          cdk_sha1_t;
+typedef struct cdk_rwlock_s        cdk_rwlock_t;
+typedef struct cdk_spinlock_s      cdk_spinlock_t;
+typedef struct cdk_dtls_ssl_s      cdk_dtls_ssl_t;
+typedef struct cdk_logger_config_s cdk_logger_config_t;
+typedef enum cdk_logger_level_e    cdk_logger_level_t;
+typedef enum cdk_channel_reason_e  cdk_channel_reason_t;
 typedef void (*cdk_logger_cb_t)(cdk_logger_level_t level, char* msg);
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -272,7 +260,7 @@ struct cdk_poller_s {
     cdk_pollfd_t    pfd;
     thrd_t          tid;
     cdk_sock_t      evfds[2];
-    cdk_list_t      evlist;
+    cdk_list_t      tasklist;
     mtx_t           evmtx;
     bool            active;
     cdk_list_t      chlist;
@@ -280,9 +268,9 @@ struct cdk_poller_s {
     cdk_list_node_t node;
 };
 
-struct cdk_poller_manager_s {
+struct cdk_net_engine_s {
     thrd_t*       thrdids;
-    int           thrdcnt;
+    atomic_int    thrdcnt;
     atomic_flag   initialized;
     cdk_list_t    poller_lst;
     mtx_t         poller_mtx;
@@ -290,32 +278,44 @@ struct cdk_poller_manager_s {
     cdk_poller_t* (*poller_roundrobin)(void);
 };
 
-struct cdk_event_s {
-    void            (*cb)(void* param);
+struct cdk_async_task_s {
+    void            (*task)(void* param);
     void*           arg;
     cdk_list_node_t node;
 };
 
 enum cdk_tls_side_e {
-    SIDE_CLIENT,
-    SIDE_SERVER,
+    TLS_SIDE_CLIENT,
+    TLS_SIDE_SERVER,
+};
+
+enum cdk_event_e {
+    EVENT_RD = 1,
+    EVENT_WR = 2,
+};
+
+enum cdk_unpacker_type_e {
+    UNPACKER_TYPE_FIXEDLEN,
+    UNPACKER_TYPE_DELIMITER,
+    UNPACKER_TYPE_LENGTHFIELD,
+    UNPACKER_TYPE_USERDEFINED,
 };
 
 enum cdk_logger_level_e {
-    LEVEL_DEBUG = 0,
-    LEVEL_INFO = 1,
-    LEVEL_WARN = 2,
-    LEVEL_ERROR = 3,
+    LOGGER_LEVEL_DEBUG = 0,
+    LOGGER_LEVEL_INFO = 1,
+    LOGGER_LEVEL_WARN = 2,
+    LOGGER_LEVEL_ERROR = 3,
 };
 
 enum cdk_channel_reason_e {
-    REASON_USER_TRIGGERED,
-    REASON_WR_TIMEOUT,
-    REASON_RD_TIMEOUT,
-    REASON_CONN_TIMEOUT,
-    REASON_POLLER_SHUTDOWN,
-    REASON_SYSCALL_FAIL,
-    REASON_TLS_FAIL,
+    CHANNEL_REASON_USER_TRIGGERED,
+    CHANNEL_REASON_WR_TIMEOUT,
+    CHANNEL_REASON_RD_TIMEOUT,
+    CHANNEL_REASON_CONN_TIMEOUT,
+    CHANNEL_REASON_POLLER_SHUTDOWN,
+    CHANNEL_REASON_SYSCALL_FAIL,
+    CHANNEL_REASON_TLS_FAIL,
 };
 
 struct cdk_tls_conf_s {
@@ -355,12 +355,6 @@ struct cdk_tls_conf_s {
     cdk_tls_side_t side;
 };
 
-struct cdk_net_conf_s {
-    int            nthrds;
-    cdk_tls_conf_t tls;
-    cdk_tls_conf_t dtls;
-};
-
 struct cdk_dtls_ssl_s {
     cdk_tls_ssl_t*    dtls_ssl;
     cdk_tls_bio_t*    dtls_bio;
@@ -385,24 +379,21 @@ struct cdk_channel_s {
         struct {
             bool           accepting;
             bool           connecting;
-            cdk_tls_ssl_t* ssl;
             uint64_t       latest_rd_time;
             uint64_t       latest_wr_time;
             cdk_timer_t*   conn_timer;
             cdk_timer_t*   wr_timer;
             cdk_timer_t*   rd_timer;
             cdk_timer_t*   hb_timer;
+            cdk_tls_ssl_t* tls_ssl;
+            cdk_tls_ctx_t* tls_ctx;
         } tcp;
         struct {
             bool connected;
-            bool accepting;
             struct {
                 struct sockaddr_storage ss;
                 socklen_t               sslen;
             } peer;
-            char            peer_human[INET6_ADDRSTRLEN + 6];
-            cdk_dtls_ssl_t* ssl;  // current ssl
-            cdk_rbtree_t* sslmap; // be released by the application as required
         } udp;
     };
 };
@@ -414,9 +405,8 @@ struct cdk_handler_s {
             void (*on_connect)(cdk_channel_t* channel);
             void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
             void (*on_write)(cdk_channel_t* channel);
-            void (*on_close)(
-                cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
-            void            (*on_heartbeat)(cdk_channel_t* channel);
+            void (*on_close)(cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
+            void (*on_heartbeat)(cdk_channel_t* channel);
             int             conn_timeout;
             int             wr_timeout;
             int             rd_timeout;
@@ -427,8 +417,7 @@ struct cdk_handler_s {
             void (*on_connect)(cdk_channel_t* channel);
             void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
             void (*on_write)(cdk_channel_t* channel);
-            void (*on_close)(
-                cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
+            void (*on_close)(cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
         } udp;
     };
 };

@@ -30,23 +30,22 @@ static void _connect_cb(cdk_channel_t* channel) {
 }
 
 int main(void) {
-    cdk_net_conf_t conf = {
-        .nthrds = 1,
-        .dtls = {
-            .cafile = "certs/ca.crt",
-            .capath = NULL,
-            .crtfile = NULL,
-            .keyfile = NULL,
-            .verifypeer = true,
-            .dtls = true,
-            .side = SIDE_CLIENT}};
+    /*cdk_tls_conf_t conf = {
+        .cafile = "certs/ca.crt",
+        .capath = NULL,
+        .crtfile = NULL,
+        .keyfile = NULL,
+        .verifypeer = true,
+        .dtls = true,
+        .side = TLS_SIDE_CLIENT};*/
+
     cdk_handler_t handler = {
         .udp.on_connect = _connect_cb,
         .udp.on_read = _read_cb,
         .udp.on_close = _close_cb,
     };
-    cdk_net_startup(&conf);
-    cdk_net_dial("udp", "127.0.0.1", "9999", &handler);
-    cdk_net_cleanup();
+    cdk_net_dial("udp", "127.0.0.1", "9999", &handler, 2, NULL);
+
+    getchar();
     return 0;
 }

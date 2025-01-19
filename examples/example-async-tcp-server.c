@@ -64,19 +64,17 @@ static void _heartbeat_cb(cdk_channel_t* channel) {
 }
 
 int main(void) {
-    cdk_net_conf_t conf = {
-        .nthrds = 4,
-        .tls = {
-            .cafile = NULL,
-            .capath = NULL,
-            .crtfile = "certs/cert.crt",
-            .keyfile = "certs/cert.key",
-            .verifypeer = false,
-            .dtls = false,
-            .side = SIDE_SERVER}};
+    cdk_tls_conf_t conf = {
+        .cafile = NULL,
+        .capath = NULL,
+        .crtfile = "certs/cert.crt",
+        .keyfile = "certs/cert.key",
+        .verifypeer = false,
+        .dtls = false,
+        .side = TLS_SIDE_SERVER};
 
     cdk_unpacker_t unpacker = {
-        .type = TYPE_LENGTHFIELD,
+        .type = UNPACKER_TYPE_LENGTHFIELD,
         .lengthfield.adj = 0,
         .lengthfield.coding = MODE_FIXEDINT,
         .lengthfield.offset = 0,
@@ -87,18 +85,18 @@ int main(void) {
         .tcp.on_accept = _accept_cb,
         .tcp.on_read = _read_cb,
         .tcp.on_close = _close_cb,
-        /*.tcp.on_heartbeat = _heartbeat_cb,
+        .tcp.on_heartbeat = _heartbeat_cb,
         .tcp.rd_timeout = 10000,
-        .tcp.hb_interval = 5000,*/
+        .tcp.hb_interval = 5000,
         .tcp.unpacker = &unpacker};
 
-    cdk_net_startup(&conf);
     cdk_logger_config_t config = {
         .async = false,
     };
     cdk_logger_create(&config);
-    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
-    cdk_net_cleanup();
+    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler, 2, &conf);
+
+    getchar();
     cdk_logger_destroy();
     return 0;
 }

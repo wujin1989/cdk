@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project(examples LANGUAGES C)
 
-add_executable(example-sync-tcp-client "example-sync-tcp-client.c")
-target_link_libraries(example-sync-tcp-client PUBLIC cdk)
-
-add_executable(example-sync-tcp-server "example-sync-tcp-server.c")
-target_link_libraries(example-sync-tcp-server PUBLIC cdk)
-
 add_executable(example-tcp-perf-client "example-tcp-perf-client.c")
 target_link_libraries(example-tcp-perf-client PUBLIC cdk)
 
@@ -50,8 +44,6 @@ target_link_libraries(example-heap PUBLIC cdk)
 add_executable(example-timer "example-timer.c")
 target_link_libraries(example-timer PUBLIC cdk)
 
-install(TARGETS example-sync-tcp-client DESTINATION bin)
-install(TARGETS example-sync-tcp-server DESTINATION bin)
 install(TARGETS example-tcp-perf-client DESTINATION bin)
 install(TARGETS example-tcp-perf-server DESTINATION bin)
 install(TARGETS example-async-tcp-client DESTINATION bin)

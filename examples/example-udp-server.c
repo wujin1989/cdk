@@ -18,23 +18,21 @@ static void _close_cb(
 }
 
 int main(void) {
-    cdk_net_conf_t conf = {
-        .nthrds = 2,
-        .dtls   = {
-              .cafile     = NULL,
-              .capath     = NULL,
-              .crtfile    = "certs/cert.crt",
-              .keyfile    = "certs/cert.key",
-              .verifypeer = false,
-              .dtls       = true,
-              .side       = SIDE_SERVER}};
+    /*cdk_tls_conf_t conf = {
+        .cafile = NULL,
+        .capath = NULL,
+        .crtfile = "certs/cert.crt",
+        .keyfile = "certs/cert.key",
+        .verifypeer = false,
+        .dtls = true,
+        .side = TLS_SIDE_SERVER};*/
 
     cdk_handler_t handler = {
         .udp.on_read  = _read_cb,
         .udp.on_close = _close_cb,
     };
-    cdk_net_startup(&conf);
-    cdk_net_listen("udp", "0.0.0.0", "9999", &handler);
-    cdk_net_cleanup();
+    cdk_net_listen("udp", "0.0.0.0", "9999", &handler, 2, NULL);
+
+    getchar();
     return 0;
 }

@@ -189,19 +189,13 @@ static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
                             : SSL_VERIFY_NONE,
         NULL);
 
-    if (tlsconf->side == SIDE_SERVER) {
+    if (tlsconf->side == TLS_SIDE_SERVER) {
         if (tlsconf->dtls) {
             SSL_CTX_set_cookie_generate_cb(ctx, _gen_cookie_cb);
             SSL_CTX_set_cookie_verify_cb(ctx, _verify_cookie_cb);
         }
     }
     return ctx;
-}
-
-static void _ctx_destroy(SSL_CTX* ctx) {
-    if (ctx) {
-        SSL_CTX_free(ctx);
-    }
 }
 
 const char* tls_error2string(int err) {
@@ -265,6 +259,9 @@ const char* tls_error2string(int err) {
 }
 
 cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf) {
+    if (!conf) {
+        return NULL;
+    }
     if (!conf->cafile && !conf->capath && !conf->crtfile) {
         return NULL;
     }
@@ -276,7 +273,10 @@ cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf) {
 }
 
 void tls_ctx_destroy(cdk_tls_ctx_t* ctx) {
-    _ctx_destroy((SSL_CTX*)ctx);
+    if ((SSL_CTX*)ctx) {
+        SSL_CTX_free((SSL_CTX*)ctx);
+        ctx = NULL;
+    }
 }
 
 cdk_tls_ssl_t* tls_ssl_create(cdk_tls_ctx_t* ctx) {
@@ -402,10 +402,10 @@ void tls_ctx_alpn_set(
     unsigned int         protos_len,
     cdk_tls_side_t       side) {
     /* used by dual side, support tls, dtls */
-    if (side == SIDE_CLIENT) {
+    if (side == TLS_SIDE_CLIENT) {
         SSL_CTX_set_alpn_protos((SSL_CTX*)ctx, protos, protos_len);
     }
-    if (side == SIDE_SERVER) {
+    if (side == TLS_SIDE_SERVER) {
         SSL_CTX_set_alpn_select_cb(
             (SSL_CTX*)ctx, _alpn_select_cb, (void*)protos);
     }

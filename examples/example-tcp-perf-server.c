@@ -23,7 +23,6 @@ static void _close_cb(cdk_channel_t* channel, cdk_channel_reason_t code, const c
 }
 
 int main(void) {
-    cdk_net_conf_t conf = {.nthrds = 1};
     cdk_unpacker_t unpacker = {
         .fixedlen.len = BUFFERSIZE,
     };
@@ -33,14 +32,12 @@ int main(void) {
         .tcp.on_close = _close_cb,
         .tcp.unpacker = &unpacker};
 
-    cdk_net_startup(&conf);
-    cdk_net_startup(&conf);
     cdk_logger_config_t config = {
         .async = false,
     };
     cdk_logger_create(&config);
-    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
-    cdk_net_cleanup();
+    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler, 1, NULL);
+    getchar();
     cdk_logger_destroy();
     return 0;
 }

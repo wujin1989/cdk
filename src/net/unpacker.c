@@ -172,19 +172,19 @@ static void _userdefined_unpack(cdk_channel_t* channel) {
 void unpacker_unpack(cdk_channel_t* channel) {
 	switch (channel->handler->tcp.unpacker->type)
 	{
-	case TYPE_FIXEDLEN: {
+    case UNPACKER_TYPE_FIXEDLEN: {
 		_fixedlen_unpack(channel);
 		break;
 	}
-	case TYPE_DELIMITER: {
+    case UNPACKER_TYPE_DELIMITER: {
 		_delimiter_unpack(channel);
 		break;
 	}
-	case TYPE_LENGTHFIELD: {
+    case UNPACKER_TYPE_LENGTHFIELD: {
 		_lengthfield_unpack(channel);
 		break;
 	}
-	case TYPE_USERDEFINED: {
+    case UNPACKER_TYPE_USERDEFINED: {
 		_userdefined_unpack(channel);
 		break;
 	}

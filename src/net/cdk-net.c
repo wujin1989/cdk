@@ -32,9 +32,7 @@
 #include "tls.h"
 #include "txlist.h"
 
-cdk_poller_manager_t global_poller_manager = {.initialized = ATOMIC_FLAG_INIT};
-cdk_tls_ctx_t*       global_tls_ctx;
-cdk_tls_ctx_t*       global_dtls_ctx;
+cdk_net_engine_t global_net_engine = {.initialized = ATOMIC_FLAG_INIT};
 
 typedef struct channel_send_ctx_s {
     cdk_channel_t* channel;
@@ -50,93 +48,96 @@ typedef struct socket_ctx_s {
     int            cores;
     cdk_poller_t*  poller;
     cdk_handler_t* handler;
+    cdk_tls_ctx_t* tls_ctx;
 } socket_ctx_t;
 
-static void _cb_inactive(void* param) {
+static void _async_poller_exit(void* param) {
     cdk_poller_t* poller = param;
     poller->active = false;
 }
 
 static inline cdk_poller_t* _roundrobin(void) {
-    mtx_lock(&global_poller_manager.poller_mtx);
-    while (cdk_list_empty(&global_poller_manager.poller_lst)) {
+    mtx_lock(&global_net_engine.poller_mtx);
+    while (cdk_list_empty(&global_net_engine.poller_lst)) {
         cnd_wait(
-            &global_poller_manager.poller_cnd,
-            &global_poller_manager.poller_mtx);
+            &global_net_engine.poller_cnd, &global_net_engine.poller_mtx);
     }
     static cdk_poller_t* curr;
     if (curr == NULL) {
         curr = cdk_list_data(
-            cdk_list_head(&global_poller_manager.poller_lst),
+            cdk_list_head(&global_net_engine.poller_lst),
             cdk_poller_t,
             node);
     } else {
         cdk_list_node_t* n = cdk_list_next(&curr->node);
-        if (n != cdk_list_sentinel(&global_poller_manager.poller_lst)) {
+        if (n != cdk_list_sentinel(&global_net_engine.poller_lst)) {
             curr = cdk_list_data(n, cdk_poller_t, node);
         } else {
             curr = cdk_list_data(cdk_list_next(n), cdk_poller_t, node);
         }
     }
-    mtx_unlock(&global_poller_manager.poller_mtx);
+    mtx_unlock(&global_net_engine.poller_mtx);
     return curr;
 }
 
-static void _manager_add_poller(cdk_poller_t* poller) {
-    mtx_lock(&global_poller_manager.poller_mtx);
-    cdk_list_insert_tail(&global_poller_manager.poller_lst, &poller->node);
-    cnd_signal(&global_poller_manager.poller_cnd);
-    mtx_unlock(&global_poller_manager.poller_mtx);
+static void _net_engine_add_poller(cdk_poller_t* poller) {
+    mtx_lock(&global_net_engine.poller_mtx);
+    cdk_list_insert_tail(&global_net_engine.poller_lst, &poller->node);
+    cnd_signal(&global_net_engine.poller_cnd);
+    mtx_unlock(&global_net_engine.poller_mtx);
 }
 
-static void _manager_del_poller(cdk_poller_t* poller) {
-    mtx_lock(&global_poller_manager.poller_mtx);
+static void _net_engine_del_poller(cdk_poller_t* poller) {
+    mtx_lock(&global_net_engine.poller_mtx);
     cdk_list_remove(&poller->node);
-    mtx_unlock(&global_poller_manager.poller_mtx);
+    mtx_unlock(&global_net_engine.poller_mtx);
 }
 
-static int _routine(void* param) {
+static void _net_engine_destroy(void) {
+    free(global_net_engine.thrdids);
+    global_net_engine.thrdids = NULL;
+
+    mtx_destroy(&global_net_engine.poller_mtx);
+    cnd_destroy(&global_net_engine.poller_cnd);
+    platform_socket_cleanup();
+}
+
+static int _poll(void* param) {
     cdk_poller_t* poller = poller_create();
-    if (poller) {
-        _manager_add_poller(poller);
-        poller_poll(poller);
-        _manager_del_poller(poller);
-        poller_destroy(poller);
+    if (!poller) {
+        return -1;
+    }
+    _net_engine_add_poller(poller);
+    poller_poll(poller);
+    _net_engine_del_poller(poller);
+    poller_destroy(poller);
+
+    atomic_fetch_sub(&global_net_engine.thrdcnt, 1);
+    if (!atomic_load(&global_net_engine.thrdcnt)) {
+        _net_engine_destroy();
     }
     return 0;
 }
 
-static void _manager_create(int parallel) {
+static void _net_engine_create(int parallel) {
     platform_socket_startup();
     if (parallel <= 0) {
         parallel = 1;
     }
-    cdk_list_init(&global_poller_manager.poller_lst);
-    mtx_init(&global_poller_manager.poller_mtx, mtx_plain);
-    cnd_init(&global_poller_manager.poller_cnd);
+    cdk_list_init(&global_net_engine.poller_lst);
+    mtx_init(&global_net_engine.poller_mtx, mtx_plain);
+    cnd_init(&global_net_engine.poller_cnd);
 
-    global_poller_manager.poller_roundrobin = _roundrobin;
-    global_poller_manager.thrdcnt = parallel;
-    global_poller_manager.thrdids =
-        malloc(global_poller_manager.thrdcnt * sizeof(thrd_t));
-    if (!global_poller_manager.thrdids) {
+    global_net_engine.poller_roundrobin = _roundrobin;
+    atomic_init(&global_net_engine.thrdcnt, parallel);
+    global_net_engine.thrdids = malloc(parallel * sizeof(thrd_t));
+    if (!global_net_engine.thrdids) {
         return;
     }
-    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
-        thrd_create((global_poller_manager.thrdids + i), _routine, NULL);
+    for (int i = 0; i < parallel; i++) {
+        thrd_create((global_net_engine.thrdids + i), _poll, NULL);
+        thrd_detach(global_net_engine.thrdids[i]);
     }
-}
-
-static void _manager_destroy(void) {
-    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
-        thrd_join(global_poller_manager.thrdids[i], NULL);
-    }
-    free(global_poller_manager.thrdids);
-    global_poller_manager.thrdids = NULL;
-
-    mtx_destroy(&global_poller_manager.poller_mtx);
-    cnd_destroy(&global_poller_manager.poller_cnd);
-    platform_socket_cleanup();
 }
 
 static socket_ctx_t* _socket_ctx_allocate(
@@ -145,7 +146,8 @@ static socket_ctx_t* _socket_ctx_allocate(
     const char*    port,
     int            idx,
     int            cores,
-    cdk_handler_t* handler) {
+    cdk_handler_t*  handler,
+    cdk_tls_ctx_t* tlsctx) {
     socket_ctx_t* ctx = malloc(sizeof(socket_ctx_t));
     if (ctx) {
         memset(ctx, 0, sizeof(socket_ctx_t));
@@ -160,104 +162,105 @@ static socket_ctx_t* _socket_ctx_allocate(
         ctx->idx = idx;
         ctx->cores = cores;
         ctx->handler = handler;
-        ctx->poller = global_poller_manager.poller_roundrobin();
+        ctx->tls_ctx = tlsctx;
+        ctx->poller = global_net_engine.poller_roundrobin();
     }
     return ctx;
 }
 
-static void _cb_listen(void* param) {
-    socket_ctx_t* ctx = param;
+static void _async_listen(void* param) {
+    socket_ctx_t* sctx = param;
 
     cdk_sock_t sock = platform_socket_listen(
-        ctx->host, ctx->port, ctx->protocol, ctx->idx, ctx->cores, true);
-    cdk_channel_t* channel = channel_create(ctx->poller, sock, false, ctx->handler);
-    if (channel) {
-        channel_accepting(channel);
+        sctx->host, sctx->port, sctx->protocol, sctx->idx, sctx->cores, true);
+
+    cdk_channel_t* channel = channel_create(sctx->poller, sock, false, sctx->handler, sctx->tls_ctx);
+    if (!channel) {
+        return;
     }
-    free(ctx);
-    ctx = NULL;
+    if (channel->type == SOCK_STREAM) {
+        channel->tcp.accepting = true;
+    }
+    if (!channel_is_reading(channel)) {
+        channel_enable_read(channel);
+    }
+    free(sctx);
+    sctx = NULL;
 }
 
-static void _cb_dial(void* param) {
-    socket_ctx_t* ctx = param;
+static inline void _conn_timeout_cb(void* param) {
+    cdk_channel_t* channel = param;
+    channel_destroy(
+        channel,
+        CHANNEL_REASON_CONN_TIMEOUT, CHANNEL_REASON_CONN_TIMEOUT_STR);
+}
+
+static void _async_dial(void* param) {
+    socket_ctx_t* sctx = param;
     bool          connected = false;
 
     cdk_sock_t sock = platform_socket_dial(
-        ctx->host, ctx->port, ctx->protocol, &connected, true);
+        sctx->host, sctx->port, sctx->protocol, &connected, true);
+
     cdk_channel_t* channel =
-        channel_create(ctx->poller, sock, connected, ctx->handler);
-    if (channel) {
-        if (channel->type == SOCK_STREAM) {
-            if (connected) {
-                if (channel->tcp.ssl) {
-                    channel_tls_cli_handshake(channel);
-                } else {
-                    channel_connected(channel);
-                }
-            } else {
-                channel_connecting(channel);
+        channel_create(sctx->poller, sock, connected, sctx->handler, sctx->tls_ctx);
+    if (!channel) {
+        return;
+    }
+    if (channel->type == SOCK_STREAM) {
+        if (!connected) {
+            channel->tcp.connecting = true;
+            if (!channel_is_writing(channel)) {
+                channel_enable_write(channel);
+            }
+            if (channel->handler->tcp.conn_timeout) {
+                channel->tcp.conn_timer = cdk_timer_add(
+                    &channel->poller->timermgr,
+                    _conn_timeout_cb,
+                    channel,
+                    channel->handler->tcp.conn_timeout,
+                    false);
             }
         }
-        if (channel->type == SOCK_DGRAM) {
-            (void)connected;
-            cdk_net_address_make(
-                sock, &channel->udp.peer.ss, ctx->host, ctx->port);
-            /**
-             * In MacOS, when the destination address parameter of the sendto
-             * function is of type struct sockaddr_storage, the address length
-             * cannot use sizeof(struct sockaddr_storage). This seems to be a
-             * bug in MacOS.
-             */
-            channel->udp.peer.sslen =
-                (platform_socket_extract_family(sock) == AF_INET)
-                    ? sizeof(struct sockaddr_in)
-                    : sizeof(struct sockaddr_in6);
-
-            if (global_dtls_ctx) {
-                channel->udp.ssl = malloc(sizeof(cdk_dtls_ssl_t));
-                if (channel->udp.ssl) {
-                    memset(channel->udp.ssl, 0, sizeof(cdk_dtls_ssl_t));
-                    channel->udp.ssl->dtls_ssl =
-                        tls_ssl_create(global_dtls_ctx);
-                }
+        if (connected) {
+            if (channel->tcp.tls_ssl) {
                 channel_tls_cli_handshake(channel);
             } else {
                 channel_connected(channel);
             }
         }
     }
-    free(ctx);
-    ctx = NULL;
-}
+    if (channel->type == SOCK_DGRAM) {
+        cdk_net_address_make(
+            sock, &channel->udp.peer.ss, sctx->host, sctx->port);
+        /**
+         * In MacOS, when the destination address parameter of the sendto
+         * function is of type struct sockaddr_storage, the address length
+         * cannot use sizeof(struct sockaddr_storage). This seems to be a
+         * bug in MacOS.
+         */
+        channel->udp.peer.sslen =
+            (platform_socket_extract_family(sock) == AF_INET)
+                ? sizeof(struct sockaddr_in)
+                : sizeof(struct sockaddr_in6);
 
-static void _cb_channel_send_explicit(void* param) {
-    channel_send_ctx_t* ctx = param;
-    channel_send_explicit(ctx->channel, ctx->data, ctx->size);
-    free(ctx);
-    ctx = NULL;
-}
-
-static void
-_channel_send_explicit(cdk_channel_t* channel, void* data, size_t size) {
-    channel_send_ctx_t* ctx = malloc(sizeof(channel_send_ctx_t) + size);
-    if (ctx) {
-        memset(ctx, 0, sizeof(channel_send_ctx_t) + size);
-        ctx->channel = channel;
-        ctx->size = size;
-        memcpy(ctx->data, data, size);
-
-        cdk_net_postevent(
-            channel->poller, _cb_channel_send_explicit, ctx, true);
+        channel_connected(channel);
     }
+    free(sctx);
+    sctx = NULL;
 }
 
-static void _cb_channel_destroy(void* param) {
+static void _async_channel_explicit_send(void* param) {
+    channel_send_ctx_t* ctx = param;
+    channel_explicit_send(ctx->channel, ctx->data, ctx->size);
+    free(ctx);
+    ctx = NULL;
+}
+
+static void _async_channel_destroy(void* param) {
     cdk_channel_t* channel = param;
-    channel_destroy(channel, REASON_USER_TRIGGERED, CHANNEL_DESTROY_REASON_USER);
-}
-
-static void _channel_destroy(cdk_channel_t* channel) {
-    cdk_net_postevent(channel->poller, _cb_channel_destroy, channel, true);
+    channel_destroy(
+        channel, CHANNEL_REASON_USER_TRIGGERED, CHANNEL_REASON_USER_TRIGGERED_STR);
 }
 
 static void _inet_ntop(int af, const void* restrict src, char* restrict dst) {
@@ -349,12 +352,19 @@ void cdk_net_listen(
     const char*    protocol,
     const char*    host,
     const char*    port,
-    cdk_handler_t* handler) {
-    for (int i = 0; i < global_poller_manager.thrdcnt; i++) {
-        socket_ctx_t* ctx = _socket_ctx_allocate(
-            protocol, host, port, i, global_poller_manager.thrdcnt, handler);
-        if (ctx) {
-            cdk_net_postevent(ctx->poller, _cb_listen, ctx, true);
+    cdk_handler_t*  handler,
+    int             nthrds,
+    cdk_tls_conf_t* config) {
+
+    if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
+        _net_engine_create(nthrds);
+    }
+    cdk_tls_ctx_t* tlsctx = tls_ctx_create(config);
+
+    for (int i = 0; i < nthrds; i++) {
+        socket_ctx_t* sctx = _socket_ctx_allocate(protocol, host, port, i, nthrds, handler, tlsctx);
+        if (sctx) {
+            cdk_net_post_task(sctx->poller, _async_listen, sctx, true);
         }
     }
 }
@@ -363,147 +373,76 @@ void cdk_net_dial(
     const char*    protocol,
     const char*    host,
     const char*    port,
-    cdk_handler_t* handler) {
-    socket_ctx_t* ctx =
-        _socket_ctx_allocate(protocol, host, port, 0, 0, handler);
-    if (ctx) {
-        cdk_net_postevent(ctx->poller, _cb_dial, ctx, true);
+    cdk_handler_t*  handler,
+    int             nthrds,
+    cdk_tls_conf_t* config) {
+
+    if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
+        _net_engine_create(nthrds);
+    }
+    socket_ctx_t* sctx = _socket_ctx_allocate(
+        protocol, host, port, 0, 0, handler, tls_ctx_create(config));
+    if (sctx) {
+        cdk_net_post_task(sctx->poller, _async_dial, sctx, true);
     }
 }
 
 void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
     if (thrd_equal(channel->poller->tid, thrd_current())) {
-        channel_send_explicit(channel, data, size);
+        channel_explicit_send(channel, data, size);
     } else {
-        _channel_send_explicit(channel, data, size);
+        channel_send_ctx_t* ctx = malloc(sizeof(channel_send_ctx_t) + size);
+        if (!ctx) {
+            return;
+        }
+        memset(ctx, 0, sizeof(channel_send_ctx_t) + size);
+        ctx->channel = channel;
+        ctx->size = size;
+        memcpy(ctx->data, data, size);
+
+        cdk_net_post_task(
+            channel->poller, _async_channel_explicit_send, ctx, true);
     }
 }
 
 void cdk_net_close(cdk_channel_t* channel) {
     if (thrd_equal(channel->poller->tid, thrd_current())) {
         channel_destroy(
-            channel, REASON_USER_TRIGGERED, CHANNEL_DESTROY_REASON_USER);
+            channel,
+            CHANNEL_REASON_USER_TRIGGERED,
+            CHANNEL_REASON_USER_TRIGGERED_STR);
     } else {
-        _channel_destroy(channel);
+        cdk_net_post_task(
+            channel->poller, _async_channel_destroy, channel, true);
     }
 }
 
-void cdk_net_postevent(
-    cdk_poller_t* poller, void (*cb)(void*), void* arg, bool totail) {
-    cdk_event_t* event = malloc(sizeof(cdk_event_t));
-    if (event) {
-        event->cb = cb;
-        event->arg = arg;
-
-        mtx_lock(&poller->evmtx);
-        if (totail) {
-            cdk_list_insert_tail(&poller->evlist, &event->node);
-        } else {
-            cdk_list_insert_head(&poller->evlist, &event->node);
-        }
-        mtx_unlock(&poller->evmtx);
-        poller_wakeup(poller);
+void cdk_net_post_task(
+    cdk_poller_t* poller, void (*task)(void*), void* arg, bool totail) {
+    cdk_async_task_t* asynctask = malloc(sizeof(cdk_async_task_t));
+    if (!asynctask) {
+        return;
     }
+    asynctask->task = task;
+    asynctask->arg = arg;
+
+    mtx_lock(&poller->evmtx);
+    if (totail) {
+        cdk_list_insert_tail(&poller->tasklist, &asynctask->node);
+    } else {
+        cdk_list_insert_head(&poller->tasklist, &asynctask->node);
+    }
+    mtx_unlock(&poller->evmtx);
+    poller_wakeup(poller);
 }
 
 void cdk_net_exit(void) {
-    mtx_lock(&global_poller_manager.poller_mtx);
-    for (cdk_list_node_t* n = cdk_list_head(&global_poller_manager.poller_lst);
-         n != cdk_list_sentinel(&global_poller_manager.poller_lst);
+    mtx_lock(&global_net_engine.poller_mtx);
+    for (cdk_list_node_t* n = cdk_list_head(&global_net_engine.poller_lst);
+         n != cdk_list_sentinel(&global_net_engine.poller_lst);
          n = cdk_list_next(n)) {
         cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
-        cdk_net_postevent(poller, _cb_inactive, poller, true);
+        cdk_net_post_task(poller, _async_poller_exit, poller, true);
     }
-    mtx_unlock(&global_poller_manager.poller_mtx);
-}
-
-void cdk_net_startup(cdk_net_conf_t* conf) {
-    if (atomic_flag_test_and_set(&global_poller_manager.initialized)) {
-        return;
-    }
-    global_tls_ctx = tls_ctx_create(&conf->tls);
-    global_dtls_ctx = tls_ctx_create(&conf->dtls);
-    _manager_create(conf->nthrds);
-}
-
-void cdk_net_cleanup(void) {
-    _manager_destroy();
-    tls_ctx_destroy(global_tls_ctx);
-}
-
-void cdk_net_startup2(void) { platform_socket_startup(); }
-
-void cdk_net_cleanup2(void) { platform_socket_cleanup(); }
-
-cdk_sock_t
-cdk_net_listen2(const char* protocol, const char* host, const char* port) {
-    int proto = 0;
-    if (!strcmp(protocol, "tcp")) {
-        proto = SOCK_STREAM;
-    }
-    if (!strcmp(protocol, "udp")) {
-        proto = SOCK_DGRAM;
-    }
-    return platform_socket_listen(host, port, proto, 0, 0, false);
-}
-
-cdk_sock_t cdk_net_accept2(cdk_sock_t sock) {
-    return platform_socket_accept(sock, false);
-}
-
-cdk_sock_t
-cdk_net_dial2(const char* protocol, const char* host, const char* port) {
-    int  proto = 0;
-    bool unused;
-    if (!strcmp(protocol, "tcp")) {
-        proto = SOCK_STREAM;
-    }
-    if (!strcmp(protocol, "udp")) {
-        proto = SOCK_DGRAM;
-    }
-    return platform_socket_dial(host, port, proto, &unused, false);
-}
-
-ssize_t cdk_net_recv2(cdk_sock_t sock, void* buf, int size) {
-    return platform_socket_recv(sock, buf, size);
-}
-
-ssize_t cdk_net_send2(cdk_sock_t sock, void* buf, int size) {
-    return platform_socket_send(sock, buf, size);
-}
-
-ssize_t cdk_net_recvall2(cdk_sock_t sock, void* buf, int size) {
-    return platform_socket_recvall(sock, buf, size);
-}
-
-ssize_t cdk_net_sendall2(cdk_sock_t sock, void* buf, int size) {
-    return platform_socket_sendall(sock, buf, size);
-}
-
-ssize_t cdk_net_recvfrom2(
-    cdk_sock_t               sock,
-    void*                    buf,
-    int                      size,
-    struct sockaddr_storage* ss,
-    socklen_t*               sslen) {
-    return platform_socket_recvfrom(sock, buf, size, ss, sslen);
-}
-
-ssize_t cdk_net_sendto2(
-    cdk_sock_t               sock,
-    void*                    buf,
-    int                      size,
-    struct sockaddr_storage* ss,
-    socklen_t                sslen) {
-    return platform_socket_sendto(sock, buf, size, ss, sslen);
-}
-
-void cdk_net_close2(cdk_sock_t sock) { platform_socket_close(sock); }
-
-void cdk_net_recvtimeo2(cdk_sock_t sock, int timeout_ms) {
-    platform_socket_recvtimeo(sock, timeout_ms);
-}
-
-void cdk_net_sendtimeo2(cdk_sock_t sock, int timeout_ms) {
-    platform_socket_sendtimeo(sock, timeout_ms);
+    mtx_unlock(&global_net_engine.poller_mtx);
 }

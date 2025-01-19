@@ -36,16 +36,17 @@ static inline void _event_handle(cdk_poller_t* poller) {
     platform_socket_recv(poller->evfds[1], (char*)(&wakeup), sizeof(bool));
 
     mtx_lock(&poller->evmtx);
-    cdk_event_t* e = NULL;
-    if (!cdk_list_empty(&poller->evlist)) {
-        e = cdk_list_data(cdk_list_head(&poller->evlist), cdk_event_t, node);
-        cdk_list_remove(&e->node);
+    cdk_async_task_t* task = NULL;
+    if (!cdk_list_empty(&poller->tasklist)) {
+        task = cdk_list_data(
+            cdk_list_head(&poller->tasklist), cdk_async_task_t, node);
+        cdk_list_remove(&task->node);
     }
     mtx_unlock(&poller->evmtx);
-    if (e) {
-        e->cb(e->arg);
-        free(e);
-        e = NULL;
+    if (task) {
+        task->task(task->arg);
+        free(task);
+        task = NULL;
     }
 }
 
@@ -59,11 +60,7 @@ static void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
             }
         }
         if (channel->type == SOCK_DGRAM) {
-            if (channel->udp.accepting) {
-                channel_accept(channel);
-            } else {
-                channel_recv(channel);
-            }
+            channel_recv(channel);
         }
     }
     if (mask & EVENT_WR) {
@@ -108,17 +105,19 @@ static inline void _timer_handle(cdk_poller_t* poller) {
 void poller_poll(cdk_poller_t* poller) {
     cdk_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
 	while (poller->active) {
-		int nevents = platform_event_wait(poller->pfd, events, _timeout_update(poller));
+        int nevents = platform_event_wait(
+            poller->pfd, events, _timeout_update(poller));
+
 		for (int i = 0; i < nevents; i++) {
 			void* ud = events[i].ptr;
 			uint32_t mask = events[i].events;
 			if (!ud) {
-				abort();
+                return;
 			}
 			if (*((cdk_sock_t*)ud) == poller->evfds[1]) {
                 _event_handle(poller);
 			} else {
-				_channel_handle((cdk_channel_t*)ud, mask);
+                _channel_handle((cdk_channel_t*)ud, mask);
 			}
 		}
         if (!_timeout_update(poller)) {
@@ -140,7 +139,7 @@ cdk_poller_t* poller_create(void) {
         poller->tid = thrd_current();
         poller->active = true;
 
-        cdk_list_init(&poller->evlist);
+        cdk_list_init(&poller->tasklist);
         cdk_list_init(&poller->chlist);
         cdk_timer_manager_init(&poller->timermgr);
 
@@ -157,17 +156,20 @@ void poller_destroy(cdk_poller_t* poller) {
     platform_socket_pollfd_destroy(poller->pfd);
     platform_socket_close(poller->evfds[0]);
 
-    while (!cdk_list_empty(&poller->evlist)) {
-        cdk_event_t* ev = cdk_list_data(cdk_list_head(&poller->evlist), cdk_event_t, node);
-        cdk_list_remove(&ev->node);
+    while (!cdk_list_empty(&poller->tasklist)) {
+        cdk_async_task_t* task = cdk_list_data(
+            cdk_list_head(&poller->tasklist), cdk_async_task_t, node);
+        cdk_list_remove(&task->node);
 
-        free(ev);
-        ev = NULL;
+        free(task);
+        task = NULL;
     }
     while (!cdk_list_empty(&poller->chlist)) {
         cdk_channel_t* ch = cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);
         channel_destroy(
-            ch, REASON_POLLER_SHUTDOWN, CHANNEL_DESTROY_REASON_POLLER_SHUTDOWN);
+            ch,
+            CHANNEL_REASON_POLLER_SHUTDOWN,
+            CHANNEL_REASON_POLLER_SHUTDOWN_STR);
     }
     mtx_destroy(&poller->evmtx);
     free(poller);

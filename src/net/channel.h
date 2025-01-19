@@ -23,31 +23,32 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-#define MAX_TCP_RECVBUF_SIZE 1048576   //1M
-#define MAX_UDP_RECVBUF_SIZE 65535     //64K
+#define MAX_TCP_RECVBUF_SIZE 1048576 // 1M
+#define MAX_UDP_RECVBUF_SIZE 65535   // 64K
 
-#define CHANNEL_DESTROY_REASON_USER                                            \
+#define CHANNEL_REASON_USER_TRIGGERED_STR                                      \
     "Channel destroyed due to User-triggered (normal behavior)"
-#define CHANNEL_DESTROY_REASON_WR_TIMEOUT                                      \
+#define CHANNEL_REASON_WR_TIMEOUT_STR                                          \
     "Channel destroyed due to write operation timeout"
-#define CHANNEL_DESTROY_REASON_RD_TIMEOUT                                      \
+#define CHANNEL_REASON_RD_TIMEOUT_STR                                          \
     "Channel destroyed due to read operation timeout"
-#define CHANNEL_DESTROY_REASON_CONN_TIMEOUT                                    \
+#define CHANNEL_REASON_CONN_TIMEOUT_STR                                        \
     "Channel destroyed due to connection establishment timeout"
-#define CHANNEL_DESTROY_REASON_POLLER_SHUTDOWN                                 \
+#define CHANNEL_REASON_POLLER_SHUTDOWN_STR                                     \
     "Channel destroyed due to poller shutdown"
 
 extern cdk_channel_t* channel_create(
-        cdk_poller_t*  poller,
-        cdk_sock_t     sock,
-        bool           udp_connected,
-        cdk_handler_t* handler);
+    cdk_poller_t*  poller,
+    cdk_sock_t     sock,
+    bool           udp_connected,
+    cdk_handler_t* handler,
+    cdk_tls_ctx_t* tls_ctx);
 extern void channel_destroy(
     cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
 extern void channel_recv(cdk_channel_t* channel);
 extern void channel_send(cdk_channel_t* channel);
 extern void
-channel_send_explicit(cdk_channel_t* channel, void* data, size_t size);
+channel_explicit_send(cdk_channel_t* channel, void* data, size_t size);
 extern void channel_accept(cdk_channel_t* channel);
 extern void channel_connect(cdk_channel_t* channel);
 extern void channel_enable_write(cdk_channel_t* channel);
@@ -60,6 +61,4 @@ extern bool channel_is_reading(cdk_channel_t* channel);
 extern void channel_tls_srv_handshake(void* param);
 extern void channel_tls_cli_handshake(void* param);
 extern void channel_connected(cdk_channel_t* channel);
-extern void channel_connecting(cdk_channel_t* channel);
 extern void channel_accepted(cdk_channel_t* channel);
-extern void channel_accepting(cdk_channel_t* channel);
