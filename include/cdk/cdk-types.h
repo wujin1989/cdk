@@ -96,7 +96,7 @@ typedef struct cdk_unpacker_s      cdk_unpacker_t;
 typedef struct cdk_address_s       cdk_address_t;
 typedef struct cdk_poller_s        cdk_poller_t;
 typedef struct cdk_net_engine_s    cdk_net_engine_t;
-typedef struct cdk_async_task_s    cdk_async_task_t;
+typedef struct cdk_async_event_s   cdk_async_event_t;
 typedef struct cdk_tls_conf_s      cdk_tls_conf_t;
 typedef enum cdk_tls_side_e        cdk_tls_side_t;
 typedef struct cdk_sha256_s        cdk_sha256_t;
@@ -266,7 +266,7 @@ struct cdk_poller_s {
     cdk_pollfd_t    pfd;
     thrd_t          tid;
     cdk_sock_t      evfds[2];
-    cdk_list_t      tasklist;
+    cdk_list_t      evlist;
     mtx_t           evmtx;
     bool            active;
     cdk_list_t      chlist;
@@ -284,7 +284,7 @@ struct cdk_net_engine_s {
     cdk_poller_t* (*poller_roundrobin)(void);
 };
 
-struct cdk_async_task_s {
+struct cdk_async_event_s {
     void            (*task)(void* param);
     void*           arg;
     cdk_list_node_t node;

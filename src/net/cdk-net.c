@@ -364,7 +364,7 @@ void cdk_net_listen(
     for (int i = 0; i < nthrds; i++) {
         socket_ctx_t* sctx = _socket_ctx_allocate(protocol, host, port, i, nthrds, handler, tlsctx);
         if (sctx) {
-            cdk_net_post_task(sctx->poller, _async_listen, sctx, true);
+            cdk_net_post_event(sctx->poller, _async_listen, sctx, true);
         }
     }
 }
@@ -383,7 +383,7 @@ void cdk_net_dial(
     socket_ctx_t* sctx = _socket_ctx_allocate(
         protocol, host, port, 0, 0, handler, tls_ctx_create(config));
     if (sctx) {
-        cdk_net_post_task(sctx->poller, _async_dial, sctx, true);
+        cdk_net_post_event(sctx->poller, _async_dial, sctx, true);
     }
 }
 
@@ -400,7 +400,7 @@ void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
         ctx->size = size;
         memcpy(ctx->data, data, size);
 
-        cdk_net_post_task(
+        cdk_net_post_event(
             channel->poller, _async_channel_explicit_send, ctx, true);
     }
 }
@@ -412,25 +412,25 @@ void cdk_net_close(cdk_channel_t* channel) {
             CHANNEL_REASON_USER_TRIGGERED,
             CHANNEL_REASON_USER_TRIGGERED_STR);
     } else {
-        cdk_net_post_task(
+        cdk_net_post_event(
             channel->poller, _async_channel_destroy, channel, true);
     }
 }
 
-void cdk_net_post_task(
+void cdk_net_post_event(
     cdk_poller_t* poller, void (*task)(void*), void* arg, bool totail) {
-    cdk_async_task_t* asynctask = malloc(sizeof(cdk_async_task_t));
-    if (!asynctask) {
+    cdk_async_event_t* async_event = malloc(sizeof(cdk_async_event_t));
+    if (!async_event) {
         return;
     }
-    asynctask->task = task;
-    asynctask->arg = arg;
+    async_event->task = task;
+    async_event->arg = arg;
 
     mtx_lock(&poller->evmtx);
     if (totail) {
-        cdk_list_insert_tail(&poller->tasklist, &asynctask->node);
+        cdk_list_insert_tail(&poller->evlist, &async_event->node);
     } else {
-        cdk_list_insert_head(&poller->tasklist, &asynctask->node);
+        cdk_list_insert_head(&poller->evlist, &async_event->node);
     }
     mtx_unlock(&poller->evmtx);
     poller_wakeup(poller);
@@ -442,7 +442,7 @@ void cdk_net_exit(void) {
          n != cdk_list_sentinel(&global_net_engine.poller_lst);
          n = cdk_list_next(n)) {
         cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
-        cdk_net_post_task(poller, _async_poller_exit, poller, true);
+        cdk_net_post_event(poller, _async_poller_exit, poller, true);
     }
     mtx_unlock(&global_net_engine.poller_mtx);
 }

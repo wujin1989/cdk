@@ -36,17 +36,17 @@ static inline void _event_handle(cdk_poller_t* poller) {
     platform_socket_recv(poller->evfds[1], (char*)(&wakeup), sizeof(bool));
 
     mtx_lock(&poller->evmtx);
-    cdk_async_task_t* task = NULL;
-    if (!cdk_list_empty(&poller->tasklist)) {
-        task = cdk_list_data(
-            cdk_list_head(&poller->tasklist), cdk_async_task_t, node);
-        cdk_list_remove(&task->node);
+    cdk_async_event_t* async_event = NULL;
+    if (!cdk_list_empty(&poller->evlist)) {
+        async_event = cdk_list_data(
+            cdk_list_head(&poller->evlist), cdk_async_event_t, node);
+        cdk_list_remove(&async_event->node);
     }
     mtx_unlock(&poller->evmtx);
-    if (task) {
-        task->task(task->arg);
-        free(task);
-        task = NULL;
+    if (async_event) {
+        async_event->task(async_event->arg);
+        free(async_event);
+        async_event = NULL;
     }
 }
 
@@ -139,7 +139,7 @@ cdk_poller_t* poller_create(void) {
         poller->tid = thrd_current();
         poller->active = true;
 
-        cdk_list_init(&poller->tasklist);
+        cdk_list_init(&poller->evlist);
         cdk_list_init(&poller->chlist);
         cdk_timer_manager_init(&poller->timermgr);
 
@@ -156,13 +156,13 @@ void poller_destroy(cdk_poller_t* poller) {
     platform_socket_pollfd_destroy(poller->pfd);
     platform_socket_close(poller->evfds[0]);
 
-    while (!cdk_list_empty(&poller->tasklist)) {
-        cdk_async_task_t* task = cdk_list_data(
-            cdk_list_head(&poller->tasklist), cdk_async_task_t, node);
-        cdk_list_remove(&task->node);
+    while (!cdk_list_empty(&poller->evlist)) {
+        cdk_async_event_t* async_event = cdk_list_data(
+            cdk_list_head(&poller->evlist), cdk_async_event_t, node);
+        cdk_list_remove(&async_event->node);
 
-        free(task);
-        task = NULL;
+        free(async_event);
+        async_event = NULL;
     }
     while (!cdk_list_empty(&poller->chlist)) {
         cdk_channel_t* ch = cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);

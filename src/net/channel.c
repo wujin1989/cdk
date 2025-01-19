@@ -215,7 +215,7 @@ static void _tls_explicit_send(cdk_channel_t* channel, void* data, size_t size) 
     }
     channel->tcp.latest_wr_time = cdk_time_now();
     if (n > 0 && channel->handler->tcp.on_write) {
-        cdk_net_post_task(channel->poller, _write_complete_cb, channel, true);
+        cdk_net_post_event(channel->poller, _write_complete_cb, channel, true);
     }
 }
 
@@ -293,7 +293,7 @@ static void _tcp_explicit_send(cdk_channel_t* channel, void* data, size_t size) 
     channel->tcp.latest_wr_time = cdk_time_now();
 
     if (n > 0 && channel->handler->tcp.on_write) {
-        cdk_net_post_task(channel->poller, _write_complete_cb, channel, true);
+        cdk_net_post_event(channel->poller, _write_complete_cb, channel, true);
     }
 }
 
@@ -330,7 +330,7 @@ static void _udp_explicit_send(cdk_channel_t* channel, void* data, size_t size) 
         }
     }
     if (n > 0 && channel->handler->udp.on_write) {
-        cdk_net_post_task(channel->poller, _write_complete_cb, channel, true);
+        cdk_net_post_event(channel->poller, _write_complete_cb, channel, true);
     }
 }
 
@@ -577,7 +577,7 @@ void channel_tls_cli_handshake(void* param) {
     int n = tls_connect(channel->tcp.tls_ssl, channel->fd, &err);
     if (n <= 0) {
         if (n == 0) {
-            cdk_net_post_task(
+            cdk_net_post_event(
                 channel->poller, channel_tls_cli_handshake, channel, true);
             return;
         }
@@ -594,7 +594,7 @@ void channel_tls_srv_handshake(void* param) {
     int n = tls_accept(channel->tcp.tls_ssl, channel->fd, true, &err);
     if (n <= 0) {
         if (n == 0) {
-            cdk_net_post_task(
+            cdk_net_post_event(
                 channel->poller, channel_tls_srv_handshake, channel, true);
             return;
         }
@@ -679,7 +679,7 @@ void channel_destroy(
         }
     }
     if (channel->poller->active) {
-        cdk_net_post_task(channel->poller, _channel_destroy_cb, channel, true);
+        cdk_net_post_event(channel->poller, _channel_destroy_cb, channel, true);
     } else {
         if (channel) {
             free(channel);
