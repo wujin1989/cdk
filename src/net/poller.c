@@ -103,7 +103,7 @@ static inline void _timer_handle(cdk_poller_t* poller) {
 }
 
 void poller_poll(cdk_poller_t* poller) {
-    cdk_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
+    platform_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
 	while (poller->active) {
         int nevents = platform_event_wait(
             poller->pfd, events, _timeout_update(poller));

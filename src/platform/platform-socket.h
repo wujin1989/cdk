@@ -57,40 +57,18 @@ extern int        platform_socket_extract_family(cdk_sock_t sock);
 extern void       platform_socket_startup(void);
 extern void       platform_socket_cleanup(void);
 extern cdk_sock_t platform_socket_accept(cdk_sock_t sock, bool nonblocking);
-extern cdk_sock_t platform_socket_listen(
-    const char* restrict host,
-    const char* restrict port,
-    int  protocol,
-    int  idx,
-    int  cores,
-    bool nonblocking);
-extern cdk_sock_t platform_socket_dial(
-    const char* restrict host,
-    const char* restrict port,
-    int   protocol,
-    bool* connected,
-    bool  nonblocking);
-extern void    platform_socket_close(cdk_sock_t sock);
-extern int     platform_socket_getaddrfamily(cdk_sock_t sock);
-extern int     platform_socket_getsocktype(cdk_sock_t sock);
-extern ssize_t platform_socket_recv(cdk_sock_t sock, void* buf, int size);
-extern ssize_t platform_socket_send(cdk_sock_t sock, void* buf, int size);
-extern ssize_t platform_socket_recvall(cdk_sock_t sock, void* buf, int size);
-extern ssize_t platform_socket_sendall(cdk_sock_t sock, void* buf, int size);
-extern ssize_t platform_socket_recvfrom(
-    cdk_sock_t               sock,
-    void*                    buf,
-    int                      size,
-    struct sockaddr_storage* ss,
-    socklen_t*               lenptr);
-extern ssize_t platform_socket_sendto(
-    cdk_sock_t               sock,
-    void*                    buf,
-    int                      size,
-    struct sockaddr_storage* ss,
-    socklen_t                len);
-extern int platform_socket_socketpair(
-    int domain, int type, int protocol, cdk_sock_t socks[2]);
+extern cdk_sock_t platform_socket_listen(const char* restrict host, const char* restrict port, int protocol, int idx, int cores, bool nonblocking);
+extern cdk_sock_t platform_socket_dial(const char* restrict host, const char* restrict port, int protocol, bool* connected, bool nonblocking);
+extern void       platform_socket_close(cdk_sock_t sock);
+extern int        platform_socket_getaddrfamily(cdk_sock_t sock);
+extern int        platform_socket_getsocktype(cdk_sock_t sock);
+extern ssize_t    platform_socket_recv(cdk_sock_t sock, void* buf, int size);
+extern ssize_t    platform_socket_send(cdk_sock_t sock, void* buf, int size);
+extern ssize_t    platform_socket_recvall(cdk_sock_t sock, void* buf, int size);
+extern ssize_t    platform_socket_sendall(cdk_sock_t sock, void* buf, int size);
+extern ssize_t    platform_socket_recvfrom(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t* lenptr);
+extern ssize_t    platform_socket_sendto(cdk_sock_t sock, void* buf, int size, struct sockaddr_storage* ss, socklen_t len);
+extern int          platform_socket_socketpair(int domain, int type, int protocol, cdk_sock_t socks[2]);
 extern const char*  platform_socket_error2string(int error);
 extern int          platform_socket_lasterror(void);
 extern cdk_pollfd_t platform_socket_pollfd_create(void);

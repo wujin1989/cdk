@@ -96,7 +96,6 @@ typedef struct cdk_unpacker_s      cdk_unpacker_t;
 typedef struct cdk_address_s       cdk_address_t;
 typedef struct cdk_poller_s        cdk_poller_t;
 typedef struct cdk_net_engine_s    cdk_net_engine_t;
-typedef enum cdk_event_e           cdk_event_t;
 typedef struct cdk_async_task_s    cdk_async_task_t;
 typedef struct cdk_tls_conf_s      cdk_tls_conf_t;
 typedef enum cdk_tls_side_e        cdk_tls_side_t;
@@ -294,11 +293,6 @@ struct cdk_async_task_s {
 enum cdk_tls_side_e {
     TLS_SIDE_CLIENT,
     TLS_SIDE_SERVER,
-};
-
-enum cdk_event_e {
-    EVENT_RD = 1,
-    EVENT_WR = 2,
 };
 
 enum cdk_logger_level_e {
