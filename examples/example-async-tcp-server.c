@@ -71,7 +71,7 @@ int main(void) {
         .keyfile = "certs/cert.key",
         .verifypeer = false,
         .dtls = false,
-        .side = TLS_SIDE_SERVER};
+        .side = CHANNEL_SIDE_SERVER};
 
     cdk_unpacker_t unpacker = {
         .type = UNPACKER_TYPE_LENGTHFIELD,

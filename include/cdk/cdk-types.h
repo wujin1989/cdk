@@ -75,6 +75,7 @@ _Pragma("once")
 #define cdk_tls_bio_t void
 
 typedef struct cdk_channel_s       cdk_channel_t;
+typedef enum cdk_channel_mode_e    cdk_channel_mode_t;
 typedef struct cdk_handler_s       cdk_handler_t;
 typedef union cdk_rbtree_key_u     cdk_rbtree_key_t;
 typedef struct cdk_rbtree_node_s   cdk_rbtree_node_t;
@@ -98,7 +99,7 @@ typedef struct cdk_poller_s        cdk_poller_t;
 typedef struct cdk_net_engine_s    cdk_net_engine_t;
 typedef struct cdk_async_event_s   cdk_async_event_t;
 typedef struct cdk_tls_conf_s      cdk_tls_conf_t;
-typedef enum cdk_tls_side_e        cdk_tls_side_t;
+typedef enum cdk_channel_side_e    cdk_channel_side_t;
 typedef struct cdk_sha256_s        cdk_sha256_t;
 typedef struct cdk_sha1_s          cdk_sha1_t;
 typedef struct cdk_rwlock_s        cdk_rwlock_t;
@@ -228,6 +229,12 @@ enum cdk_unpacker_type_e {
     UNPACKER_TYPE_USERDEFINED,
 };
 
+enum cdk_channel_mode_e {
+    CHANNEL_MODE_ACCEPT,
+    CHANNEL_MODE_CONNECT,
+    CHANNEL_MODE_NORMAL,
+};
+
 struct cdk_unpacker_s {
     cdk_unpacker_type_t type;
     union {
@@ -290,9 +297,9 @@ struct cdk_async_event_s {
     cdk_list_node_t node;
 };
 
-enum cdk_tls_side_e {
-    TLS_SIDE_CLIENT,
-    TLS_SIDE_SERVER,
+enum cdk_channel_side_e {
+    CHANNEL_SIDE_CLIENT,
+    CHANNEL_SIDE_SERVER,
 };
 
 enum cdk_logger_level_e {
@@ -344,9 +351,9 @@ struct cdk_tls_conf_s {
      * handshake will fail if the peer does not provide a valid
      * certificate.
      */
-    bool           verifypeer;
-    bool           dtls;
-    cdk_tls_side_t side;
+    bool               verifypeer;
+    bool               dtls;
+    cdk_channel_side_t side;
 };
 
 struct cdk_dtls_ssl_s {
@@ -363,6 +370,8 @@ struct cdk_channel_s {
     int            type;
     atomic_bool    closing;
     cdk_list_t     txlist;
+    cdk_channel_mode_t mode;
+    cdk_channel_side_t side;
     struct {
         void*   buf;
         ssize_t len;
@@ -383,7 +392,6 @@ struct cdk_channel_s {
             cdk_tls_ctx_t* tls_ctx;
         } tcp;
         struct {
-            bool connected;
             struct {
                 struct sockaddr_storage ss;
                 socklen_t               sslen;

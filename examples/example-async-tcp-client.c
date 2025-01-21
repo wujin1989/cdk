@@ -76,7 +76,7 @@ int main(void) {
         .keyfile = NULL,
         .verifypeer = true,
         .dtls = false,
-        .side = TLS_SIDE_CLIENT};
+        .side = CHANNEL_SIDE_CLIENT};
 
     cdk_unpacker_t unpacker = {
         .type = UNPACKER_TYPE_LENGTHFIELD,

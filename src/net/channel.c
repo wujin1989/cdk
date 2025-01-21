@@ -88,10 +88,10 @@ static void _udp_send(cdk_channel_t* channel) {
     txlist_node_t* e =
         cdk_list_data(cdk_list_head(&(channel->txlist)), txlist_node_t, n);
     
-    if (channel->udp.connected) {
+    if (channel->side == CHANNEL_SIDE_CLIENT) {
         n = platform_socket_send(channel->fd, e->buf, (int)e->len);
     }
-    if (!channel->udp.connected) {
+    if (channel->side == CHANNEL_SIDE_SERVER) {
         n = platform_socket_sendto(
             channel->fd,
             e->buf,
@@ -300,10 +300,10 @@ static void _tcp_explicit_send(cdk_channel_t* channel, void* data, size_t size) 
 static void _udp_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
     ssize_t n = 0;
     if (txlist_empty(&channel->txlist)) {
-        if (channel->udp.connected) {
+        if (channel->side == CHANNEL_SIDE_CLIENT) {
             n = platform_socket_send(channel->fd, data, size);
         }
-        if (!channel->udp.connected) {
+        if (channel->side == CHANNEL_SIDE_SERVER) {
             n = platform_socket_sendto(
                 channel->fd,
                 data,
@@ -419,11 +419,11 @@ static void _tcp_recv(cdk_channel_t* channel) {
 
 static void _udp_recv(cdk_channel_t* channel) {
     ssize_t n;
-    if (channel->udp.connected) {
+    if (channel->side == CHANNEL_SIDE_CLIENT) {
         n = platform_socket_recv(
             channel->fd, channel->rxbuf.buf, MAX_UDP_RECVBUF_SIZE);
     }
-    if (!channel->udp.connected) {
+    if (channel->side == CHANNEL_SIDE_SERVER) {
         channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
         n = platform_socket_recvfrom(
             channel->fd,
@@ -449,7 +449,7 @@ static void _udp_recv(cdk_channel_t* channel) {
 }
 
 static inline void _channel_destroy_cb(void* param) {
-    cdk_channel_t* channel = param;
+    cdk_channel_t*  channel = param;
     if (channel) {
         free(channel);
         channel = NULL;
@@ -593,7 +593,8 @@ void channel_tls_srv_handshake(void* param) {
 cdk_channel_t* channel_create(
     cdk_poller_t*  poller,
     cdk_sock_t     sock,
-    bool           udp_connected,
+    cdk_channel_mode_t mode,
+    cdk_channel_side_t side,
     cdk_handler_t* handler,
     cdk_tls_ctx_t* tlsctx) {
     cdk_channel_t* channel = malloc(sizeof(cdk_channel_t));
@@ -605,6 +606,9 @@ cdk_channel_t* channel_create(
         channel->handler = handler;
         channel->type = platform_socket_getsocktype(sock);
         atomic_init(&channel->closing, false);
+        txlist_create(&channel->txlist);
+        channel->mode = mode;
+        channel->side = side;
 
         if (channel->type == SOCK_STREAM) {
             channel->rxbuf.len = MAX_TCP_RECVBUF_SIZE;
@@ -617,15 +621,17 @@ cdk_channel_t* channel_create(
         if (channel->rxbuf.buf) {
             memset(channel->rxbuf.buf, 0, channel->rxbuf.len);
         }
-        txlist_create(&channel->txlist);
         if (channel->type == SOCK_STREAM) {
             if (tlsctx) {
-                channel->tcp.tls_ssl = tls_ssl_create(tlsctx);
-                channel->tcp.tls_ctx = tlsctx;
+                if (channel->mode == CHANNEL_MODE_ACCEPT ||
+                    channel->mode == CHANNEL_MODE_CONNECT) {
+                    channel->tcp.tls_ctx = tlsctx;
+                } 
+                if (channel->mode == CHANNEL_MODE_CONNECT ||
+                    channel->mode == CHANNEL_MODE_NORMAL) {
+                    channel->tcp.tls_ssl = tls_ssl_create(tlsctx);
+                }
             }
-        }
-        if (channel->type == SOCK_DGRAM) {
-            channel->udp.connected = udp_connected;
         }
         cdk_list_insert_tail(&poller->chlist, &channel->node);
         return channel;
@@ -653,11 +659,11 @@ void channel_destroy(
     channel->rxbuf.off = 0;
 
     if (channel->type == SOCK_STREAM) {
-        if (channel->tcp.accepting) {
+        if (channel->tcp.accepting || channel->tcp.connecting) {
             tls_ctx_destroy(channel->tcp.tls_ctx);
+        } else {
+            tls_ssl_destroy(channel->tcp.tls_ssl);
         }
-        tls_ssl_destroy(channel->tcp.tls_ssl);
-
         if (channel->handler->tcp.on_close) {
             channel->handler->tcp.on_close(channel, code, reason);
         }
@@ -715,7 +721,8 @@ void channel_accept(cdk_channel_t* channel) {
     cdk_channel_t* nchannel = channel_create(
         global_net_engine.poller_roundrobin(),
         cli,
-        false,
+        CHANNEL_MODE_NORMAL,
+        CHANNEL_SIDE_SERVER,
         channel->handler, channel->tcp.tls_ctx);
     if (nchannel) {
         if (nchannel->tcp.tls_ssl) {

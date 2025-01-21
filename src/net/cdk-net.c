@@ -178,7 +178,8 @@ static void _async_listen(void* param) {
         sctx->idx, sctx->cores,
         true);
 
-    cdk_channel_t* channel = channel_create(sctx->poller, sock, false, sctx->handler, sctx->tls_ctx);
+    cdk_channel_t* channel = channel_create(
+        sctx->poller, sock, CHANNEL_MODE_ACCEPT, CHANNEL_SIDE_SERVER, sctx->handler, sctx->tls_ctx);
     if (!channel) {
         return;
     }
@@ -206,8 +207,13 @@ static void _async_dial(void* param) {
     cdk_sock_t sock = platform_socket_dial(
         sctx->host, sctx->port, sctx->protocol, &connected, true);
 
-    cdk_channel_t* channel =
-        channel_create(sctx->poller, sock, connected, sctx->handler, sctx->tls_ctx);
+    cdk_channel_t* channel = channel_create(
+        sctx->poller,
+        sock,
+        CHANNEL_MODE_CONNECT,
+        CHANNEL_SIDE_CLIENT,
+        sctx->handler,
+        sctx->tls_ctx);
     if (!channel) {
         return;
     }

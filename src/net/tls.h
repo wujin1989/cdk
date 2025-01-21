@@ -41,4 +41,4 @@ extern void tls_ctx_alpn_set(
     cdk_tls_ctx_t*       ctx,
     const unsigned char* protos,
     unsigned int         protos_len,
-    cdk_tls_side_t       side);
+    cdk_channel_side_t   side);
