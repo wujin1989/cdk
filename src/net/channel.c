@@ -88,10 +88,10 @@ static void _udp_send(cdk_channel_t* channel) {
     txlist_node_t* e =
         cdk_list_data(cdk_list_head(&(channel->txlist)), txlist_node_t, n);
     
-    if (channel->side == CHANNEL_SIDE_CLIENT) {
+    if (channel->side == SIDE_CLIENT) {
         n = platform_socket_send(channel->fd, e->buf, (int)e->len);
     }
-    if (channel->side == CHANNEL_SIDE_SERVER) {
+    if (channel->side == SIDE_SERVER) {
         n = platform_socket_sendto(
             channel->fd,
             e->buf,
@@ -300,10 +300,10 @@ static void _tcp_explicit_send(cdk_channel_t* channel, void* data, size_t size) 
 static void _udp_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
     ssize_t n = 0;
     if (txlist_empty(&channel->txlist)) {
-        if (channel->side == CHANNEL_SIDE_CLIENT) {
+        if (channel->side == SIDE_CLIENT) {
             n = platform_socket_send(channel->fd, data, size);
         }
-        if (channel->side == CHANNEL_SIDE_SERVER) {
+        if (channel->side == SIDE_SERVER) {
             n = platform_socket_sendto(
                 channel->fd,
                 data,
@@ -419,11 +419,11 @@ static void _tcp_recv(cdk_channel_t* channel) {
 
 static void _udp_recv(cdk_channel_t* channel) {
     ssize_t n;
-    if (channel->side == CHANNEL_SIDE_CLIENT) {
+    if (channel->side == SIDE_CLIENT) {
         n = platform_socket_recv(
             channel->fd, channel->rxbuf.buf, MAX_UDP_RECVBUF_SIZE);
     }
-    if (channel->side == CHANNEL_SIDE_SERVER) {
+    if (channel->side == SIDE_SERVER) {
         channel->udp.peer.sslen = sizeof(struct sockaddr_storage);
         n = platform_socket_recvfrom(
             channel->fd,
@@ -594,7 +594,7 @@ cdk_channel_t* channel_create(
     cdk_poller_t*  poller,
     cdk_sock_t     sock,
     cdk_channel_mode_t mode,
-    cdk_channel_side_t side,
+    cdk_side_t side,
     cdk_handler_t* handler,
     cdk_tls_ctx_t* tlsctx) {
     cdk_channel_t* channel = malloc(sizeof(cdk_channel_t));
@@ -722,7 +722,7 @@ void channel_accept(cdk_channel_t* channel) {
         global_net_engine.poller_roundrobin(),
         cli,
         CHANNEL_MODE_NORMAL,
-        CHANNEL_SIDE_SERVER,
+        SIDE_SERVER,
         channel->handler, channel->tcp.tls_ctx);
     if (nchannel) {
         if (nchannel->tcp.tls_ssl) {

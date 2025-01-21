@@ -99,7 +99,7 @@ typedef struct cdk_poller_s        cdk_poller_t;
 typedef struct cdk_net_engine_s    cdk_net_engine_t;
 typedef struct cdk_async_event_s   cdk_async_event_t;
 typedef struct cdk_tls_conf_s      cdk_tls_conf_t;
-typedef enum cdk_channel_side_e    cdk_channel_side_t;
+typedef enum cdk_side_e            cdk_side_t;
 typedef struct cdk_sha256_s        cdk_sha256_t;
 typedef struct cdk_sha1_s          cdk_sha1_t;
 typedef struct cdk_rwlock_s        cdk_rwlock_t;
@@ -297,9 +297,9 @@ struct cdk_async_event_s {
     cdk_list_node_t node;
 };
 
-enum cdk_channel_side_e {
-    CHANNEL_SIDE_CLIENT,
-    CHANNEL_SIDE_SERVER,
+enum cdk_side_e {
+    SIDE_CLIENT,
+    SIDE_SERVER,
 };
 
 enum cdk_logger_level_e {
@@ -353,7 +353,7 @@ struct cdk_tls_conf_s {
      */
     bool               verifypeer;
     bool               dtls;
-    cdk_channel_side_t side;
+    cdk_side_t side;
 };
 
 struct cdk_dtls_ssl_s {
@@ -371,7 +371,7 @@ struct cdk_channel_s {
     atomic_bool    closing;
     cdk_list_t     txlist;
     cdk_channel_mode_t mode;
-    cdk_channel_side_t side;
+    cdk_side_t side;
     struct {
         void*   buf;
         ssize_t len;

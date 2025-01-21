@@ -189,7 +189,7 @@ static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
                             : SSL_VERIFY_NONE,
         NULL);
 
-    if (tlsconf->side == CHANNEL_SIDE_SERVER) {
+    if (tlsconf->side == SIDE_SERVER) {
         if (tlsconf->dtls) {
             SSL_CTX_set_cookie_generate_cb(ctx, _gen_cookie_cb);
             SSL_CTX_set_cookie_verify_cb(ctx, _verify_cookie_cb);
@@ -399,12 +399,12 @@ void tls_ctx_alpn_set(
     cdk_tls_ctx_t*       ctx,
     const unsigned char* protos,
     unsigned int         protos_len,
-    cdk_channel_side_t   side) {
+    cdk_side_t   side) {
     /* used by dual side, support tls, dtls */
-    if (side == CHANNEL_SIDE_CLIENT) {
+    if (side == SIDE_CLIENT) {
         SSL_CTX_set_alpn_protos((SSL_CTX*)ctx, protos, protos_len);
     }
-    if (side == CHANNEL_SIDE_SERVER) {
+    if (side == SIDE_SERVER) {
         SSL_CTX_set_alpn_select_cb(
             (SSL_CTX*)ctx, _alpn_select_cb, (void*)protos);
     }
