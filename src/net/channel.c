@@ -510,21 +510,6 @@ static void _tcp_timers_create(cdk_channel_t* channel) {
     }
 }
 
-static void _tcp_timers_destroy(cdk_channel_t* channel) {
-    if (channel->tcp.hb_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
-    }
-    if (channel->tcp.rd_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
-    }
-    if (channel->tcp.wr_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
-    }
-    if (channel->tcp.conn_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
-    }
-}
-
 void channel_connected(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
         channel->tcp.connecting = false;
@@ -650,6 +635,9 @@ cdk_channel_t* channel_create(
 
 void channel_destroy(
     cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
+    if (!channel) {
+        return;
+    }
     if (atomic_load(&channel->closing)) {
         return;
     }
@@ -665,13 +653,23 @@ void channel_destroy(
     channel->rxbuf.off = 0;
 
     if (channel->type == SOCK_STREAM) {
+        if (channel->tcp.accepting) {
+            tls_ctx_destroy(channel->tcp.tls_ctx);
+        }
         tls_ssl_destroy(channel->tcp.tls_ssl);
-        tls_ctx_destroy(channel->tcp.tls_ctx);
 
         if (channel->handler->tcp.on_close) {
             channel->handler->tcp.on_close(channel, code, reason);
         }
-        _tcp_timers_destroy(channel);
+        if (channel->tcp.hb_timer) {
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
+        }
+        if (channel->tcp.rd_timer) {
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
+        }
+        if (channel->tcp.wr_timer) {
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
+        }
     }
     if (channel->type == SOCK_DGRAM) {
         if (channel->handler->udp.on_close) {

@@ -172,7 +172,11 @@ static void _async_listen(void* param) {
     socket_ctx_t* sctx = param;
 
     cdk_sock_t sock = platform_socket_listen(
-        sctx->host, sctx->port, sctx->protocol, sctx->idx, sctx->cores, true);
+        sctx->host,
+        sctx->port,
+        sctx->protocol,
+        sctx->idx, sctx->cores,
+        true);
 
     cdk_channel_t* channel = channel_create(sctx->poller, sock, false, sctx->handler, sctx->tls_ctx);
     if (!channel) {
@@ -359,6 +363,9 @@ void cdk_net_listen(
     if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
         _net_engine_create(nthrds);
     }
+    /**
+     * Destroy tlsctx when the accepting channel is destroyed. 
+     */
     cdk_tls_ctx_t* tlsctx = tls_ctx_create(config);
 
     for (int i = 0; i < nthrds; i++) {
@@ -380,8 +387,9 @@ void cdk_net_dial(
     if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
         _net_engine_create(nthrds);
     }
-    socket_ctx_t* sctx = _socket_ctx_allocate(
-        protocol, host, port, 0, 0, handler, tls_ctx_create(config));
+    cdk_tls_ctx_t* tlsctx = tls_ctx_create(config);
+
+    socket_ctx_t* sctx = _socket_ctx_allocate(protocol, host, port, 0, 0, handler, tlsctx);
     if (sctx) {
         cdk_net_post_event(sctx->poller, _async_dial, sctx, true);
     }
