@@ -45,6 +45,7 @@ static void _close_cb(
         cdk_logi("%d clients has disconnected.\n", total_clients);
         _statistic_info_printf();
         cdk_logi("channel closed reason: %s\n", reason);
+        cdk_net_exit();
     }
 }
 
