@@ -31,7 +31,7 @@
 #include "txlist.h"
 #include "unpacker.h"
 
-#define CHANNEL_DELAYED_DESTROY_TIME 1000 * 60  //1min
+#define CHANNEL_DELAYED_DESTROY_TIME  60000
 
 extern cdk_net_engine_t global_net_engine;
 
@@ -472,6 +472,9 @@ static inline void _channel_cleanup_cb(void* param) {
 
 static inline void _channel_destroy_cb(void* param) {
     cdk_channel_t* channel = param;
+    /**
+     * Do not delete the timer within the timer task.
+     */
     cdk_net_post_event(channel->poller, _channel_cleanup_cb, channel, true);
 }
 
@@ -686,11 +689,6 @@ void channel_destroy(
         }
         if (channel->handler->tcp.on_close) {
             channel->handler->tcp.on_close(channel, code, reason);
-        }
-    }
-    if (channel->type == SOCK_DGRAM) {
-        if (channel->handler->udp.on_close) {
-            channel->handler->udp.on_close(channel, code, reason);
         }
     }
     if (channel->poller->active) {
