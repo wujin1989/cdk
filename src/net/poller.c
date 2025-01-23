@@ -165,9 +165,9 @@ void poller_destroy(cdk_poller_t* poller) {
         async_event = NULL;
     }
     while (!cdk_list_empty(&poller->chlist)) {
-        cdk_channel_t* ch = cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);
+        cdk_channel_t* channel = cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);
         channel_destroy(
-            ch,
+            channel,
             CHANNEL_REASON_POLLER_SHUTDOWN,
             CHANNEL_REASON_POLLER_SHUTDOWN_STR);
     }

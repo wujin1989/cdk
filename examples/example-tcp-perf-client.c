@@ -12,7 +12,10 @@ atomic_size_t total_readbytes;
 
 static void _finished(void* param) {
     cdk_channel_t* channel = param;
-    cdk_net_close(channel);
+
+    if (cdk_net_is_usable(channel)) {
+        cdk_net_close(channel);
+    }
 }
 
 static void _statistic_info_printf() {

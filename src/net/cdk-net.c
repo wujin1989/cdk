@@ -435,6 +435,10 @@ void cdk_net_close(cdk_channel_t* channel) {
     }
 }
 
+bool cdk_net_is_usable(cdk_channel_t* channel) {
+    return !atomic_load(&channel->closing);
+}
+
 void cdk_net_post_event(
     cdk_poller_t* poller, void (*task)(void*), void* arg, bool totail) {
     cdk_async_event_t* async_event = malloc(sizeof(cdk_async_event_t));

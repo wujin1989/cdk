@@ -351,8 +351,8 @@ struct cdk_tls_conf_s {
      * handshake will fail if the peer does not provide a valid
      * certificate.
      */
-    bool               verifypeer;
-    bool               dtls;
+    bool       verifypeer;
+    bool       dtls;
     cdk_side_t side;
 };
 
@@ -363,15 +363,16 @@ struct cdk_dtls_ssl_s {
 };
 
 struct cdk_channel_s {
-    cdk_poller_t*  poller;
-    cdk_sock_t     fd;
-    int            events;
-    cdk_handler_t* handler;
-    int            type;
-    atomic_bool    closing;
-    cdk_list_t     txlist;
+    cdk_poller_t*      poller;
+    cdk_sock_t         fd;
+    int                events;
+    cdk_handler_t*     handler;
+    int                type;
+    atomic_bool        closing;
+    cdk_list_t         txlist;
     cdk_channel_mode_t mode;
-    cdk_side_t side;
+    cdk_side_t         side;
+    cdk_timer_t*       ch_destroy_timer;
     struct {
         void*   buf;
         ssize_t len;
@@ -407,8 +408,11 @@ struct cdk_handler_s {
             void (*on_connect)(cdk_channel_t* channel);
             void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
             void (*on_write)(cdk_channel_t* channel);
-            void (*on_close)(cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
-            void (*on_heartbeat)(cdk_channel_t* channel);
+            void (*on_close)(
+                cdk_channel_t*       channel,
+                cdk_channel_reason_t code,
+                const char*          reason);
+            void            (*on_heartbeat)(cdk_channel_t* channel);
             int             conn_timeout;
             int             wr_timeout;
             int             rd_timeout;
@@ -419,7 +423,10 @@ struct cdk_handler_s {
             void (*on_connect)(cdk_channel_t* channel);
             void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
             void (*on_write)(cdk_channel_t* channel);
-            void (*on_close)(cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
+            void (*on_close)(
+                cdk_channel_t*       channel,
+                cdk_channel_reason_t code,
+                const char*          reason);
         } udp;
     };
 };
