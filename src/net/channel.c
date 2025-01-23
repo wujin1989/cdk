@@ -662,9 +662,12 @@ void channel_destroy(
     channel->rxbuf.off = 0;
 
     if (channel->type == SOCK_STREAM) {
-        if (channel->tcp.accepting || channel->tcp.connecting) {
+        if (channel->mode == CHANNEL_MODE_ACCEPT ||
+            channel->mode == CHANNEL_MODE_CONNECT) {
             tls_ctx_destroy(channel->tcp.tls_ctx);
-        } else {
+        }
+        if (channel->mode == CHANNEL_MODE_CONNECT ||
+            channel->mode == CHANNEL_MODE_NORMAL) {
             tls_ssl_destroy(channel->tcp.tls_ssl);
         }
         if (channel->tcp.hb_timer) {

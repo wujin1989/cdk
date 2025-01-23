@@ -216,6 +216,7 @@ static void _async_dial(void* param) {
         SIDE_CLIENT,
         sctx->handler,
         sctx->tls_ctx);
+
     if (!channel) {
         free(sctx);
         sctx = NULL;
