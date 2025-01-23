@@ -372,7 +372,6 @@ struct cdk_channel_s {
     cdk_list_t         txlist;
     cdk_channel_mode_t mode;
     cdk_side_t         side;
-    cdk_timer_t*       ch_destroy_timer;
     struct {
         void*   buf;
         ssize_t len;

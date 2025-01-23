@@ -31,7 +31,7 @@
 #include "txlist.h"
 #include "unpacker.h"
 
-#define CHANNEL_DELAYED_DESTROY_TIME  60000
+#define CHANNEL_DELAYED_DESTROY_TIME 60000
 
 extern cdk_net_engine_t global_net_engine;
 
@@ -460,22 +460,11 @@ static void _udp_recv(cdk_channel_t* channel) {
     }
 }
 
-static inline void _channel_cleanup_cb(void* param) {
-    cdk_channel_t* channel = param;
-
-    if (channel->ch_destroy_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->ch_destroy_timer);
-    }
-    free(channel);
-    channel = NULL;
-}
-
 static inline void _channel_destroy_cb(void* param) {
     cdk_channel_t* channel = param;
-    /**
-     * Do not delete the timer within the timer task.
-     */
-    cdk_net_post_event(channel->poller, _channel_cleanup_cb, channel, true);
+
+    free(channel);
+    channel = NULL;
 }
 
 static inline void _rd_timeout_cb(void* param) {
@@ -692,7 +681,10 @@ void channel_destroy(
         }
     }
     if (channel->poller->active) {
-        channel->ch_destroy_timer = cdk_timer_add(
+        /**
+         * This timer is destroyed by the _timer_handle function, so it can be anonymous.
+         */
+        cdk_timer_add(
             &channel->poller->timermgr,
             _channel_destroy_cb,
             channel,
