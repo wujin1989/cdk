@@ -181,6 +181,8 @@ static void _async_listen(void* param) {
     cdk_channel_t* channel = channel_create(
         sctx->poller, sock, CHANNEL_MODE_ACCEPT, SIDE_SERVER, sctx->handler, sctx->tls_ctx);
     if (!channel) {
+        free(sctx);
+        sctx = NULL;
         return;
     }
     if (channel->type == SOCK_STREAM) {
@@ -215,6 +217,8 @@ static void _async_dial(void* param) {
         sctx->handler,
         sctx->tls_ctx);
     if (!channel) {
+        free(sctx);
+        sctx = NULL;
         return;
     }
     if (channel->type == SOCK_STREAM) {
