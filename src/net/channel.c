@@ -460,7 +460,7 @@ static void _udp_recv(cdk_channel_t* channel) {
     }
 }
 
-static inline void _channel_destroy_cb(void* param) {
+static inline void _channel_cleanup_cb(void* param) {
     cdk_channel_t* channel = param;
 
     if (channel->ch_destroy_timer) {
@@ -468,6 +468,11 @@ static inline void _channel_destroy_cb(void* param) {
     }
     free(channel);
     channel = NULL;
+}
+
+static inline void _channel_destroy_cb(void* param) {
+    cdk_channel_t* channel = param;
+    cdk_net_post_event(channel->poller, _channel_cleanup_cb, channel, true);
 }
 
 static inline void _rd_timeout_cb(void* param) {
