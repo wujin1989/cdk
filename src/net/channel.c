@@ -507,7 +507,7 @@ static void _tcp_timers_create(cdk_channel_t* channel) {
             _rd_timeout_cb,
             channel,
             channel->handler->tcp.rd_timeout,
-            false);
+            true);
     }
     if (channel->handler->tcp.wr_timeout) {
         channel->tcp.wr_timer = cdk_timer_add(
@@ -515,7 +515,7 @@ static void _tcp_timers_create(cdk_channel_t* channel) {
             _wr_timeout_cb,
             channel,
             channel->handler->tcp.wr_timeout,
-            false);
+            true);
     }
 }
 
