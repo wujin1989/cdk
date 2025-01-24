@@ -694,10 +694,8 @@ void channel_destroy(
             CHANNEL_DELAYED_DESTROY_TIME,
             false);
     } else {
-        if (channel) {
-            free(channel);
-            channel = NULL;
-        }
+        cdk_time_sleep(CHANNEL_DELAYED_DESTROY_TIME);
+        _channel_destroy_cb(channel);
     }
 }
 
