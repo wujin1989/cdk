@@ -31,8 +31,6 @@
 #include "txlist.h"
 #include "unpacker.h"
 
-#define CHANNEL_DELAYED_DESTROY_TIME 60000
-
 extern cdk_net_engine_t global_net_engine;
 
 static inline void _write_complete_cb(void* param) {
@@ -653,8 +651,10 @@ void channel_destroy(
     atomic_store(&channel->closing, true);
     channel_disable_all(channel);
     platform_socket_close(channel->fd);
-    cdk_list_remove(&channel->node);
 
+    if (channel->poller->active) {
+        cdk_list_remove(&channel->node);
+    }
     txlist_destroy(&channel->txlist);
     free(channel->rxbuf.buf);
     channel->rxbuf.buf = NULL;
@@ -693,9 +693,6 @@ void channel_destroy(
             channel,
             CHANNEL_DELAYED_DESTROY_TIME,
             false);
-    } else {
-        cdk_time_sleep(CHANNEL_DELAYED_DESTROY_TIME);
-        _channel_destroy_cb(channel);
     }
 }
 

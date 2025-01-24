@@ -172,11 +172,21 @@ void poller_destroy(cdk_poller_t* poller) {
         timer->routine(timer->param);
         cdk_timer_del(&poller->timermgr, timer);
     }
-    while (!cdk_list_empty(&poller->chlist)) {
+    for (cdk_list_node_t* node = cdk_list_head(&poller->chlist);
+         node != cdk_list_sentinel(&poller->chlist); node = cdk_list_next(node)) {
         channel_destroy(
             cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node),
             CHANNEL_REASON_POLLER_SHUTDOWN,
             CHANNEL_REASON_POLLER_SHUTDOWN_STR);
+    }
+    cdk_time_sleep(CHANNEL_DELAYED_DESTROY_TIME);
+
+    while (!cdk_list_empty(&poller->chlist)) {
+        cdk_channel_t* channel =
+            cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);
+        cdk_list_remove(&channel->node);
+        free(channel);
+        channel = NULL;
     }
     mtx_destroy(&poller->evmtx);
     free(poller);

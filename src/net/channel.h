@@ -25,6 +25,7 @@ _Pragma("once")
 
 #define MAX_TCP_RECVBUF_SIZE 1048576 // 1M
 #define MAX_UDP_RECVBUF_SIZE 65535   // 64K
+#define CHANNEL_DELAYED_DESTROY_TIME 60000
 
 #define CHANNEL_REASON_USER_TRIGGERED_STR                                      \
     "Channel destroyed due to User-triggered (normal behavior)"
