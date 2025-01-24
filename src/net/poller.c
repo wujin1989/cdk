@@ -19,16 +19,16 @@
  *  IN THE SOFTWARE.
  */
 
-#include "platform/platform-socket.h"
-#include "platform/platform-event.h"
-#include "cdk/container/cdk-list.h"
-#include "cdk/cdk-timer.h"
 #include "cdk/cdk-time.h"
-#include "cdk/net/cdk-net.h"
+#include "cdk/cdk-timer.h"
 #include "cdk/container/cdk-heap.h"
+#include "cdk/container/cdk-list.h"
 #include "cdk/container/cdk-rbtree.h"
+#include "cdk/net/cdk-net.h"
 #include "net/channel.h"
 #include "net/txlist.h"
+#include "platform/platform-event.h"
+#include "platform/platform-socket.h"
 #include <limits.h>
 
 static inline void _event_handle(cdk_poller_t* poller) {
@@ -81,8 +81,9 @@ static inline int _timeout_update(cdk_poller_t* poller) {
     if (cdk_heap_empty(&poller->timermgr.heap)) {
         return INT_MAX - 1;
     }
-    uint64_t now = cdk_time_now();
-    cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
+    uint64_t     now = cdk_time_now();
+    cdk_timer_t* timer =
+        cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
     if ((timer->birth + timer->expire) <= now) {
         return 0;
     } else {
@@ -92,7 +93,8 @@ static inline int _timeout_update(cdk_poller_t* poller) {
 
 static inline void _timer_handle(cdk_poller_t* poller) {
     do {
-        cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
+        cdk_timer_t* timer = cdk_heap_data(
+            cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
         timer->routine(timer->param);
         if (timer->repeat) {
             cdk_timer_reset(&poller->timermgr, timer, timer->expire);
@@ -104,26 +106,26 @@ static inline void _timer_handle(cdk_poller_t* poller) {
 
 void poller_poll(cdk_poller_t* poller) {
     platform_pollevent_t events[MAX_PROCESS_EVENTS] = {0};
-	while (poller->active) {
-        int nevents = platform_event_wait(
-            poller->pfd, events, _timeout_update(poller));
+    while (poller->active) {
+        int nevents =
+            platform_event_wait(poller->pfd, events, _timeout_update(poller));
 
-		for (int i = 0; i < nevents; i++) {
-			void* ud = events[i].ptr;
-			uint32_t mask = events[i].events;
-			if (!ud) {
+        for (int i = 0; i < nevents; i++) {
+            void*    ud = events[i].ptr;
+            uint32_t mask = events[i].events;
+            if (!ud) {
                 return;
-			}
-			if (*((cdk_sock_t*)ud) == poller->evfds[1]) {
+            }
+            if (*((cdk_sock_t*)ud) == poller->evfds[1]) {
                 _event_handle(poller);
-			} else {
+            } else {
                 _channel_handle((cdk_channel_t*)ud, mask);
-			}
-		}
+            }
+        }
         if (!_timeout_update(poller)) {
             _timer_handle(poller);
         }
-	}
+    }
 }
 
 void poller_wakeup(cdk_poller_t* poller) {
@@ -146,7 +148,8 @@ cdk_poller_t* poller_create(void) {
         mtx_init(&poller->evmtx, mtx_plain);
         platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
         platform_socket_nonblock(poller->evfds[1]);
-        platform_event_add(poller->pfd, poller->evfds[1], EVENT_RD, &poller->evfds[1]);
+        platform_event_add(
+            poller->pfd, poller->evfds[1], EVENT_RD, &poller->evfds[1]);
     }
     return poller;
 }
@@ -173,7 +176,8 @@ void poller_destroy(cdk_poller_t* poller) {
         cdk_timer_del(&poller->timermgr, timer);
     }
     for (cdk_list_node_t* node = cdk_list_head(&poller->chlist);
-         node != cdk_list_sentinel(&poller->chlist); node = cdk_list_next(node)) {
+         node != cdk_list_sentinel(&poller->chlist);
+         node = cdk_list_next(node)) {
         channel_destroy(
             cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node),
             CHANNEL_REASON_POLLER_SHUTDOWN,
