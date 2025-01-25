@@ -207,7 +207,7 @@ static void _async_dial(void* param) {
     socket_ctx_t* sctx = param;
     bool          connected = false;
 
-    cdk_sock_t sock = platform_socket_dial(
+     cdk_sock_t sock = platform_socket_dial(
         sctx->host, sctx->port, sctx->protocol, &connected, true);
 
     cdk_channel_t* channel = channel_create(

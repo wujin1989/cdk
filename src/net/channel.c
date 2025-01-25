@@ -385,6 +385,13 @@ static inline void _heartbeat_cb(void* param) {
 static inline void _channel_destroy_cb(void* param) {
     cdk_channel_t* channel = param;
     
+    txlist_destroy(&channel->txlist);
+
+    free(channel->rxbuf.buf);
+    channel->rxbuf.buf = NULL;
+    channel->rxbuf.len = 0;
+    channel->rxbuf.off = 0;
+
     if (channel->type == SOCK_STREAM) {
         if (channel->mode == CHANNEL_MODE_ACCEPT ||
             channel->mode == CHANNEL_MODE_CONNECT) {
@@ -402,19 +409,6 @@ static inline void _channel_destroy_cb(void* param) {
         }
         if (channel->tcp.wr_timer) {
             cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
-        }
-        if (channel->handler->tcp.on_close) {
-            channel->handler->tcp.on_close(
-                channel,
-                channel->status_info.reason,
-                channel->status_info.str_reason);
-        }
-    } else {
-        if (channel->handler->udp.on_close) {
-            channel->handler->udp.on_close(
-                channel,
-                channel->status_info.reason,
-                channel->status_info.str_reason);
         }
     }
     if (channel) {
@@ -593,14 +587,7 @@ void channel_destroy(cdk_channel_t* channel) {
             atomic_store(&channel->closing, true);
             channel_disable_all(channel);
             platform_socket_close(channel->fd);
-
             cdk_list_remove(&channel->node);
-            txlist_destroy(&channel->txlist);
-
-            free(channel->rxbuf.buf);
-            channel->rxbuf.buf = NULL;
-            channel->rxbuf.len = 0;
-            channel->rxbuf.off = 0;
         }
         atomic_fetch_sub(&channel->refcnt, 1);
 
@@ -611,7 +598,25 @@ void channel_destroy(cdk_channel_t* channel) {
         return;
     }
     /**
-     * STEP2: Perform the actual channel destruction.
+     * STEP2: Perform callback to notify application.
+     */
+    if (channel->type == SOCK_STREAM) {
+        if (channel->handler->tcp.on_close) {
+            channel->handler->tcp.on_close(
+                channel,
+                channel->status_info.reason,
+                channel->status_info.str_reason);
+        }
+    } else {
+        if (channel->handler->udp.on_close) {
+            channel->handler->udp.on_close(
+                channel,
+                channel->status_info.reason,
+                channel->status_info.str_reason);
+        }
+    }
+    /**
+     * STEP3: Perform the actual channel destruction.
      * 
      * The reason for asynchronously destroying the channel here is to prevent
      * it from being used after it has been destroyed.
