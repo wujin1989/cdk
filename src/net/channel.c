@@ -384,6 +384,39 @@ static inline void _heartbeat_cb(void* param) {
 
 static inline void _channel_destroy_cb(void* param) {
     cdk_channel_t* channel = param;
+    
+    if (channel->type == SOCK_STREAM) {
+        if (channel->mode == CHANNEL_MODE_ACCEPT ||
+            channel->mode == CHANNEL_MODE_CONNECT) {
+            tls_ctx_destroy(channel->tcp.tls_ctx);
+        }
+        if (channel->mode == CHANNEL_MODE_CONNECT ||
+            channel->mode == CHANNEL_MODE_NORMAL) {
+            tls_ssl_destroy(channel->tcp.tls_ssl);
+        }
+        if (channel->tcp.hb_timer) {
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
+        }
+        if (channel->tcp.rd_timer) {
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
+        }
+        if (channel->tcp.wr_timer) {
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
+        }
+        if (channel->handler->tcp.on_close) {
+            channel->handler->tcp.on_close(
+                channel,
+                channel->status_info.reason,
+                channel->status_info.str_reason);
+        }
+    } else {
+        if (channel->handler->udp.on_close) {
+            channel->handler->udp.on_close(
+                channel,
+                channel->status_info.reason,
+                channel->status_info.str_reason);
+        }
+    }
     if (channel) {
         free(channel);
         channel = NULL;
@@ -555,59 +588,31 @@ void channel_destroy(cdk_channel_t* channel) {
     /**
      * STEP1: Nullify some variables and close some file descriptors.
      */
-    if (!atomic_load(&channel->closing)) {
-        atomic_store(&channel->closing, true);
-        channel_disable_all(channel);
-        platform_socket_close(channel->fd);
-    }
     if (atomic_load(&channel->refcnt)) {
+        if (!atomic_load(&channel->closing)) {
+            atomic_store(&channel->closing, true);
+            channel_disable_all(channel);
+            platform_socket_close(channel->fd);
+
+            cdk_list_remove(&channel->node);
+            txlist_destroy(&channel->txlist);
+
+            free(channel->rxbuf.buf);
+            channel->rxbuf.buf = NULL;
+            channel->rxbuf.len = 0;
+            channel->rxbuf.off = 0;
+        }
         atomic_fetch_sub(&channel->refcnt, 1);
-    }
-    if (atomic_load(&channel->refcnt)) {
+
+        if (atomic_load(&channel->refcnt)) {
+            return;
+        }
+    } else {
         return;
     }
     /**
      * STEP2: Perform the actual channel destruction.
-     */
-    cdk_list_remove(&channel->node);
-    txlist_destroy(&channel->txlist);
-
-    free(channel->rxbuf.buf);
-    channel->rxbuf.buf = NULL;
-    channel->rxbuf.len = 0;
-    channel->rxbuf.off = 0;
-
-    if (channel->type == SOCK_STREAM) {
-        if (channel->mode == CHANNEL_MODE_ACCEPT ||
-            channel->mode == CHANNEL_MODE_CONNECT) {
-            tls_ctx_destroy(channel->tcp.tls_ctx);
-        }
-        if (channel->mode == CHANNEL_MODE_CONNECT ||
-            channel->mode == CHANNEL_MODE_NORMAL) {
-            tls_ssl_destroy(channel->tcp.tls_ssl);
-        }
-        if (channel->tcp.hb_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
-        }
-        if (channel->tcp.rd_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
-        }
-        if (channel->tcp.wr_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
-        }
-        if (channel->handler->tcp.on_close) {
-            channel->handler->tcp.on_close(
-                channel, channel->status_info.reason, channel->status_info.str_reason);
-        }
-    } else {
-        if (channel->handler->udp.on_close) {
-            channel->handler->udp.on_close(
-                channel,
-                channel->status_info.reason,
-                channel->status_info.str_reason);
-        }
-    }
-    /**
+     * 
      * The reason for asynchronously destroying the channel here is to prevent
      * it from being used after it has been destroyed.
      */

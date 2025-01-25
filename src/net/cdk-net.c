@@ -273,11 +273,6 @@ static void _async_channel_explicit_send(void* param) {
 
 static void _async_channel_destroy(void* param) {
     cdk_channel_t* channel = param;
-    channel_status_info_update(
-        channel,
-        CHANNEL_REASON_USER_TRIGGERED,
-        CHANNEL_REASON_USER_TRIGGERED_STR);
-
     channel_destroy(channel);
 }
 
@@ -421,32 +416,7 @@ void cdk_net_dial(
         cdk_net_post_event(sctx->poller, _async_dial, sctx, true);
     }
 }
-bool cdk_net_is_usable(cdk_channel_t* channel) {
-    if (!atomic_load(&channel->refcnt)) {
-        return false;
-    }
-    if (atomic_load(&channel->closing)) {
-        if (thrd_equal(channel->poller->tid, thrd_current())) {
-            channel_status_info_update(
-                channel,
-                channel->status_info.reason,
-                channel->status_info.str_reason);
 
-            channel_destroy(channel);
-        } else {
-            cdk_net_post_event(
-                channel->poller, _async_channel_destroy, channel, true);
-        }
-        return false;
-    }
-    if (need_inc_refcnt) {
-        if (!thrd_equal(channel->poller->tid, thrd_current())) {
-            atomic_fetch_add(&channel->refcnt, 1);
-            need_inc_refcnt = false;
-        }
-    }
-    return true;
-}
 bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
     if (thrd_equal(channel->poller->tid, thrd_current())) {
         if (atomic_load(&channel->closing)) {

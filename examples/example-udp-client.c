@@ -13,10 +13,12 @@ static void _close_cb(cdk_channel_t* channel, cdk_channel_reason_t code, const c
 static int _routine(void* p) {
     static int     num;
     cdk_channel_t* channel = p;
-    while (cdk_net_is_usable(channel)) {
+    while (true) {
         char buffer[64] = {0};
         sprintf(buffer, "%d", num++);
-        cdk_net_send(channel, buffer, sizeof(buffer));
+        if (!cdk_net_send(channel, buffer, sizeof(buffer))) {
+            break;
+        }
     }
     return 0;
 }

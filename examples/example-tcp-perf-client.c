@@ -72,7 +72,7 @@ int main(void) {
     atomic_init(&total_readbytes, 0);
 
     for (int i = 0; i < total_clients; i++) {
-        cdk_net_dial("tcp", "127.0.0.1", "9999", &handler, 1, NULL);
+        cdk_net_dial("tcp", "127.0.0.1", "9999", &handler, 4, NULL);
     }
     getchar();
     cdk_logger_destroy();
