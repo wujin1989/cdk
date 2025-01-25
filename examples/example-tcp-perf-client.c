@@ -3,7 +3,7 @@
 #define BUFFERSIZE 4096
 #define RUNTIME 10 // s
 
-int           total_clients = 100;
+int           total_clients = 1;
 char          buffer[BUFFERSIZE];
 atomic_int    connected_clients;
 atomic_int    disconnected_clients;
@@ -73,7 +73,7 @@ int main(void) {
     atomic_init(&total_readbytes, 0);
 
     for (int i = 0; i < total_clients; i++) {
-        cdk_net_dial("tcp", "127.0.0.1", "9999", &handler, 4, NULL);
+        cdk_net_dial("tcp", "127.0.0.1", "9999", &handler, 1, NULL);
     }
     getchar();
     cdk_logger_destroy();

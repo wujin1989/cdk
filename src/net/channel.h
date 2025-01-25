@@ -25,7 +25,6 @@ _Pragma("once")
 
 #define MAX_TCP_RECVBUF_SIZE 1048576 // 1M
 #define MAX_UDP_RECVBUF_SIZE 65535   // 64K
-#define CHANNEL_DELAYED_DESTROY_TIME 60000
 
 #define CHANNEL_REASON_USER_TRIGGERED_STR                                      \
     "Channel destroyed due to User-triggered (normal behavior)"
@@ -39,7 +38,7 @@ _Pragma("once")
     "Channel destroyed due to poller shutdown"
 
 extern cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_channel_mode_t mode, cdk_side_t side, cdk_handler_t* handler, cdk_tls_ctx_t* tls_ctx);
-extern void channel_destroy(cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason);
+extern void channel_destroy(cdk_channel_t* channel);
 extern void channel_recv(cdk_channel_t* channel);
 extern void channel_send(cdk_channel_t* channel);
 extern void channel_explicit_send(cdk_channel_t* channel, void* data, size_t size);
@@ -56,3 +55,4 @@ extern void channel_tls_srv_handshake(void* param);
 extern void channel_tls_cli_handshake(void* param);
 extern void channel_connected(cdk_channel_t* channel);
 extern void channel_accepted(cdk_channel_t* channel);
+extern void channel_status_info_update(cdk_channel_t* channel, cdk_channel_reason_t reason, const char* str_reason);

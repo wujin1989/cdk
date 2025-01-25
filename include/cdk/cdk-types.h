@@ -108,7 +108,9 @@ typedef struct cdk_dtls_ssl_s      cdk_dtls_ssl_t;
 typedef struct cdk_logger_config_s cdk_logger_config_t;
 typedef enum cdk_logger_level_e    cdk_logger_level_t;
 typedef enum cdk_channel_reason_e  cdk_channel_reason_t;
-typedef void (*cdk_logger_cb_t)(cdk_logger_level_t level, char* msg);
+typedef struct cdk_channel_status_info_s cdk_channel_status_info_t;
+typedef void (*cdk_logger_cb_t)(
+        cdk_logger_level_t level, char* msg);
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -362,6 +364,11 @@ struct cdk_dtls_ssl_s {
     cdk_rbtree_node_t node;
 };
 
+struct cdk_channel_status_info_s {
+    cdk_channel_reason_t reason;
+    char*                str_reason;
+};
+
 struct cdk_channel_s {
     cdk_poller_t*      poller;
     cdk_sock_t         fd;
@@ -372,6 +379,8 @@ struct cdk_channel_s {
     cdk_list_t         txlist;
     cdk_channel_mode_t mode;
     cdk_side_t         side;
+    atomic_int         refcnt;
+    cdk_channel_status_info_t status_info;
     struct {
         void*   buf;
         ssize_t len;

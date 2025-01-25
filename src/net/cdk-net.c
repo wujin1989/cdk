@@ -32,7 +32,8 @@
 #include "tls.h"
 #include "txlist.h"
 
-cdk_net_engine_t global_net_engine = {.initialized = ATOMIC_FLAG_INIT};
+cdk_net_engine_t  global_net_engine = {.initialized = ATOMIC_FLAG_INIT};
+thread_local bool need_inc_refcnt = true;
 
 typedef struct channel_send_ctx_s {
     cdk_channel_t* channel;
@@ -59,15 +60,12 @@ static void _async_poller_exit(void* param) {
 static inline cdk_poller_t* _roundrobin(void) {
     mtx_lock(&global_net_engine.poller_mtx);
     while (cdk_list_empty(&global_net_engine.poller_lst)) {
-        cnd_wait(
-            &global_net_engine.poller_cnd, &global_net_engine.poller_mtx);
+        cnd_wait(&global_net_engine.poller_cnd, &global_net_engine.poller_mtx);
     }
     static cdk_poller_t* curr;
     if (curr == NULL) {
         curr = cdk_list_data(
-            cdk_list_head(&global_net_engine.poller_lst),
-            cdk_poller_t,
-            node);
+            cdk_list_head(&global_net_engine.poller_lst), cdk_poller_t, node);
     } else {
         cdk_list_node_t* n = cdk_list_next(&curr->node);
         if (n != cdk_list_sentinel(&global_net_engine.poller_lst)) {
@@ -146,7 +144,7 @@ static socket_ctx_t* _socket_ctx_allocate(
     const char*    port,
     int            idx,
     int            cores,
-    cdk_handler_t*  handler,
+    cdk_handler_t* handler,
     cdk_tls_ctx_t* tlsctx) {
     socket_ctx_t* ctx = malloc(sizeof(socket_ctx_t));
     if (ctx) {
@@ -172,14 +170,15 @@ static void _async_listen(void* param) {
     socket_ctx_t* sctx = param;
 
     cdk_sock_t sock = platform_socket_listen(
-        sctx->host,
-        sctx->port,
-        sctx->protocol,
-        sctx->idx, sctx->cores,
-        true);
+        sctx->host, sctx->port, sctx->protocol, sctx->idx, sctx->cores, true);
 
     cdk_channel_t* channel = channel_create(
-        sctx->poller, sock, CHANNEL_MODE_ACCEPT, SIDE_SERVER, sctx->handler, sctx->tls_ctx);
+        sctx->poller,
+        sock,
+        CHANNEL_MODE_ACCEPT,
+        SIDE_SERVER,
+        sctx->handler,
+        sctx->tls_ctx);
     if (!channel) {
         free(sctx);
         sctx = NULL;
@@ -197,9 +196,11 @@ static void _async_listen(void* param) {
 
 static inline void _conn_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
-    channel_destroy(
+    channel_status_info_update(
         channel,
         CHANNEL_REASON_CONN_TIMEOUT, CHANNEL_REASON_CONN_TIMEOUT_STR);
+
+    channel_destroy(channel);
 }
 
 static void _async_dial(void* param) {
@@ -223,7 +224,13 @@ static void _async_dial(void* param) {
         return;
     }
     if (channel->type == SOCK_STREAM) {
-        if (!connected) {
+        if (connected) {
+            if (channel->tcp.tls_ssl) {
+                channel_tls_cli_handshake(channel);
+            } else {
+                channel_connected(channel);
+            }
+        } else {
             channel->tcp.connecting = true;
             if (!channel_is_writing(channel)) {
                 channel_enable_write(channel);
@@ -237,15 +244,7 @@ static void _async_dial(void* param) {
                     false);
             }
         }
-        if (connected) {
-            if (channel->tcp.tls_ssl) {
-                channel_tls_cli_handshake(channel);
-            } else {
-                channel_connected(channel);
-            }
-        }
-    }
-    if (channel->type == SOCK_DGRAM) {
+    } else {
         cdk_net_address_make(
             sock, &channel->udp.peer.ss, sctx->host, sctx->port);
         /**
@@ -274,16 +273,26 @@ static void _async_channel_explicit_send(void* param) {
 
 static void _async_channel_destroy(void* param) {
     cdk_channel_t* channel = param;
-    channel_destroy(
-        channel, CHANNEL_REASON_USER_TRIGGERED, CHANNEL_REASON_USER_TRIGGERED_STR);
+    channel_status_info_update(
+        channel,
+        CHANNEL_REASON_USER_TRIGGERED,
+        CHANNEL_REASON_USER_TRIGGERED_STR);
+
+    channel_destroy(channel);
 }
 
 static void _inet_ntop(int af, const void* restrict src, char* restrict dst) {
-    if (af == AF_INET) {
+    switch (af) {
+    case AF_INET: {
         inet_ntop(af, src, dst, INET_ADDRSTRLEN);
+        break;
     }
-    if (af == AF_INET6) {
+    case AF_INET6: {
         inet_ntop(af, src, dst, INET6_ADDRSTRLEN);
+        break;
+    }
+    default:
+        break;
     }
 }
 
@@ -317,19 +326,25 @@ void cdk_net_ntop(struct sockaddr_storage* ss, cdk_address_t* ai) {
 void cdk_net_pton(cdk_address_t* ai, struct sockaddr_storage* ss) {
     memset(ss, 0, sizeof(struct sockaddr_storage));
 
-    if (ai->family == AF_INET6) {
-        struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
-
-        si6->sin6_family = AF_INET6;
-        si6->sin6_port = htons(ai->port);
-        inet_pton(AF_INET6, ai->addr, &(si6->sin6_addr));
-    }
-    if (ai->family == AF_INET) {
+    switch (ai->family) {
+    case AF_INET: {
         struct sockaddr_in* si = (struct sockaddr_in*)ss;
 
         si->sin_family = AF_INET;
         si->sin_port = htons(ai->port);
         inet_pton(AF_INET, ai->addr, &(si->sin_addr));
+        break;
+    }
+    case AF_INET6: {
+        struct sockaddr_in6* si6 = (struct sockaddr_in6*)ss;
+
+        si6->sin6_family = AF_INET6;
+        si6->sin6_port = htons(ai->port);
+        inet_pton(AF_INET6, ai->addr, &(si6->sin6_addr));
+        break;
+    }
+    default:
+        break;
     }
 }
 
@@ -352,8 +367,7 @@ void cdk_net_address_retrieve(cdk_sock_t sock, cdk_address_t* ai, bool peer) {
 
     if (peer) {
         getpeername(sock, (struct sockaddr*)&ss, &len);
-    }
-    if (!peer) {
+    } else {
         getsockname(sock, (struct sockaddr*)&ss, &len);
     }
     cdk_net_ntop(&ss, ai);
@@ -364,9 +378,9 @@ int cdk_net_getsocktype(cdk_sock_t sock) {
 }
 
 void cdk_net_listen(
-    const char*    protocol,
-    const char*    host,
-    const char*    port,
+    const char*     protocol,
+    const char*     host,
+    const char*     port,
     cdk_handler_t*  handler,
     int             nthrds,
     cdk_tls_conf_t* config) {
@@ -375,12 +389,13 @@ void cdk_net_listen(
         _net_engine_create(nthrds);
     }
     /**
-     * Destroy tlsctx when the accepting channel is destroyed. 
+     * Destroy tlsctx when the accepting channel is destroyed.
      */
     cdk_tls_ctx_t* tlsctx = tls_ctx_create(config);
 
     for (int i = 0; i < nthrds; i++) {
-        socket_ctx_t* sctx = _socket_ctx_allocate(protocol, host, port, i, nthrds, handler, tlsctx);
+        socket_ctx_t* sctx = _socket_ctx_allocate(
+            protocol, host, port, i, nthrds, handler, tlsctx);
         if (sctx) {
             cdk_net_post_event(sctx->poller, _async_listen, sctx, true);
         }
@@ -388,9 +403,9 @@ void cdk_net_listen(
 }
 
 void cdk_net_dial(
-    const char*    protocol,
-    const char*    host,
-    const char*    port,
+    const char*     protocol,
+    const char*     host,
+    const char*     port,
     cdk_handler_t*  handler,
     int             nthrds,
     cdk_tls_conf_t* config) {
@@ -400,7 +415,8 @@ void cdk_net_dial(
     }
     cdk_tls_ctx_t* tlsctx = tls_ctx_create(config);
 
-    socket_ctx_t* sctx = _socket_ctx_allocate(protocol, host, port, 0, 0, handler, tlsctx);
+    socket_ctx_t* sctx =
+        _socket_ctx_allocate(protocol, host, port, 0, 0, handler, tlsctx);
     if (sctx) {
         cdk_net_post_event(sctx->poller, _async_dial, sctx, true);
     }
@@ -426,10 +442,12 @@ void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
 
 void cdk_net_close(cdk_channel_t* channel) {
     if (thrd_equal(channel->poller->tid, thrd_current())) {
-        channel_destroy(
+        channel_status_info_update(
             channel,
             CHANNEL_REASON_USER_TRIGGERED,
             CHANNEL_REASON_USER_TRIGGERED_STR);
+
+        channel_destroy(channel);
     } else {
         cdk_net_post_event(
             channel->poller, _async_channel_destroy, channel, true);
@@ -437,7 +455,30 @@ void cdk_net_close(cdk_channel_t* channel) {
 }
 
 bool cdk_net_is_usable(cdk_channel_t* channel) {
-    return !atomic_load(&channel->closing);
+    if (!atomic_load(&channel->refcnt)) {
+        return false;
+    }
+    if (atomic_load(&channel->closing)) {
+        if (thrd_equal(channel->poller->tid, thrd_current())) {
+            channel_status_info_update(
+                channel,
+                CHANNEL_REASON_USER_TRIGGERED,
+                CHANNEL_REASON_USER_TRIGGERED_STR);
+
+            channel_destroy(channel);
+        } else {
+            cdk_net_post_event(
+                channel->poller, _async_channel_destroy, channel, true);
+        }
+        return false;
+    }
+    if (need_inc_refcnt) {
+        if (!thrd_equal(channel->poller->tid, thrd_current())) {
+            atomic_fetch_add(&channel->refcnt, 1);
+            need_inc_refcnt = false;
+        }
+    }
+    return true;
 }
 
 void cdk_net_post_event(
