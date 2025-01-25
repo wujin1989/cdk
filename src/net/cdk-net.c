@@ -421,39 +421,6 @@ void cdk_net_dial(
         cdk_net_post_event(sctx->poller, _async_dial, sctx, true);
     }
 }
-
-void cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
-    if (thrd_equal(channel->poller->tid, thrd_current())) {
-        channel_explicit_send(channel, data, size);
-    } else {
-        channel_send_ctx_t* ctx = malloc(sizeof(channel_send_ctx_t) + size);
-        if (!ctx) {
-            return;
-        }
-        memset(ctx, 0, sizeof(channel_send_ctx_t) + size);
-        ctx->channel = channel;
-        ctx->size = size;
-        memcpy(ctx->data, data, size);
-
-        cdk_net_post_event(
-            channel->poller, _async_channel_explicit_send, ctx, true);
-    }
-}
-
-void cdk_net_close(cdk_channel_t* channel) {
-    if (thrd_equal(channel->poller->tid, thrd_current())) {
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_USER_TRIGGERED,
-            CHANNEL_REASON_USER_TRIGGERED_STR);
-
-        channel_destroy(channel);
-    } else {
-        cdk_net_post_event(
-            channel->poller, _async_channel_destroy, channel, true);
-    }
-}
-
 bool cdk_net_is_usable(cdk_channel_t* channel) {
     if (!atomic_load(&channel->refcnt)) {
         return false;
@@ -462,8 +429,8 @@ bool cdk_net_is_usable(cdk_channel_t* channel) {
         if (thrd_equal(channel->poller->tid, thrd_current())) {
             channel_status_info_update(
                 channel,
-                CHANNEL_REASON_USER_TRIGGERED,
-                CHANNEL_REASON_USER_TRIGGERED_STR);
+                channel->status_info.reason,
+                channel->status_info.str_reason);
 
             channel_destroy(channel);
         } else {
@@ -479,6 +446,47 @@ bool cdk_net_is_usable(cdk_channel_t* channel) {
         }
     }
     return true;
+}
+bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
+    if (thrd_equal(channel->poller->tid, thrd_current())) {
+        if (atomic_load(&channel->closing)) {
+            return false;
+        }
+        channel_explicit_send(channel, data, size);
+    } else {
+        if (need_inc_refcnt) {
+            atomic_fetch_add(&channel->refcnt, 1);
+            need_inc_refcnt = false;
+        }
+        if (atomic_load(&channel->closing)) {
+            if (atomic_load(&channel->refcnt)) {
+                cdk_net_post_event(
+                    channel->poller, _async_channel_destroy, channel, true);
+            }
+            return false;
+        }
+        channel_send_ctx_t* ctx = malloc(sizeof(channel_send_ctx_t) + size);
+        if (!ctx) {
+            return false;
+        }
+        memset(ctx, 0, sizeof(channel_send_ctx_t) + size);
+        ctx->channel = channel;
+        ctx->size = size;
+        memcpy(ctx->data, data, size);
+
+        cdk_net_post_event(
+            channel->poller, _async_channel_explicit_send, ctx, true);
+    }
+    return true;
+}
+
+void cdk_net_close(cdk_channel_t* channel) {
+    channel_status_info_update(
+        channel,
+        CHANNEL_REASON_USER_TRIGGERED,
+        CHANNEL_REASON_USER_TRIGGERED_STR);
+
+    channel_destroy(channel);
 }
 
 void cdk_net_post_event(

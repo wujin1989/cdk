@@ -3,19 +3,16 @@
 #define BUFFERSIZE 4096
 #define RUNTIME 10 // s
 
-int           total_clients = 1;
+int           total_clients = 100;
 char          buffer[BUFFERSIZE];
 atomic_int    connected_clients;
 atomic_int    disconnected_clients;
 atomic_int    total_readcnt;
 atomic_size_t total_readbytes;
+atomic_flag   initialized = ATOMIC_FLAG_INIT;
 
 static void _finished(void* param) {
-    cdk_channel_t* channel = param;
-
-    if (cdk_net_is_usable(channel)) {
-        cdk_net_close(channel);
-    }
+    cdk_net_exit();
 }
 
 static void _statistic_info_printf() {
@@ -26,8 +23,10 @@ static void _statistic_info_printf() {
 }
 
 static void _connect_cb(cdk_channel_t* channel) {
-    cdk_timer_add(&channel->poller->timermgr, _finished, channel, 10000, false);
-
+    if (!atomic_flag_test_and_set(&initialized)) {
+        cdk_timer_add(
+            &channel->poller->timermgr, _finished, NULL, 10000, false);
+    }
     atomic_fetch_add(&connected_clients, 1);
     if (atomic_load(&connected_clients) == total_clients) {
         cdk_logi("%d clients has connected.\n", total_clients);

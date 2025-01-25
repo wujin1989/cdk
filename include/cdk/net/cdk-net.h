@@ -29,7 +29,7 @@ extern void cdk_net_address_make(cdk_sock_t sock, struct sockaddr_storage* ss, c
 extern void cdk_net_address_retrieve(cdk_sock_t sock, cdk_address_t* ai, bool peer);
 extern void cdk_net_listen(const char* protocol, const char* host, const char* port, cdk_handler_t* handler, int nthrds, cdk_tls_conf_t* config);
 extern void cdk_net_dial(const char* protocol, const char* host, const char* port, cdk_handler_t* handler, int nthrds, cdk_tls_conf_t* config);
-extern void cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
+extern bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
 extern void cdk_net_post_event(cdk_poller_t* poller, void (*task)(void*), void* arg, bool totail);
 extern void cdk_net_close(cdk_channel_t* channel);
 extern bool cdk_net_is_usable(cdk_channel_t* channel);

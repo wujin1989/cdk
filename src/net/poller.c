@@ -162,7 +162,6 @@ void poller_destroy(cdk_poller_t* poller) {
             cdk_list_head(&poller->evlist), cdk_async_event_t, node);
         cdk_list_remove(&async_event->node);
 
-        async_event->task(async_event->arg);
         free(async_event);
         async_event = NULL;
     }
@@ -170,7 +169,6 @@ void poller_destroy(cdk_poller_t* poller) {
         cdk_timer_t* timer = cdk_heap_data(
             cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
 
-        timer->routine(timer->param);
         cdk_timer_del(&poller->timermgr, timer);
     }
     while (!cdk_list_empty(&poller->chlist)) {
