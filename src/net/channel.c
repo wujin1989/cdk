@@ -382,9 +382,21 @@ static inline void _heartbeat_cb(void* param) {
     }
 }
 
+static void _tcp_timers_destroy(cdk_channel_t* channel) {
+    if (channel->tcp.hb_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
+    }
+    if (channel->tcp.rd_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
+    }
+    if (channel->tcp.wr_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
+    }
+}
+
 static inline void _channel_destroy_cb(void* param) {
     cdk_channel_t* channel = param;
-    
+
     txlist_destroy(&channel->txlist);
 
     free(channel->rxbuf.buf);
@@ -401,15 +413,7 @@ static inline void _channel_destroy_cb(void* param) {
             channel->mode == CHANNEL_MODE_NORMAL) {
             tls_ssl_destroy(channel->tcp.tls_ssl);
         }
-        if (channel->tcp.hb_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
-        }
-        if (channel->tcp.rd_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
-        }
-        if (channel->tcp.wr_timer) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
-        }
+        _tcp_timers_destroy(channel);
     }
     if (channel) {
         free(channel);
@@ -466,6 +470,9 @@ void channel_connected(cdk_channel_t* channel) {
 }
 
 void channel_recv(cdk_channel_t* channel) {
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
     if (channel->type == SOCK_STREAM) {
         if (channel->tcp.tls_ssl) {
             _tls_recv(channel);
@@ -625,6 +632,9 @@ void channel_destroy(cdk_channel_t* channel) {
 }
 
 void channel_send(cdk_channel_t* channel) {
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
     if (channel->type == SOCK_STREAM) {
         if (channel->tcp.tls_ssl) {
             _tls_send(channel);
@@ -637,6 +647,9 @@ void channel_send(cdk_channel_t* channel) {
 }
 
 void channel_accept(cdk_channel_t* channel) {
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
     cdk_sock_t cli = platform_socket_accept(channel->fd, true);
     if (cli == PLATFORM_SO_ERROR_INVALID_SOCKET) {
         if ((platform_socket_lasterror() == PLATFORM_SO_ERROR_EAGAIN) ||
@@ -669,6 +682,9 @@ void channel_accept(cdk_channel_t* channel) {
 
 void channel_connect(cdk_channel_t* channel) {
     if (atomic_load(&channel->closing)) {
+        if (channel->handler->tcp.conn_timeout) {
+            cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
+        }
         return;
     }
     int       err = 0;
