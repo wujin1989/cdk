@@ -355,8 +355,9 @@ static void _udp_recv(cdk_channel_t* channel) {
 
 static inline void _rd_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
-    if ((cdk_time_now() - channel->latest_rd_time) >
-        channel->handler->rd_timeout) {
+
+    uint64_t elapsed_time = cdk_time_now() - channel->latest_rd_time;
+    if (elapsed_time > channel->handler->rd_timeout) {
         cdk_channel_error_t error = {
             .code = CHANNEL_ERROR_RD_TIMEOUT,
             .codestr = CHANNEL_ERROR_RD_TIMEOUT_STR
@@ -364,23 +365,22 @@ static inline void _rd_timeout_cb(void* param) {
         channel_error_update(channel, error);
         channel_destroy(channel);
     } else {
-        channel->rd_timer->expire = 
-            (channel->handler->rd_timeout - (cdk_time_now() - channel->latest_rd_time));
+        channel->rd_timer->expire = (channel->handler->rd_timeout - elapsed_time);
     }
 }
 
 static inline void _wr_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
-    if ((cdk_time_now() - channel->latest_wr_time) >
-        channel->handler->wr_timeout) {
+
+    uint64_t elapsed_time = cdk_time_now() - channel->latest_wr_time;
+    if (elapsed_time > channel->handler->wr_timeout) {
         cdk_channel_error_t error = {
             .code = CHANNEL_ERROR_WR_TIMEOUT,
             .codestr = CHANNEL_ERROR_WR_TIMEOUT_STR};
         channel_error_update(channel, error);
         channel_destroy(channel);
     } else {
-        channel->wr_timer->expire =
-            (channel->handler->wr_timeout - (cdk_time_now() - channel->latest_wr_time));
+        channel->wr_timer->expire = (channel->handler->wr_timeout - elapsed_time);
     }
 }
 
