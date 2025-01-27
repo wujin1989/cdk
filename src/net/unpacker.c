@@ -30,14 +30,14 @@ static inline void _fixedlen_unpack(cdk_channel_t* channel) {
 
 	uint32_t accumulated = (uint32_t)(tail - head);
 	while (true) {
-		if (accumulated < channel->handler->tcp.unpacker->fixedlen.len) {
+		if (accumulated < channel->handler->unpacker->fixedlen.len) {
 			break;
 		}
-		if (channel->handler->tcp.on_read) {
-			channel->handler->tcp.on_read(channel, tmp, channel->handler->tcp.unpacker->fixedlen.len);
+		if (channel->handler->on_read) {
+			channel->handler->on_read(channel, tmp, channel->handler->unpacker->fixedlen.len);
 		}
-		tmp += channel->handler->tcp.unpacker->fixedlen.len;
-		accumulated -= channel->handler->tcp.unpacker->fixedlen.len;
+		tmp += channel->handler->unpacker->fixedlen.len;
+		accumulated -= channel->handler->unpacker->fixedlen.len;
 	}
 	if (tmp == head) {
 		return;
@@ -53,7 +53,7 @@ static inline void _delimiter_unpack(cdk_channel_t* channel) {
 	char* tail = (char*)channel->rxbuf.buf + channel->rxbuf.off;
 	char* tmp = head;
 
-	size_t dlen = strlen(channel->handler->tcp.unpacker->delimiter.delimiter);
+	size_t dlen = strlen(channel->handler->unpacker->delimiter.delimiter);
 
 	uint32_t accumulated = (uint32_t)(tail - head);
 	if (accumulated < dlen) {
@@ -67,25 +67,25 @@ static inline void _delimiter_unpack(cdk_channel_t* channel) {
 	int j = 0;
 	for (int i = 1; i < dlen; i++) {
 
-		while (j > 0 && channel->handler->tcp.unpacker->delimiter.delimiter[i] != channel->handler->tcp.unpacker->delimiter.delimiter[j]) {
+		while (j > 0 && channel->handler->unpacker->delimiter.delimiter[i] != channel->handler->unpacker->delimiter.delimiter[j]) {
 			j = next[j - 1];
 		}
-		if (channel->handler->tcp.unpacker->delimiter.delimiter[i] == channel->handler->tcp.unpacker->delimiter.delimiter[j]) {
+		if (channel->handler->unpacker->delimiter.delimiter[i] == channel->handler->unpacker->delimiter.delimiter[j]) {
 			j++;
 		}
 		next[i] = j;
 	}
 	j = 0;
 	for (uint32_t i = 0; i < accumulated; i++) {
-		while (j > 0 && tmp[i] != channel->handler->tcp.unpacker->delimiter.delimiter[j]) {
+		while (j > 0 && tmp[i] != channel->handler->unpacker->delimiter.delimiter[j]) {
 			j = next[j - 1];
 		}
-		if (tmp[i] == channel->handler->tcp.unpacker->delimiter.delimiter[j]) {
+		if (tmp[i] == channel->handler->unpacker->delimiter.delimiter[j]) {
 			j++;
 		}
 		if (j == dlen) {
-			if (channel->handler->tcp.on_read) {
-				channel->handler->tcp.on_read(channel, tmp, ((i - dlen + 1) + dlen));
+			if (channel->handler->on_read) {
+				channel->handler->on_read(channel, tmp, ((i - dlen + 1) + dlen));
 			}
 			tmp += (i - dlen + 1) + dlen;
 			accumulated -= (uint32_t)((i - dlen + 1) + dlen);
@@ -117,31 +117,31 @@ static inline void _lengthfield_unpack(cdk_channel_t* channel) {
 
 	uint32_t accumulated = (uint32_t)(tail - head);
 	while (true) {
-		if (accumulated < channel->handler->tcp.unpacker->lengthfield.payload) {
+		if (accumulated < channel->handler->unpacker->lengthfield.payload) {
 			break;
 		}
-		hs = channel->handler->tcp.unpacker->lengthfield.payload;
+		hs = channel->handler->unpacker->lengthfield.payload;
 		ps = 0;
-		if (channel->handler->tcp.unpacker->lengthfield.coding == MODE_FIXEDINT) {
+		if (channel->handler->unpacker->lengthfield.coding == MODE_FIXEDINT) {
 
-			ps = *((uint32_t*)(tmp + channel->handler->tcp.unpacker->lengthfield.offset));
+			ps = *((uint32_t*)(tmp + channel->handler->unpacker->lengthfield.offset));
 			//1 means little-endian, 0 means big-endian.
 			if (cdk_utils_byteorder()) {
 				ps = ntohl(ps);
 			}
 		}
-		if (channel->handler->tcp.unpacker->lengthfield.coding == MODE_VARINT) {
+		if (channel->handler->unpacker->lengthfield.coding == MODE_VARINT) {
 
-			int flexible = (int)(tail - (tmp + channel->handler->tcp.unpacker->lengthfield.offset));
+			int flexible = (int)(tail - (tmp + channel->handler->unpacker->lengthfield.offset));
 
-			ps = (uint32_t)cdk_varint_decode(tmp + channel->handler->tcp.unpacker->lengthfield.offset, &flexible);
+			ps = (uint32_t)cdk_varint_decode(tmp + channel->handler->unpacker->lengthfield.offset, &flexible);
 
 			if (cdk_utils_byteorder()) {
 				ps = ntohl(ps);
 			}
-			hs = channel->handler->tcp.unpacker->lengthfield.payload + flexible - channel->handler->tcp.unpacker->lengthfield.size;
+			hs = channel->handler->unpacker->lengthfield.payload + flexible - channel->handler->unpacker->lengthfield.size;
 		}
-		fs = hs + ps + channel->handler->tcp.unpacker->lengthfield.adj;
+		fs = hs + ps + channel->handler->unpacker->lengthfield.adj;
 
 		if (fs > channel->rxbuf.len) {
 			abort();
@@ -149,8 +149,8 @@ static inline void _lengthfield_unpack(cdk_channel_t* channel) {
 		if (accumulated < fs) {
 			break;
 		}
-		if (channel->handler->tcp.on_read) {
-			channel->handler->tcp.on_read(channel, tmp, fs);
+		if (channel->handler->on_read) {
+			channel->handler->on_read(channel, tmp, fs);
 		}
 		tmp += fs;
 		accumulated -= fs;
@@ -166,11 +166,11 @@ static inline void _lengthfield_unpack(cdk_channel_t* channel) {
 }
 
 static void _userdefined_unpack(cdk_channel_t* channel) {
-	channel->handler->tcp.unpacker->userdefined.unpack(channel);
+	channel->handler->unpacker->userdefined.unpack(channel);
 }
 
 void unpacker_unpack(cdk_channel_t* channel) {
-	switch (channel->handler->tcp.unpacker->type)
+	switch (channel->handler->unpacker->type)
 	{
     case UNPACKER_TYPE_FIXEDLEN: {
 		_fixedlen_unpack(channel);

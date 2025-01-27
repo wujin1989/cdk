@@ -46,9 +46,8 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     }
 }
 
-static void _close_cb(
-    cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
-    cdk_loge("connection closed, reason: %s\n", reason);
+static void _close_cb(cdk_channel_t* channel, cdk_channel_error_t error) {
+    cdk_loge("connection closed, reason: %s\n", error.codestr);
 }
 
 static void _heartbeat_cb(cdk_channel_t* channel) {
@@ -70,7 +69,6 @@ int main(void) {
         .crtfile = "certs/cert.crt",
         .keyfile = "certs/cert.key",
         .verifypeer = false,
-        .dtls = false,
         .side = SIDE_SERVER};
 
     cdk_unpacker_t unpacker = {
@@ -82,19 +80,21 @@ int main(void) {
         .lengthfield.size = 4};
 
     cdk_handler_t handler = {
-        .tcp.on_accept = _accept_cb,
-        .tcp.on_read = _read_cb,
-        .tcp.on_close = _close_cb,
-        .tcp.on_heartbeat = _heartbeat_cb,
-        .tcp.rd_timeout = 10000,
-        .tcp.hb_interval = 5000,
-        .tcp.unpacker = &unpacker};
+        .on_accept = _accept_cb,
+        .on_read = _read_cb,
+        .on_close = _close_cb,
+        .on_heartbeat = _heartbeat_cb,
+        .rd_timeout = 10000,
+        .hb_interval = 5000,
+        .unpacker = &unpacker,
+        .tlsconfig = &conf
+    };
 
     cdk_logger_config_t config = {
         .async = false,
     };
     cdk_logger_create(&config);
-    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler, 2, &conf);
+    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 
     getchar();
     cdk_logger_destroy();

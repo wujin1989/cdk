@@ -15,7 +15,7 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     cdk_net_send(channel, buf, len);
 }
 
-static void _close_cb(cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
+static void _close_cb(cdk_channel_t* channel, cdk_channel_error_t error) {
     if (++disconnected_clients == total_clients) {
         accepted_clients = disconnected_clients = 0;
         cdk_loge("%d clients has disconnected.\n", total_clients);
@@ -28,16 +28,16 @@ int main(void) {
         .fixedlen.len = BUFFERSIZE,
     };
     cdk_handler_t handler = {
-        .tcp.on_accept = _accept_cb,
-        .tcp.on_read = _read_cb,
-        .tcp.on_close = _close_cb,
-        .tcp.unpacker = &unpacker};
+        .on_accept = _accept_cb,
+        .on_read = _read_cb,
+        .on_close = _close_cb,
+        .unpacker = &unpacker};
 
     cdk_logger_config_t config = {
         .async = false,
     };
     cdk_logger_create(&config);
-    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler, 1, NULL);
+    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
     getchar();
     cdk_logger_destroy();
     return 0;

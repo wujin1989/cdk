@@ -455,6 +455,6 @@ int platform_socket_socketpair(
     return socketpair(AF_LOCAL, type, protocol, socks);
 }
 
-const char* platform_socket_error2string(int error) { return strerror(error); }
+char* platform_socket_error2string(int error) { return strerror(error); }
 
 int platform_socket_lasterror(void) { return errno; }

@@ -6,8 +6,8 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     printf("recv %s from %s:%d\n", (char*)buf, addrinfo.addr, addrinfo.port);
 }
 
-static void _close_cb(cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
-    printf("channel closed, reason: %s\n", reason);
+static void _close_cb(cdk_channel_t* channel, cdk_channel_error_t error) {
+    printf("channel closed, reason: %s\n", error.codestr);
 }
 
 static int _routine(void* p) {
@@ -31,21 +31,12 @@ static void _connect_cb(cdk_channel_t* channel) {
 }
 
 int main(void) {
-    /*cdk_tls_conf_t conf = {
-        .cafile = "certs/ca.crt",
-        .capath = NULL,
-        .crtfile = NULL,
-        .keyfile = NULL,
-        .verifypeer = true,
-        .dtls = true,
-        .side = TLS_SIDE_CLIENT};*/
-
     cdk_handler_t handler = {
-        .udp.on_connect = _connect_cb,
-        .udp.on_read = _read_cb,
-        .udp.on_close = _close_cb,
+        .on_connect = _connect_cb,
+        .on_read = _read_cb,
+        .on_close = _close_cb,
     };
-    cdk_net_dial("udp", "127.0.0.1", "9999", &handler, 2, NULL);
+    cdk_net_dial("udp", "127.0.0.1", "9999", &handler);
 
     getchar();
     return 0;

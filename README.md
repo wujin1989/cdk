@@ -12,7 +12,7 @@ CDK is a clean and concise cross-platform C development kits that is a supplemen
 # Feature
 - High-performance Asynchronous I/O
 - Cross-platform Compatibility
-- Built-in TLS and DTLS Support
+- Built-in TLS Support
 - Built-in TCP Packet Reassembler
 - Receive side scaling Support
 

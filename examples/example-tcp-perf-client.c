@@ -40,13 +40,12 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     cdk_net_send(channel, buf, len);
 }
 
-static void _close_cb(
-    cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
+static void _close_cb(cdk_channel_t* channel, cdk_channel_error_t error) {
     atomic_fetch_add(&disconnected_clients, 1);
     if (atomic_load(&disconnected_clients) == total_clients) {
         cdk_logi("%d clients has disconnected.\n", total_clients);
         _statistic_info_printf();
-        cdk_logi("channel closed reason: %s\n", reason);
+        cdk_logi("channel closed reason: %s\n", error.codestr);
         cdk_net_exit();
     }
 }
@@ -57,10 +56,10 @@ int main(void) {
         .fixedlen.len = BUFFERSIZE,
     };
     cdk_handler_t handler = {
-        .tcp.on_connect = _connect_cb,
-        .tcp.on_read = _read_cb,
-        .tcp.on_close = _close_cb,
-        .tcp.unpacker = &unpacker};
+        .on_connect = _connect_cb,
+        .on_read = _read_cb,
+        .on_close = _close_cb,
+        .unpacker = &unpacker};
 
     cdk_logger_config_t config = {
         .async = false,
@@ -71,8 +70,9 @@ int main(void) {
     atomic_init(&total_readcnt, 0);
     atomic_init(&total_readbytes, 0);
 
+    cdk_net_concurrency_configure(4);
     for (int i = 0; i < total_clients; i++) {
-        cdk_net_dial("tcp", "127.0.0.1", "9999", &handler, 4, NULL);
+        cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
     }
     getchar();
     cdk_logger_destroy();

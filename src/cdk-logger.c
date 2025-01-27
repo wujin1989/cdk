@@ -131,8 +131,12 @@ static inline void _cbbase(cdk_logger_level_t level, const char *restrict file,
 
 void cdk_logger_create(cdk_logger_config_t* config) {
     if (!atomic_flag_test_and_set(&initialized)) {
-        global_logger.level = config->level;
-
+        if (config->level == LOGGER_LEVEL_BGN ||
+            config->level == LOGGER_LEVEL_END) {
+            global_logger.level = LOGGER_LEVEL_DEBUG;
+        } else {
+            global_logger.level = config->level;
+        }
         if (config->callback) {
             global_logger.callback = config->callback;
             return;
@@ -172,7 +176,7 @@ void cdk_logger_destroy(void) {
 
 void cdk_logger_log(cdk_logger_level_t level, const char *restrict file, int line, const char *restrict fmt, ...) {
     char *p = strrchr(file, S);
-
+    
     if (global_logger.callback) {
         va_list v;
         va_start(v, fmt);

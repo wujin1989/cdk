@@ -35,12 +35,7 @@ extern cdk_net_engine_t global_net_engine;
 
 static inline void _write_complete_cb(void* param) {
     cdk_channel_t* channel = param;
-
-    if (channel->type == SOCK_STREAM) {
-        channel->handler->tcp.on_write(channel);
-    } else {
-        channel->handler->udp.on_write(channel);
-    }
+    channel->handler->on_write(channel);
 }
 
 static void _tcp_send(cdk_channel_t* channel) {
@@ -59,20 +54,21 @@ static void _tcp_send(cdk_channel_t* channel) {
             (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
         }
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_SYSCALL_FAIL,
-            platform_socket_error2string(platform_socket_lasterror()));
-
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_SYSCALL_FAIL,
+            .codestr =
+                platform_socket_error2string(platform_socket_lasterror())
+        };
+        channel_error_update(channel, error);
         channel_destroy(channel);
         return;
     }
     if (n < e->len) {
         txlist_insert(&channel->txlist, e->buf + n, (e->len - n), false);
     }
-    channel->tcp.latest_wr_time = cdk_time_now();
-    if (n > 0 && channel->handler->tcp.on_write) {
-        channel->handler->tcp.on_write(channel);
+    channel->latest_wr_time = cdk_time_now();
+    if (n > 0 && channel->handler->on_write) {
+        channel->handler->on_write(channel);
     }
     txlist_remove(e);
 }
@@ -103,19 +99,19 @@ static void _udp_send(cdk_channel_t* channel) {
             (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
         }
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_SYSCALL_FAIL,
-            platform_socket_error2string(platform_socket_lasterror()));
-
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_SYSCALL_FAIL,
+            .codestr =
+                platform_socket_error2string(platform_socket_lasterror())};
+        channel_error_update(channel, error);
         channel_destroy(channel);
         return;
     }
     if (n < e->len) {
         txlist_insert(&channel->txlist, e->buf + n, (e->len - n), false);
     }
-    if (n > 0 && channel->handler->udp.on_write) {
-        channel->handler->udp.on_write(channel);
+    if (n > 0 && channel->handler->on_write) {
+        channel->handler->on_write(channel);
     }
     txlist_remove(e);
 }
@@ -136,19 +132,20 @@ static void _tls_send(cdk_channel_t* channel) {
         if (n == 0) {
             return;
         }
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_TLS_FAIL, tls_error2string(err));
-
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_TLS_FAIL, 
+            .codestr = tls_error2string(err)
+        };
+        channel_error_update(channel, error);
         channel_destroy(channel);
         return;
     }
     if (n < e->len) {
         txlist_insert(&channel->txlist, e->buf + n, (e->len - n), false);
     }
-    channel->tcp.latest_wr_time = cdk_time_now();
-    if (n > 0 && channel->handler->tcp.on_write) {
-        channel->handler->tcp.on_write(channel);
+    channel->latest_wr_time = cdk_time_now();
+    if (n > 0 && channel->handler->on_write) {
+        channel->handler->on_write(channel);
     }
     txlist_remove(e);
 }
@@ -167,8 +164,10 @@ _tls_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
                 }
                 return;
             }
-            channel_status_info_update(
-                channel, CHANNEL_REASON_TLS_FAIL, tls_error2string(err));
+            cdk_channel_error_t error = {
+                .code = CHANNEL_ERROR_TLS_FAIL,
+                .codestr = tls_error2string(err)};
+            channel_error_update(channel, error);
 
             channel_destroy(channel);
             return;
@@ -180,8 +179,8 @@ _tls_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
             channel_enable_write(channel);
         }
     }
-    channel->tcp.latest_wr_time = cdk_time_now();
-    if (n > 0 && channel->handler->tcp.on_write) {
+    channel->latest_wr_time = cdk_time_now();
+    if (n > 0 && channel->handler->on_write) {
         cdk_net_post_event(channel->poller, _write_complete_cb, channel, true);
     }
 }
@@ -202,11 +201,12 @@ _tcp_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
                 }
                 return;
             }
-            channel_status_info_update(
-                channel,
-                CHANNEL_REASON_SYSCALL_FAIL,
-                platform_socket_error2string(platform_socket_lasterror()));
-
+            cdk_channel_error_t error = {
+                .code = CHANNEL_ERROR_SYSCALL_FAIL,
+                .codestr =
+                    platform_socket_error2string(platform_socket_lasterror())
+            };
+            channel_error_update(channel, error);
             channel_destroy(channel);
             return;
         }
@@ -217,9 +217,9 @@ _tcp_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
             channel_enable_write(channel);
         }
     }
-    channel->tcp.latest_wr_time = cdk_time_now();
+    channel->latest_wr_time = cdk_time_now();
 
-    if (n > 0 && channel->handler->tcp.on_write) {
+    if (n > 0 && channel->handler->on_write) {
         cdk_net_post_event(channel->poller, _write_complete_cb, channel, true);
     }
 }
@@ -249,16 +249,16 @@ _udp_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
                 }
                 return;
             }
-            channel_status_info_update(
-                channel,
-                CHANNEL_REASON_SYSCALL_FAIL,
-                platform_socket_error2string(platform_socket_lasterror()));
-
+            cdk_channel_error_t error = {
+                .code = CHANNEL_ERROR_SYSCALL_FAIL,
+                .codestr =
+                    platform_socket_error2string(platform_socket_lasterror())};
+            channel_error_update(channel, error);
             channel_destroy(channel);
             return;
         }
     }
-    if (n > 0 && channel->handler->udp.on_write) {
+    if (n > 0 && channel->handler->on_write) {
         cdk_net_post_event(channel->poller, _write_complete_cb, channel, true);
     }
 }
@@ -274,13 +274,13 @@ static void _tls_recv(cdk_channel_t* channel) {
         if (n == 0) {
             return;
         }
-        channel_status_info_update(
-            channel, CHANNEL_REASON_TLS_FAIL, tls_error2string(err));
-
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_TLS_FAIL, .codestr = tls_error2string(err)};
+        channel_error_update(channel, error);
         channel_destroy(channel);
         return;
     }
-    channel->tcp.latest_rd_time = cdk_time_now();
+    channel->latest_rd_time = cdk_time_now();
     channel->rxbuf.off += n;
     if (channel->rxbuf.off > MAX_TCP_RECVBUF_SIZE) {
         abort();
@@ -298,24 +298,25 @@ static void _tcp_recv(cdk_channel_t* channel) {
             (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
         }
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_SYSCALL_FAIL,
-            platform_socket_error2string(platform_socket_lasterror()));
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_SYSCALL_FAIL,
+            .codestr =
+                platform_socket_error2string(platform_socket_lasterror())};
+        channel_error_update(channel, error);
 
         channel_destroy(channel);
         return;
     }
     if (n == 0) {
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_SYSCALL_FAIL,
-            platform_socket_error2string(PLATFORM_SO_ERROR_ECONNRESET));
-
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_SYSCALL_FAIL,
+            .codestr =
+                platform_socket_error2string(PLATFORM_SO_ERROR_ECONNRESET)};
+        channel_error_update(channel, error);
         channel_destroy(channel);
         return;
     }
-    channel->tcp.latest_rd_time = cdk_time_now();
+    channel->latest_rd_time = cdk_time_now();
     channel->rxbuf.off += n;
     unpacker_unpack(channel);
 }
@@ -339,58 +340,60 @@ static void _udp_recv(cdk_channel_t* channel) {
             (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
         }
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_SYSCALL_FAIL,
-            platform_socket_error2string(platform_socket_lasterror()));
-
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_SYSCALL_FAIL,
+            .codestr =
+                platform_socket_error2string(platform_socket_lasterror())};
+        channel_error_update(channel, error);
         channel_destroy(channel);
         return;
     }
-    if (channel->handler->udp.on_read) {
-        channel->handler->udp.on_read(channel, channel->rxbuf.buf, n);
+    if (channel->handler->on_read) {
+        channel->handler->on_read(channel, channel->rxbuf.buf, n);
     }
 }
 
 static inline void _rd_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
-    if ((cdk_time_now() - channel->tcp.latest_rd_time) >
-        channel->handler->tcp.rd_timeout) {
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_RD_TIMEOUT, CHANNEL_REASON_RD_TIMEOUT_STR);
-
+    if ((cdk_time_now() - channel->latest_rd_time) >
+        channel->handler->rd_timeout) {
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_RD_TIMEOUT,
+            .codestr = CHANNEL_ERROR_RD_TIMEOUT_STR
+        };
+        channel_error_update(channel, error);
         channel_destroy(channel);
     }
 }
 
 static inline void _wr_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
-    if ((cdk_time_now() - channel->tcp.latest_wr_time) >
-        channel->handler->tcp.wr_timeout) {
-        channel_status_info_update(
-            channel, CHANNEL_REASON_WR_TIMEOUT, CHANNEL_REASON_WR_TIMEOUT_STR);
-
+    if ((cdk_time_now() - channel->latest_wr_time) >
+        channel->handler->wr_timeout) {
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_WR_TIMEOUT,
+            .codestr = CHANNEL_ERROR_WR_TIMEOUT_STR};
+        channel_error_update(channel, error);
         channel_destroy(channel);
     }
 }
 
 static inline void _heartbeat_cb(void* param) {
     cdk_channel_t* channel = param;
-    if (channel->handler->tcp.on_heartbeat) {
-        channel->handler->tcp.on_heartbeat(channel);
+    if (channel->handler->on_heartbeat) {
+        channel->handler->on_heartbeat(channel);
     }
 }
 
 static void _tcp_timers_destroy(cdk_channel_t* channel) {
-    if (channel->tcp.hb_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->tcp.hb_timer);
+    if (channel->hb_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->hb_timer);
     }
-    if (channel->tcp.rd_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->tcp.rd_timer);
+    if (channel->rd_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->rd_timer);
     }
-    if (channel->tcp.wr_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->tcp.wr_timer);
+    if (channel->wr_timer) {
+        cdk_timer_del(&channel->poller->timermgr, channel->wr_timer);
     }
 }
 
@@ -422,28 +425,28 @@ static inline void _channel_destroy_cb(void* param) {
 }
 
 static void _tcp_timers_create(cdk_channel_t* channel) {
-    if (channel->handler->tcp.hb_interval) {
-        channel->tcp.hb_timer = cdk_timer_add(
+    if (channel->handler->hb_interval) {
+        channel->hb_timer = cdk_timer_add(
             &channel->poller->timermgr,
             _heartbeat_cb,
             channel,
-            channel->handler->tcp.hb_interval,
+            channel->handler->hb_interval,
             true);
     }
-    if (channel->handler->tcp.rd_timeout) {
-        channel->tcp.rd_timer = cdk_timer_add(
+    if (channel->handler->rd_timeout) {
+        channel->rd_timer = cdk_timer_add(
             &channel->poller->timermgr,
             _rd_timeout_cb,
             channel,
-            channel->handler->tcp.rd_timeout,
+            channel->handler->rd_timeout,
             true);
     }
-    if (channel->handler->tcp.wr_timeout) {
-        channel->tcp.wr_timer = cdk_timer_add(
+    if (channel->handler->wr_timeout) {
+        channel->wr_timer = cdk_timer_add(
             &channel->poller->timermgr,
             _wr_timeout_cb,
             channel,
-            channel->handler->tcp.wr_timeout,
+            channel->handler->wr_timeout,
             true);
     }
 }
@@ -452,16 +455,16 @@ void channel_connected(cdk_channel_t* channel) {
     if (channel->type == SOCK_STREAM) {
         channel->tcp.connecting = false;
 
-        if (channel->handler->tcp.on_connect) {
-            channel->handler->tcp.on_connect(channel);
+        if (channel->handler->on_connect) {
+            channel->handler->on_connect(channel);
         }
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
         }
         _tcp_timers_create(channel);
     } else {
-        if (channel->handler->udp.on_connect) {
-            channel->handler->udp.on_connect(channel);
+        if (channel->handler->on_connect) {
+            channel->handler->on_connect(channel);
         }
         if (!channel_is_reading(channel)) {
             channel_enable_read(channel);
@@ -485,8 +488,8 @@ void channel_recv(cdk_channel_t* channel) {
 }
 
 void channel_accepted(cdk_channel_t* channel) {
-    if (channel->handler->tcp.on_accept) {
-        channel->handler->tcp.on_accept(channel);
+    if (channel->handler->on_accept) {
+        channel->handler->on_accept(channel);
     }
     if (!channel_is_reading(channel)) {
         channel_enable_read(channel);
@@ -505,8 +508,11 @@ void channel_tls_cli_handshake(void* param) {
                 channel->poller, channel_tls_cli_handshake, channel, true);
             return;
         }
-        channel_status_info_update(
-            channel, CHANNEL_REASON_TLS_FAIL, tls_error2string(err));
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_TLS_FAIL, 
+            .codestr = tls_error2string(err)
+        };
+        channel_error_update(channel, error);
 
         channel_destroy(channel);
         return;
@@ -514,9 +520,9 @@ void channel_tls_cli_handshake(void* param) {
     channel_connected(channel);
 }
 
-void channel_status_info_update(cdk_channel_t* channel, cdk_channel_reason_t reason, const char* str_reason) {
-    channel->status_info.reason = reason;
-    channel->status_info.str_reason = (char*)str_reason;
+void channel_error_update(cdk_channel_t* channel, cdk_channel_error_t error) {
+    channel->error.code = error.code;
+    channel->error.codestr = (char*)error.codestr;
 }
 
 void channel_tls_srv_handshake(void* param) {
@@ -529,7 +535,11 @@ void channel_tls_srv_handshake(void* param) {
                 channel->poller, channel_tls_srv_handshake, channel, true);
             return;
         }
-        channel_status_info_update(channel, CHANNEL_REASON_TLS_FAIL, tls_error2string(err));
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_TLS_FAIL, 
+            .codestr = tls_error2string(err)
+        };
+        channel_error_update(channel, error);
         channel_destroy(channel);
         return;
     }
@@ -607,20 +617,8 @@ void channel_destroy(cdk_channel_t* channel) {
     /**
      * STEP2: Perform callback to notify application.
      */
-    if (channel->type == SOCK_STREAM) {
-        if (channel->handler->tcp.on_close) {
-            channel->handler->tcp.on_close(
-                channel,
-                channel->status_info.reason,
-                channel->status_info.str_reason);
-        }
-    } else {
-        if (channel->handler->udp.on_close) {
-            channel->handler->udp.on_close(
-                channel,
-                channel->status_info.reason,
-                channel->status_info.str_reason);
-        }
+    if (channel->handler->on_close) {
+        channel->handler->on_close(channel, channel->error);
     }
     /**
      * STEP3: Perform the actual channel destruction.
@@ -656,11 +654,12 @@ void channel_accept(cdk_channel_t* channel) {
             (platform_socket_lasterror() == PLATFORM_SO_ERROR_EWOULDBLOCK)) {
             return;
         }
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_SYSCALL_FAIL,
-            platform_socket_error2string(platform_socket_lasterror()));
-
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_SYSCALL_FAIL,
+            .codestr =
+                platform_socket_error2string(platform_socket_lasterror())
+        };
+        channel_error_update(channel, error);
         channel_destroy(channel);
         return;
     }
@@ -682,7 +681,7 @@ void channel_accept(cdk_channel_t* channel) {
 
 void channel_connect(cdk_channel_t* channel) {
     if (atomic_load(&channel->closing)) {
-        if (channel->handler->tcp.conn_timeout) {
+        if (channel->handler->conn_timeout) {
             cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
         }
         return;
@@ -691,16 +690,16 @@ void channel_connect(cdk_channel_t* channel) {
     socklen_t len = sizeof(int);
 
     channel_disable_all(channel);
-    if (channel->handler->tcp.conn_timeout) {
+    if (channel->handler->conn_timeout) {
         cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
     }
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_SYSCALL_FAIL,
-            platform_socket_error2string(platform_socket_lasterror()));
-
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_SYSCALL_FAIL,
+            .codestr =
+                platform_socket_error2string(platform_socket_lasterror())};
+        channel_error_update(channel, error);
         channel_destroy(channel);
     } else {
         if (channel->tcp.tls_ssl) {

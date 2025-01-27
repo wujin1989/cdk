@@ -175,10 +175,11 @@ void poller_destroy(cdk_poller_t* poller) {
         cdk_channel_t* channel =
             cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);
 
-        channel_status_info_update(
-            channel,
-            CHANNEL_REASON_POLLER_SHUTDOWN,
-            CHANNEL_REASON_POLLER_SHUTDOWN_STR);
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_POLLER_SHUTDOWN,
+            .codestr = CHANNEL_ERROR_POLLER_SHUTDOWN_STR
+        };
+        channel_error_update(channel, error);
         channel_destroy(channel);
     }
     mtx_destroy(&poller->evmtx);

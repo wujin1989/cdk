@@ -12,26 +12,16 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
     cdk_net_send(channel, buf, len);
 }
 
-static void _close_cb(
-    cdk_channel_t* channel, cdk_channel_reason_t code, const char* reason) {
-    printf("channel closed, reason: %s\n", reason);
+static void _close_cb(cdk_channel_t* channel, cdk_channel_error_t error) {
+    printf("channel closed, reason: %s\n", error.codestr);
 }
 
 int main(void) {
-    /*cdk_tls_conf_t conf = {
-        .cafile = NULL,
-        .capath = NULL,
-        .crtfile = "certs/cert.crt",
-        .keyfile = "certs/cert.key",
-        .verifypeer = false,
-        .dtls = true,
-        .side = TLS_SIDE_SERVER};*/
-
     cdk_handler_t handler = {
-        .udp.on_read  = _read_cb,
-        .udp.on_close = _close_cb,
+        .on_read  = _read_cb,
+        .on_close = _close_cb,
     };
-    cdk_net_listen("udp", "0.0.0.0", "9999", &handler, 2, NULL);
+    cdk_net_listen("udp", "0.0.0.0", "9999", &handler);
 
     getchar();
     return 0;

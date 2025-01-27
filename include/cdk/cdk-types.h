@@ -72,7 +72,6 @@ _Pragma("once")
 
 #define cdk_tls_ssl_t void
 #define cdk_tls_ctx_t void
-#define cdk_tls_bio_t void
 
 typedef struct cdk_channel_s       cdk_channel_t;
 typedef enum cdk_channel_mode_e    cdk_channel_mode_t;
@@ -104,11 +103,9 @@ typedef struct cdk_sha256_s        cdk_sha256_t;
 typedef struct cdk_sha1_s          cdk_sha1_t;
 typedef struct cdk_rwlock_s        cdk_rwlock_t;
 typedef struct cdk_spinlock_s      cdk_spinlock_t;
-typedef struct cdk_dtls_ssl_s      cdk_dtls_ssl_t;
 typedef struct cdk_logger_config_s cdk_logger_config_t;
 typedef enum cdk_logger_level_e    cdk_logger_level_t;
-typedef enum cdk_channel_reason_e  cdk_channel_reason_t;
-typedef struct cdk_channel_status_info_s cdk_channel_status_info_t;
+typedef struct cdk_channel_error_s cdk_channel_error_t;
 typedef void (*cdk_logger_cb_t)(
         cdk_logger_level_t level, char* msg);
 
@@ -225,16 +222,20 @@ struct cdk_ringbuf_s {
 };
 
 enum cdk_unpacker_type_e {
+    UNPACKER_TYPE_BGN,
     UNPACKER_TYPE_FIXEDLEN,
     UNPACKER_TYPE_DELIMITER,
     UNPACKER_TYPE_LENGTHFIELD,
     UNPACKER_TYPE_USERDEFINED,
+    UNPACKER_TYPE_END,
 };
 
 enum cdk_channel_mode_e {
+    CHANNEL_MODE_BGN,
     CHANNEL_MODE_ACCEPT,
     CHANNEL_MODE_CONNECT,
     CHANNEL_MODE_NORMAL,
+    CHANNEL_MODE_END,
 };
 
 struct cdk_unpacker_s {
@@ -255,7 +256,7 @@ struct cdk_unpacker_s {
             int32_t  adj;     /* length field adjustment */
             enum {
                 MODE_VARINT,
-                MODE_FIXEDINT
+                MODE_FIXEDINT,
             } coding; /* length field coding     */
         } lengthfield;
 
@@ -300,25 +301,19 @@ struct cdk_async_event_s {
 };
 
 enum cdk_side_e {
+    SIDE_BGN,
     SIDE_CLIENT,
     SIDE_SERVER,
+    SIDE_END,
 };
 
 enum cdk_logger_level_e {
-    LOGGER_LEVEL_DEBUG = 0,
-    LOGGER_LEVEL_INFO = 1,
-    LOGGER_LEVEL_WARN = 2,
-    LOGGER_LEVEL_ERROR = 3,
-};
-
-enum cdk_channel_reason_e {
-    CHANNEL_REASON_USER_TRIGGERED,
-    CHANNEL_REASON_WR_TIMEOUT,
-    CHANNEL_REASON_RD_TIMEOUT,
-    CHANNEL_REASON_CONN_TIMEOUT,
-    CHANNEL_REASON_POLLER_SHUTDOWN,
-    CHANNEL_REASON_SYSCALL_FAIL,
-    CHANNEL_REASON_TLS_FAIL,
+    LOGGER_LEVEL_BGN = -1,
+    LOGGER_LEVEL_DEBUG,
+    LOGGER_LEVEL_INFO,
+    LOGGER_LEVEL_WARN,
+    LOGGER_LEVEL_ERROR,
+    LOGGER_LEVEL_END,
 };
 
 struct cdk_tls_conf_s {
@@ -354,19 +349,22 @@ struct cdk_tls_conf_s {
      * certificate.
      */
     bool       verifypeer;
-    bool       dtls;
     cdk_side_t side;
 };
 
-struct cdk_dtls_ssl_s {
-    cdk_tls_ssl_t*    dtls_ssl;
-    cdk_tls_bio_t*    dtls_bio;
-    cdk_rbtree_node_t node;
-};
-
-struct cdk_channel_status_info_s {
-    cdk_channel_reason_t reason;
-    char*                str_reason;
+struct cdk_channel_error_s {
+    enum {
+        CHANNEL_ERROR_BGN,
+        CHANNEL_ERROR_USER_CLOSE,
+        CHANNEL_ERROR_WR_TIMEOUT,
+        CHANNEL_ERROR_RD_TIMEOUT,
+        CHANNEL_ERROR_CONN_TIMEOUT,
+        CHANNEL_ERROR_POLLER_SHUTDOWN,
+        CHANNEL_ERROR_SYSCALL_FAIL,
+        CHANNEL_ERROR_TLS_FAIL,
+        CHANNEL_ERROR_END,
+    } code;
+    char* codestr;
 };
 
 struct cdk_channel_s {
@@ -380,7 +378,12 @@ struct cdk_channel_s {
     cdk_channel_mode_t mode;
     cdk_side_t         side;
     atomic_int         refcnt;
-    cdk_channel_status_info_t status_info;
+    cdk_channel_error_t error;
+    cdk_timer_t*        wr_timer;
+    cdk_timer_t*        rd_timer;
+    cdk_timer_t*        hb_timer;
+    uint64_t            latest_rd_time;
+    uint64_t            latest_wr_time;
     struct {
         void*   buf;
         ssize_t len;
@@ -391,12 +394,7 @@ struct cdk_channel_s {
         struct {
             bool           accepting;
             bool           connecting;
-            uint64_t       latest_rd_time;
-            uint64_t       latest_wr_time;
             cdk_timer_t*   conn_timer;
-            cdk_timer_t*   wr_timer;
-            cdk_timer_t*   rd_timer;
-            cdk_timer_t*   hb_timer;
             cdk_tls_ssl_t* tls_ssl;
             cdk_tls_ctx_t* tls_ctx;
         } tcp;
@@ -410,33 +408,21 @@ struct cdk_channel_s {
 };
 
 struct cdk_handler_s {
-    union {
-        struct {
-            void (*on_accept)(cdk_channel_t* channel);
-            void (*on_connect)(cdk_channel_t* channel);
-            void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
-            void (*on_write)(cdk_channel_t* channel);
-            void (*on_close)(
-                cdk_channel_t*       channel,
-                cdk_channel_reason_t code,
-                const char*          reason);
-            void            (*on_heartbeat)(cdk_channel_t* channel);
-            int             conn_timeout;
-            int             wr_timeout;
-            int             rd_timeout;
-            int             hb_interval;
-            cdk_unpacker_t* unpacker;
-        } tcp;
-        struct {
-            void (*on_connect)(cdk_channel_t* channel);
-            void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
-            void (*on_write)(cdk_channel_t* channel);
-            void (*on_close)(
-                cdk_channel_t*       channel,
-                cdk_channel_reason_t code,
-                const char*          reason);
-        } udp;
-    };
+    void (*on_connect)(cdk_channel_t* channel);
+    void (*on_read)(cdk_channel_t* channel, void* buf, size_t len);
+    void (*on_write)(cdk_channel_t* channel);
+    void (*on_close)(cdk_channel_t* channel, cdk_channel_error_t error);
+    void (*on_heartbeat)(cdk_channel_t* channel);
+    int wr_timeout;
+    int rd_timeout;
+    int hb_interval;
+    /**
+     * Below are TCP-specific.
+     */
+    void (*on_accept)(cdk_channel_t* channel);
+    int  conn_timeout;
+    cdk_unpacker_t* unpacker;
+    cdk_tls_conf_t* tlsconfig;
 };
 
 struct cdk_sha256_s {

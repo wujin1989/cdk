@@ -117,22 +117,22 @@ static int _poll(void* param) {
     return 0;
 }
 
-static void _net_engine_create(int parallel) {
+static void _net_engine_create(void) {
     platform_socket_startup();
-    if (parallel <= 0) {
-        parallel = 1;
+    if (!atomic_load(&global_net_engine.thrdcnt)) {
+        atomic_store(&global_net_engine.thrdcnt, 1);
     }
     cdk_list_init(&global_net_engine.poller_lst);
     mtx_init(&global_net_engine.poller_mtx, mtx_plain);
     cnd_init(&global_net_engine.poller_cnd);
 
     global_net_engine.poller_roundrobin = _roundrobin;
-    atomic_init(&global_net_engine.thrdcnt, parallel);
-    global_net_engine.thrdids = malloc(parallel * sizeof(thrd_t));
+    global_net_engine.thrdids =
+        malloc(atomic_load(&global_net_engine.thrdcnt) * sizeof(thrd_t));
     if (!global_net_engine.thrdids) {
         return;
     }
-    for (int i = 0; i < parallel; i++) {
+    for (int i = 0; i < atomic_load(&global_net_engine.thrdcnt); i++) {
         thrd_create((global_net_engine.thrdids + i), _poll, NULL);
         thrd_detach(global_net_engine.thrdids[i]);
     }
@@ -196,9 +196,12 @@ static void _async_listen(void* param) {
 
 static inline void _conn_timeout_cb(void* param) {
     cdk_channel_t* channel = param;
-    channel_status_info_update(
-        channel,
-        CHANNEL_REASON_CONN_TIMEOUT, CHANNEL_REASON_CONN_TIMEOUT_STR);
+
+    cdk_channel_error_t error = {
+        .code = CHANNEL_ERROR_CONN_TIMEOUT,
+        .codestr = CHANNEL_ERROR_CONN_TIMEOUT_STR
+    };
+    channel_error_update(channel, error);
 
     channel_destroy(channel);
 }
@@ -235,12 +238,12 @@ static void _async_dial(void* param) {
             if (!channel_is_writing(channel)) {
                 channel_enable_write(channel);
             }
-            if (channel->handler->tcp.conn_timeout) {
+            if (channel->handler->conn_timeout) {
                 channel->tcp.conn_timer = cdk_timer_add(
                     &channel->poller->timermgr,
                     _conn_timeout_cb,
                     channel,
-                    channel->handler->tcp.conn_timeout,
+                    channel->handler->conn_timeout,
                     false);
             }
         }
@@ -372,25 +375,33 @@ int cdk_net_getsocktype(cdk_sock_t sock) {
     return platform_socket_getsocktype(sock);
 }
 
+void cdk_net_concurrency_configure(int ncpus) {
+    atomic_init(&global_net_engine.thrdcnt, ncpus);
+}
+
 void cdk_net_listen(
     const char*     protocol,
     const char*     host,
     const char*     port,
-    cdk_handler_t*  handler,
-    int             nthrds,
-    cdk_tls_conf_t* config) {
+    cdk_handler_t*  handler) {
 
     if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
-        _net_engine_create(nthrds);
+        _net_engine_create();
     }
     /**
      * Destroy tlsctx when the accepting channel is destroyed.
      */
-    cdk_tls_ctx_t* tlsctx = tls_ctx_create(config);
+    cdk_tls_ctx_t* tlsctx = tls_ctx_create(handler->tlsconfig);
 
-    for (int i = 0; i < nthrds; i++) {
+    for (int i = 0; i < atomic_load(&global_net_engine.thrdcnt); i++) {
         socket_ctx_t* sctx = _socket_ctx_allocate(
-            protocol, host, port, i, nthrds, handler, tlsctx);
+            protocol,
+            host,
+            port,
+            i,
+            atomic_load(&global_net_engine.thrdcnt),
+            handler,
+            tlsctx);
         if (sctx) {
             cdk_net_post_event(sctx->poller, _async_listen, sctx, true);
         }
@@ -401,14 +412,12 @@ void cdk_net_dial(
     const char*     protocol,
     const char*     host,
     const char*     port,
-    cdk_handler_t*  handler,
-    int             nthrds,
-    cdk_tls_conf_t* config) {
+    cdk_handler_t*  handler) {
 
     if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
-        _net_engine_create(nthrds);
+        _net_engine_create();
     }
-    cdk_tls_ctx_t* tlsctx = tls_ctx_create(config);
+    cdk_tls_ctx_t* tlsctx = tls_ctx_create(handler->tlsconfig);
 
     socket_ctx_t* sctx =
         _socket_ctx_allocate(protocol, host, port, 0, 0, handler, tlsctx);
@@ -451,11 +460,11 @@ bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
 }
 
 void cdk_net_close(cdk_channel_t* channel) {
-    channel_status_info_update(
-        channel,
-        CHANNEL_REASON_USER_TRIGGERED,
-        CHANNEL_REASON_USER_TRIGGERED_STR);
-
+    cdk_channel_error_t error = {
+        .code = CHANNEL_ERROR_USER_CLOSE,
+        .codestr = CHANNEL_ERROR_USER_CLOSE_STR
+    };
+    channel_error_update(channel, error);
     channel_destroy(channel);
 }
 

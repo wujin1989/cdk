@@ -25,14 +25,11 @@ _Pragma("once")
 
 extern cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf);
 extern cdk_tls_ssl_t* tls_ssl_create(cdk_tls_ctx_t* ctx);
-extern cdk_tls_bio_t* tls_bio_create(int fd);
-extern void           tls_bio_destroy(cdk_tls_bio_t* bio);
 extern void           tls_ctx_destroy(cdk_tls_ctx_t* ctx);
 extern void           tls_ssl_destroy(cdk_tls_ssl_t* ssl);
-extern const char*    tls_error2string(int err);
+extern char*    tls_error2string(int err);
 extern int            tls_connect(cdk_tls_ssl_t* ssl, int fd, int* error);
 extern int            tls_accept(cdk_tls_ssl_t* ssl, int fd, bool tcp, int* error);
-extern int  tls_listen(cdk_tls_ssl_t* ssl, int fd, cdk_tls_bio_t* bio, int* error);
 extern int  tls_ssl_read(cdk_tls_ssl_t* ssl, void* buf, int size, int* error);
 extern int  tls_ssl_write(cdk_tls_ssl_t* ssl, void* buf, int size, int* error);
 extern void tls_ssl_sni_set(cdk_tls_ssl_t* ssl, const char* sni);

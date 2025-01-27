@@ -26,15 +26,15 @@ _Pragma("once")
 #define MAX_TCP_RECVBUF_SIZE 1048576 // 1M
 #define MAX_UDP_RECVBUF_SIZE 65535   // 64K
 
-#define CHANNEL_REASON_USER_TRIGGERED_STR                                      \
+#define CHANNEL_ERROR_USER_CLOSE_STR                                          \
     "Channel destroyed due to User-triggered (normal behavior)"
-#define CHANNEL_REASON_WR_TIMEOUT_STR                                          \
+#define CHANNEL_ERROR_WR_TIMEOUT_STR                                          \
     "Channel destroyed due to write operation timeout"
-#define CHANNEL_REASON_RD_TIMEOUT_STR                                          \
+#define CHANNEL_ERROR_RD_TIMEOUT_STR                                          \
     "Channel destroyed due to read operation timeout"
-#define CHANNEL_REASON_CONN_TIMEOUT_STR                                        \
+#define CHANNEL_ERROR_CONN_TIMEOUT_STR                                        \
     "Channel destroyed due to connection establishment timeout"
-#define CHANNEL_REASON_POLLER_SHUTDOWN_STR                                     \
+#define CHANNEL_ERROR_POLLER_SHUTDOWN_STR                                     \
     "Channel destroyed due to poller shutdown"
 
 extern cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_channel_mode_t mode, cdk_side_t side, cdk_handler_t* handler, cdk_tls_ctx_t* tls_ctx);
@@ -55,4 +55,4 @@ extern void channel_tls_srv_handshake(void* param);
 extern void channel_tls_cli_handshake(void* param);
 extern void channel_connected(cdk_channel_t* channel);
 extern void channel_accepted(cdk_channel_t* channel);
-extern void channel_status_info_update(cdk_channel_t* channel, cdk_channel_reason_t reason, const char* str_reason);
+extern void channel_error_update(cdk_channel_t* channel, cdk_channel_error_t error);

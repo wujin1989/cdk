@@ -46,102 +46,11 @@ static int _sni_select_cb(SSL* s, int* al, void* arg) {
     return 0;
 }
 
-static int
-_gen_cookie_cb(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len) {
-    unsigned char *buffer, result[EVP_MAX_MD_SIZE];
-    unsigned int   length = 0, resultlength;
-    union {
-        struct sockaddr_storage ss;
-        struct sockaddr_in6     s6;
-        struct sockaddr_in      s4;
-    } peer;
-
-    /* Initialize a random secret */
-    if (!cookie_initialized) {
-        if (!RAND_bytes(cookie_secret, COOKIE_SECRET_LENGTH)) {
-            return 0;
-        }
-        cookie_initialized = 1;
-    }
-
-    /* Read peer information */
-    (void)BIO_dgram_get_peer(SSL_get_rbio(ssl), &peer);
-
-    /* Create buffer with peer's address and port */
-    length = 0;
-    switch (peer.ss.ss_family) {
-    case AF_INET:
-        length += sizeof(struct in_addr);
-        break;
-    case AF_INET6:
-        length += sizeof(struct in6_addr);
-        break;
-    default:
-        OPENSSL_assert(0);
-        break;
-    }
-    length += 2;
-    buffer = (unsigned char*)OPENSSL_malloc(length);
-
-    if (buffer == NULL) {
-        return 0;
-    }
-
-    switch (peer.ss.ss_family) {
-    case AF_INET:
-        memcpy(buffer, &peer.s4.sin_port, 2);
-        memcpy(
-            buffer + sizeof(peer.s4.sin_port),
-            &peer.s4.sin_addr,
-            sizeof(struct in_addr));
-        break;
-    case AF_INET6:
-        memcpy(buffer, &peer.s6.sin6_port, 2);
-        memcpy(buffer + 2, &peer.s6.sin6_addr, sizeof(struct in6_addr));
-        break;
-    default:
-        OPENSSL_assert(0);
-        break;
-    }
-
-    /* Calculate HMAC of buffer using the secret */
-    HMAC(
-        EVP_sha1(),
-        (const void*)cookie_secret,
-        COOKIE_SECRET_LENGTH,
-        (const unsigned char*)buffer,
-        length,
-        result,
-        &resultlength);
-    OPENSSL_free(buffer);
-
-    memcpy(cookie, result, resultlength);
-    *cookie_len = resultlength;
-
-    return 1;
-}
-
-static int _verify_cookie_cb(
-    SSL* ssl, const unsigned char* cookie, unsigned int cookie_len) {
-    unsigned char result[EVP_MAX_MD_SIZE];
-    unsigned int  resultlength;
-
-    if (cookie_initialized && _gen_cookie_cb(ssl, result, &resultlength) &&
-        cookie_len == resultlength && !memcmp(result, cookie, resultlength)) {
-        return 1;
-    }
-    return 0;
-}
-
 static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
     SSL_CTX* ctx = NULL;
 
     OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
-    if (tlsconf->dtls) {
-        ctx = SSL_CTX_new(DTLS_method());
-    } else {
-        ctx = SSL_CTX_new(TLS_method());
-    }
+    ctx = SSL_CTX_new(TLS_method());
     if (!ctx) {
         return NULL;
     }
@@ -190,18 +99,15 @@ static SSL_CTX* _ctx_create(cdk_tls_conf_t* tlsconf) {
         NULL);
 
     if (tlsconf->side == SIDE_SERVER) {
-        if (tlsconf->dtls) {
-            SSL_CTX_set_cookie_generate_cb(ctx, _gen_cookie_cb);
-            SSL_CTX_set_cookie_verify_cb(ctx, _verify_cookie_cb);
-        }
+        
     }
     return ctx;
 }
 
-const char* tls_error2string(int err) {
+char* tls_error2string(int err) {
     static char buffer[512];
-    const char* error_str = "Unknown SSL error code";
-    const char* sys_error_str = NULL;
+    char* error_str = "Unknown SSL error code";
+    char* sys_error_str = NULL;
 
     memset(buffer, 0, sizeof(buffer));
 
@@ -295,14 +201,6 @@ void tls_ssl_destroy(cdk_tls_ssl_t* ssl) {
     }
 }
 
-cdk_tls_bio_t* tls_bio_create(int fd) {
-    return BIO_new_dgram(fd, 0);
-}
-
-void tls_bio_destroy(cdk_tls_bio_t* bio) {
-    BIO_free((BIO*)bio);
-}
-
 int tls_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
     /**
      * For the client, since we use already connected sockets for both TLS and
@@ -336,26 +234,6 @@ int tls_accept(cdk_tls_ssl_t* ssl, int fd, bool tcp, int* error) {
         }
         return -1;
     }
-    return ret;
-}
-
-int tls_listen(cdk_tls_ssl_t* ssl, int fd, cdk_tls_bio_t* bio, int* error) {
-    /**
-     * For the server, UDP sockets cannot use already connected sockets because
-     * they need to send data to multiple peers. Therefore, we cannot use
-     * SSL_set_fd, as SSL_set_fd is only suitable for already connected sockets.
-     */
-    SSL_set_bio((SSL*)ssl, (BIO*)bio, bio);
-
-    BIO_ADDR* noused = BIO_ADDR_new();
-    int       ret = DTLSv1_listen((SSL*)ssl, noused);
-    if (ret <= 0) {
-        int err = SSL_get_error((SSL*)ssl, ret);
-        *error = err;
-        BIO_ADDR_free(noused);
-        return ret;
-    }
-    BIO_ADDR_free(noused);
     return ret;
 }
 
