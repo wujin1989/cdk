@@ -1,29 +1,24 @@
 #include "cdk.h"
 
-mtx_t mtx;
-static inline void _routine_cb(void* p) {
-	mtx_lock(&mtx);
+static inline void _timer_task(void* p) {
 	cdk_logi("[%d]timer task\n", (int)cdk_utils_systemtid());
-	mtx_unlock(&mtx);
 }
 
 int main(void) {
-	cdk_timermgr_t mgr;
-	cdk_timer_t* timer;
-	
+	cdk_timermgr_t* timermgr;
 	cdk_logger_config_t config = {
 		.async = false,
 	};
 	cdk_logger_create(&config);
-	cdk_timer_manager_init(&mgr);
-	mtx_init(&mtx, mtx_plain);
+    timermgr = cdk_timer_manager_create();
 	
-	timer = cdk_timer_add(&mgr, _routine_cb, NULL, 1000, true);
+	cdk_timer_add(timermgr, _timer_task, NULL, 1000, true);
 	while (true) {
-		if (cdk_heap_empty(&mgr.heap)) {
+        if (cdk_heap_empty(&timermgr->heap)) {
 			break;
 		}
-		cdk_timer_t* min = cdk_heap_data(cdk_heap_min(&mgr.heap), cdk_timer_t, node);
+        cdk_timer_t* min =
+            cdk_heap_data(cdk_heap_min(&timermgr->heap), cdk_timer_t, node);
 		
 		if (min->birth + min->expire > cdk_time_now()) {
 			cdk_time_sleep(min->birth + min->expire - cdk_time_now());
@@ -31,12 +26,12 @@ int main(void) {
 		}
 		min->routine(min->param);
 		if (min->repeat) {
-			cdk_timer_reset(&mgr, min, min->expire);
+            cdk_timer_reset(timermgr, min, min->expire);
 		} else {
-			cdk_timer_del(&mgr, min);
+            cdk_timer_del(timermgr, min);
 		}
 	}
-	mtx_destroy(&mtx);
+    cdk_timer_manager_destroy(timermgr);
 	cdk_logger_destroy();
 	return 0;
 }

@@ -39,38 +39,78 @@ static int _min_heapcmp(cdk_heap_node_t* a, cdk_heap_node_t* b) {
 	return 0;
 }
 
-void cdk_timer_manager_init(cdk_timermgr_t* mgr) {
-	cdk_heap_init(&mgr->heap, _min_heapcmp);
-	mgr->ntimers = 0;
+cdk_timermgr_t* cdk_timer_manager_create(void) {
+    cdk_timermgr_t* timermgr = malloc(sizeof(cdk_timermgr_t));
+    if (timermgr) {
+        cdk_heap_init(&timermgr->heap, _min_heapcmp);
+        mtx_init(&timermgr->mtx, mtx_plain);
+        timermgr->ntimers = 0;
+	}
+    return timermgr;
 }
 
-cdk_timer_t* cdk_timer_add(cdk_timermgr_t* mgr, void (*routine)(void*), void* param, size_t expire, bool repeat) {
+void cdk_timer_manager_destroy(cdk_timermgr_t* timermgr) {
+    timermgr->ntimers = 0;
+    mtx_destroy(&timermgr->mtx);
+
+    if (timermgr) {
+        free(timermgr);
+        timermgr = NULL;
+	}
+}
+
+cdk_timer_t* cdk_timer_add(
+    cdk_timermgr_t* timermgr,
+    void            (*routine)(void*),
+    void*           param,
+    size_t          expire,
+    bool            repeat) {
 	cdk_timer_t* timer = malloc(sizeof(cdk_timer_t));
 	if (timer) {
+        mtx_lock(&timermgr->mtx);
 		timer->routine = routine;
 		timer->param = param;
 		timer->birth = cdk_time_now();
-		timer->id = mgr->ntimers++;
+        timer->id = timermgr->ntimers++;
 		timer->expire = expire;
 		timer->repeat = repeat;
 
-		cdk_heap_insert(&mgr->heap, &timer->node);
-		return timer;
+		cdk_heap_insert(&timermgr->heap, &timer->node);
+        mtx_unlock(&timermgr->mtx);
 	}
-	return NULL;
+    return timer;
 }
 
-void cdk_timer_del(cdk_timermgr_t* mgr, cdk_timer_t* timer) {
-	cdk_heap_remove(&mgr->heap, &timer->node);
-	mgr->ntimers--;
+void cdk_timer_del(cdk_timermgr_t* timermgr, cdk_timer_t* timer) {
+    mtx_lock(&timermgr->mtx);
+    cdk_heap_remove(&timermgr->heap, &timer->node);
+    timermgr->ntimers--;
+    mtx_unlock(&timermgr->mtx);
 
 	free(timer);
 	timer = NULL;
 }
 
-void cdk_timer_reset(cdk_timermgr_t* mgr, cdk_timer_t* timer, size_t expire) {
-	cdk_heap_remove(&mgr->heap, &timer->node);
+void cdk_timer_reset(
+    cdk_timermgr_t* timermgr, cdk_timer_t* timer, size_t expire) {
+    mtx_lock(&timermgr->mtx);
+    cdk_heap_remove(&timermgr->heap, &timer->node);
 	timer->birth = cdk_time_now();
 	timer->expire = expire;
-	cdk_heap_insert(&mgr->heap, &timer->node);
+    cdk_heap_insert(&timermgr->heap, &timer->node);
+    mtx_unlock(&timermgr->mtx);
+}
+
+bool cdk_timer_empty(cdk_timermgr_t* timermgr) {
+    mtx_lock(&timermgr->mtx);
+    bool empty = cdk_heap_empty(&timermgr->heap);
+    mtx_unlock(&timermgr->mtx);
+    return empty;
+}
+
+cdk_timer_t* cdk_timer_min(cdk_timermgr_t* timermgr) {
+    mtx_lock(&timermgr->mtx);
+    cdk_timer_t* timer = cdk_heap_data(cdk_heap_min(&timermgr->heap), cdk_timer_t, node);
+    mtx_unlock(&timermgr->mtx);
+    return timer;
 }

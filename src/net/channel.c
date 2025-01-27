@@ -363,6 +363,9 @@ static inline void _rd_timeout_cb(void* param) {
         };
         channel_error_update(channel, error);
         channel_destroy(channel);
+    } else {
+        channel->rd_timer->expire = 
+            (channel->handler->rd_timeout - (cdk_time_now() - channel->latest_rd_time));
     }
 }
 
@@ -375,6 +378,9 @@ static inline void _wr_timeout_cb(void* param) {
             .codestr = CHANNEL_ERROR_WR_TIMEOUT_STR};
         channel_error_update(channel, error);
         channel_destroy(channel);
+    } else {
+        channel->wr_timer->expire =
+            (channel->handler->wr_timeout - (cdk_time_now() - channel->latest_wr_time));
     }
 }
 
@@ -387,13 +393,13 @@ static inline void _heartbeat_cb(void* param) {
 
 void channel_timers_destroy(cdk_channel_t* channel) {
     if (channel->hb_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->hb_timer);
+        cdk_timer_del(channel->poller->timermgr, channel->hb_timer);
     }
     if (channel->rd_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->rd_timer);
+        cdk_timer_del(channel->poller->timermgr, channel->rd_timer);
     }
     if (channel->wr_timer) {
-        cdk_timer_del(&channel->poller->timermgr, channel->wr_timer);
+        cdk_timer_del(channel->poller->timermgr, channel->wr_timer);
     }
 }
 
@@ -427,7 +433,7 @@ static inline void _channel_destroy_cb(void* param) {
 void channel_timers_create(cdk_channel_t* channel) {
     if (channel->handler->hb_interval) {
         channel->hb_timer = cdk_timer_add(
-            &channel->poller->timermgr,
+            channel->poller->timermgr,
             _heartbeat_cb,
             channel,
             channel->handler->hb_interval,
@@ -435,7 +441,7 @@ void channel_timers_create(cdk_channel_t* channel) {
     }
     if (channel->handler->rd_timeout) {
         channel->rd_timer = cdk_timer_add(
-            &channel->poller->timermgr,
+            channel->poller->timermgr,
             _rd_timeout_cb,
             channel,
             channel->handler->rd_timeout,
@@ -443,7 +449,7 @@ void channel_timers_create(cdk_channel_t* channel) {
     }
     if (channel->handler->wr_timeout) {
         channel->wr_timer = cdk_timer_add(
-            &channel->poller->timermgr,
+            channel->poller->timermgr,
             _wr_timeout_cb,
             channel,
             channel->handler->wr_timeout,
@@ -671,7 +677,7 @@ void channel_accepting(cdk_channel_t* channel) {
 void channel_connecting(cdk_channel_t* channel) {
     if (atomic_load(&channel->closing)) {
         if (channel->handler->conn_timeout) {
-            cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
+            cdk_timer_del(channel->poller->timermgr, channel->tcp.conn_timer);
         }
         return;
     }
@@ -680,7 +686,7 @@ void channel_connecting(cdk_channel_t* channel) {
 
     channel_disable_all(channel);
     if (channel->handler->conn_timeout) {
-        cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
+        cdk_timer_del(channel->poller->timermgr, channel->tcp.conn_timer);
     }
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {

@@ -239,7 +239,7 @@ static void _async_dial(void* param) {
             }
             if (channel->handler->conn_timeout) {
                 channel->tcp.conn_timer = cdk_timer_add(
-                    &channel->poller->timermgr,
+                    channel->poller->timermgr,
                     _conn_timeout_cb,
                     channel,
                     channel->handler->conn_timeout,
@@ -484,6 +484,20 @@ void cdk_net_post_event(
     }
     mtx_unlock(&poller->evmtx);
     poller_wakeup(poller);
+}
+
+void cdk_net_timer_create(
+    void (*routine)(void*), void* param, size_t expire, bool repeat) {
+    cdk_poller_t* poller = global_net_engine.poller_roundrobin();
+    if (!poller) {
+        return;
+    }
+    cdk_timer_add(
+        poller->timermgr,
+        routine,
+        param,
+        expire,
+        repeat);
 }
 
 void cdk_net_exit(void) {

@@ -211,6 +211,7 @@ struct cdk_timer_s {
 struct cdk_timermgr_s {
     cdk_heap_t heap;
     size_t     ntimers;
+    mtx_t      mtx;
 };
 
 struct cdk_ringbuf_s {
@@ -280,7 +281,7 @@ struct cdk_poller_s {
     mtx_t           evmtx;
     bool            active;
     cdk_list_t      chlist;
-    cdk_timermgr_t  timermgr;
+    cdk_timermgr_t* timermgr;
     cdk_list_node_t node;
 };
 

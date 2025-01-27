@@ -9,7 +9,6 @@ atomic_int    connected_clients;
 atomic_int    disconnected_clients;
 atomic_int    total_readcnt;
 atomic_size_t total_readbytes;
-atomic_flag   initialized = ATOMIC_FLAG_INIT;
 
 static void _finished(void* param) {
     cdk_net_exit();
@@ -23,10 +22,6 @@ static void _statistic_info_printf() {
 }
 
 static void _connect_cb(cdk_channel_t* channel) {
-    if (!atomic_flag_test_and_set(&initialized)) {
-        cdk_timer_add(
-            &channel->poller->timermgr, _finished, NULL, 10000, false);
-    }
     atomic_fetch_add(&connected_clients, 1);
     if (atomic_load(&connected_clients) == total_clients) {
         cdk_logi("%d clients has connected.\n", total_clients);
@@ -46,7 +41,6 @@ static void _close_cb(cdk_channel_t* channel, cdk_channel_error_t error) {
         cdk_logi("%d clients has disconnected.\n", total_clients);
         _statistic_info_printf();
         cdk_logi("channel closed reason: %s\n", error.codestr);
-        cdk_net_exit();
     }
 }
 
@@ -74,6 +68,8 @@ int main(void) {
     for (int i = 0; i < total_clients; i++) {
         cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
     }
+    cdk_net_timer_create(_finished, NULL, 10000, false);
+
     getchar();
     cdk_logger_destroy();
     return 0;

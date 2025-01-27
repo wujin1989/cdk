@@ -82,12 +82,11 @@ static void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
 }
 
 static inline int _timeout_update(cdk_poller_t* poller) {
-    if (cdk_heap_empty(&poller->timermgr.heap)) {
+    if (cdk_timer_empty(poller->timermgr)) {
         return INT_MAX - 1;
     }
     uint64_t     now = cdk_time_now();
-    cdk_timer_t* timer =
-        cdk_heap_data(cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
+    cdk_timer_t* timer = cdk_timer_min(poller->timermgr);
     if ((timer->birth + timer->expire) <= now) {
         return 0;
     } else {
@@ -97,13 +96,12 @@ static inline int _timeout_update(cdk_poller_t* poller) {
 
 static inline void _timer_handle(cdk_poller_t* poller) {
     do {
-        cdk_timer_t* timer = cdk_heap_data(
-            cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
+        cdk_timer_t* timer = cdk_timer_min(poller->timermgr);
         timer->routine(timer->param);
         if (timer->repeat) {
-            cdk_timer_reset(&poller->timermgr, timer, timer->expire);
+            cdk_timer_reset(poller->timermgr, timer, timer->expire);
         } else {
-            cdk_timer_del(&poller->timermgr, timer);
+            cdk_timer_del(poller->timermgr, timer);
         }
     } while (!_timeout_update(poller));
 }
@@ -144,10 +142,10 @@ cdk_poller_t* poller_create(void) {
         poller->pfd = platform_socket_pollfd_create();
         poller->tid = thrd_current();
         poller->active = true;
+        poller->timermgr = cdk_timer_manager_create();
 
         cdk_list_init(&poller->evlist);
         cdk_list_init(&poller->chlist);
-        cdk_timer_manager_init(&poller->timermgr);
 
         mtx_init(&poller->evmtx, mtx_plain);
         platform_socket_socketpair(AF_INET, SOCK_STREAM, 0, poller->evfds);
@@ -171,11 +169,9 @@ void poller_destroy(cdk_poller_t* poller) {
         free(async_event);
         async_event = NULL;
     }
-    while (!cdk_heap_empty(&poller->timermgr.heap)) {
-        cdk_timer_t* timer = cdk_heap_data(
-            cdk_heap_min(&poller->timermgr.heap), cdk_timer_t, node);
-
-        cdk_timer_del(&poller->timermgr, timer);
+    while (!cdk_timer_empty(poller->timermgr)) {
+        cdk_timer_t* timer = cdk_timer_min(poller->timermgr);
+        cdk_timer_del(poller->timermgr, timer);
     }
     while (!cdk_list_empty(&poller->chlist)) {
         cdk_channel_t* channel =
@@ -189,6 +185,7 @@ void poller_destroy(cdk_poller_t* poller) {
         channel_destroy(channel);
     }
     mtx_destroy(&poller->evmtx);
+    cdk_timer_manager_destroy(poller->timermgr);
     free(poller);
     poller = NULL;
 }
