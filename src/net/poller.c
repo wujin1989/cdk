@@ -53,19 +53,25 @@ static inline void _event_handle(cdk_poller_t* poller) {
 static void _channel_handle(cdk_channel_t* channel, uint32_t mask) {
     if (mask & EVENT_RD) {
         if (channel->type == SOCK_STREAM) {
-            if (channel->tcp.accepting) {
-                channel_accept(channel);
+            if (channel->accepting) {
+                channel_accepting(channel);
             } else {
                 channel_recv(channel);
             }
         } else {
-            channel_recv(channel);
+            if (channel->accepting) {
+                channel->accepting = false;
+                channel_timers_create(channel);
+                channel_recv(channel);
+            } else {
+                channel_recv(channel);
+            }
         }
     }
     if (mask & EVENT_WR) {
         if (channel->type == SOCK_STREAM) {
             if (channel->tcp.connecting) {
-                channel_connect(channel);
+                channel_connecting(channel);
             } else {
                 channel_send(channel);
             }

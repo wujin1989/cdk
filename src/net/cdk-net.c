@@ -184,9 +184,8 @@ static void _async_listen(void* param) {
         sctx = NULL;
         return;
     }
-    if (channel->type == SOCK_STREAM) {
-        channel->tcp.accepting = true;
-    }
+    channel->accepting = true;
+
     if (!channel_is_reading(channel)) {
         channel_enable_read(channel);
     }

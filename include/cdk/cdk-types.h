@@ -384,6 +384,7 @@ struct cdk_channel_s {
     cdk_timer_t*        hb_timer;
     uint64_t            latest_rd_time;
     uint64_t            latest_wr_time;
+    bool                accepting;
     struct {
         void*   buf;
         ssize_t len;
@@ -392,7 +393,6 @@ struct cdk_channel_s {
     cdk_list_node_t node;
     union {
         struct {
-            bool           accepting;
             bool           connecting;
             cdk_timer_t*   conn_timer;
             cdk_tls_ssl_t* tls_ssl;

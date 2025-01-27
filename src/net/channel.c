@@ -107,9 +107,8 @@ static void _udp_send(cdk_channel_t* channel) {
         channel_destroy(channel);
         return;
     }
-    if (n < e->len) {
-        txlist_insert(&channel->txlist, e->buf + n, (e->len - n), false);
-    }
+    channel->latest_wr_time = cdk_time_now();
+
     if (n > 0 && channel->handler->on_write) {
         channel->handler->on_write(channel);
     }
@@ -348,6 +347,7 @@ static void _udp_recv(cdk_channel_t* channel) {
         channel_destroy(channel);
         return;
     }
+    channel->latest_rd_time = cdk_time_now();
     if (channel->handler->on_read) {
         channel->handler->on_read(channel, channel->rxbuf.buf, n);
     }
@@ -385,7 +385,7 @@ static inline void _heartbeat_cb(void* param) {
     }
 }
 
-static void _tcp_timers_destroy(cdk_channel_t* channel) {
+void channel_timers_destroy(cdk_channel_t* channel) {
     if (channel->hb_timer) {
         cdk_timer_del(&channel->poller->timermgr, channel->hb_timer);
     }
@@ -416,15 +416,15 @@ static inline void _channel_destroy_cb(void* param) {
             channel->mode == CHANNEL_MODE_NORMAL) {
             tls_ssl_destroy(channel->tcp.tls_ssl);
         }
-        _tcp_timers_destroy(channel);
     }
+    channel_timers_destroy(channel);
     if (channel) {
         free(channel);
         channel = NULL;
     }
 }
 
-static void _tcp_timers_create(cdk_channel_t* channel) {
+void channel_timers_create(cdk_channel_t* channel) {
     if (channel->handler->hb_interval) {
         channel->hb_timer = cdk_timer_add(
             &channel->poller->timermgr,
@@ -452,24 +452,13 @@ static void _tcp_timers_create(cdk_channel_t* channel) {
 }
 
 void channel_connected(cdk_channel_t* channel) {
-    if (channel->type == SOCK_STREAM) {
-        channel->tcp.connecting = false;
-
-        if (channel->handler->on_connect) {
-            channel->handler->on_connect(channel);
-        }
-        if (!channel_is_reading(channel)) {
-            channel_enable_read(channel);
-        }
-        _tcp_timers_create(channel);
-    } else {
-        if (channel->handler->on_connect) {
-            channel->handler->on_connect(channel);
-        }
-        if (!channel_is_reading(channel)) {
-            channel_enable_read(channel);
-        }
+    if (channel->handler->on_connect) {
+        channel->handler->on_connect(channel);
     }
+    if (!channel_is_reading(channel)) {
+        channel_enable_read(channel);
+    }
+    channel_timers_create(channel);
 }
 
 void channel_recv(cdk_channel_t* channel) {
@@ -494,7 +483,7 @@ void channel_accepted(cdk_channel_t* channel) {
     if (!channel_is_reading(channel)) {
         channel_enable_read(channel);
     }
-    _tcp_timers_create(channel);
+    channel_timers_create(channel);
 }
 
 void channel_tls_cli_handshake(void* param) {
@@ -644,7 +633,7 @@ void channel_send(cdk_channel_t* channel) {
     }
 }
 
-void channel_accept(cdk_channel_t* channel) {
+void channel_accepting(cdk_channel_t* channel) {
     if (atomic_load(&channel->closing)) {
         return;
     }
@@ -679,7 +668,7 @@ void channel_accept(cdk_channel_t* channel) {
     }
 }
 
-void channel_connect(cdk_channel_t* channel) {
+void channel_connecting(cdk_channel_t* channel) {
     if (atomic_load(&channel->closing)) {
         if (channel->handler->conn_timeout) {
             cdk_timer_del(&channel->poller->timermgr, channel->tcp.conn_timer);
@@ -702,6 +691,7 @@ void channel_connect(cdk_channel_t* channel) {
         channel_error_update(channel, error);
         channel_destroy(channel);
     } else {
+        channel->tcp.connecting = false;
         if (channel->tcp.tls_ssl) {
             channel_tls_cli_handshake(channel);
         } else {
