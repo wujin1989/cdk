@@ -30,6 +30,9 @@
 #include "tls.h"
 #include "txlist.h"
 #include "unpacker.h"
+#include "cdk/cdk-logger.h"
+
+#define CHANNEL_DELAYED_DESTROY_TIME 10000
 
 extern cdk_net_engine_t global_net_engine;
 
@@ -560,7 +563,6 @@ cdk_channel_t* channel_create(
         txlist_create(&channel->txlist);
         channel->mode = mode;
         channel->side = side;
-        atomic_init(&channel->refcnt, 1);
 
         if (channel->type == SOCK_STREAM) {
             channel->rxbuf.len = MAX_TCP_RECVBUF_SIZE;
@@ -591,37 +593,23 @@ cdk_channel_t* channel_create(
 }
 
 void channel_destroy(cdk_channel_t* channel) {
-    /**
-     * STEP1: Nullify some variables and close some file descriptors.
-     */
-    if (atomic_load(&channel->refcnt)) {
-        if (!atomic_load(&channel->closing)) {
-            atomic_store(&channel->closing, true);
-            channel_disable_all(channel);
-            platform_socket_close(channel->fd);
-            cdk_list_remove(&channel->node);
-        }
-        atomic_fetch_sub(&channel->refcnt, 1);
-
-        if (atomic_load(&channel->refcnt)) {
-            return;
-        }
-    } else {
+    if (atomic_load(&channel->closing)) {
         return;
     }
-    /**
-     * STEP2: Perform callback to notify application.
-     */
+    atomic_store(&channel->closing, true);
+    channel_disable_all(channel);
+    platform_socket_close(channel->fd);
+    cdk_list_remove(&channel->node);
+
     if (channel->handler->on_close) {
         channel->handler->on_close(channel, channel->error);
     }
-    /**
-     * STEP3: Perform the actual channel destruction.
-     * 
-     * The reason for asynchronously destroying the channel here is to prevent
-     * it from being used after it has been destroyed.
-     */
-    cdk_net_post_event(channel->poller, _channel_destroy_cb, channel, true);
+    cdk_timer_add(
+        channel->poller->timermgr,
+        _channel_destroy_cb,
+        channel,
+        CHANNEL_DELAYED_DESTROY_TIME,
+        false);
 }
 
 void channel_send(cdk_channel_t* channel) {

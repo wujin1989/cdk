@@ -32,8 +32,7 @@
 #include "tls.h"
 #include "txlist.h"
 
-cdk_net_engine_t  global_net_engine = {.initialized = ATOMIC_FLAG_INIT};
-thread_local bool need_inc_refcnt = true;
+cdk_net_engine_t global_net_engine = {.initialized = ATOMIC_FLAG_INIT};
 
 typedef struct channel_send_ctx_s {
     cdk_channel_t* channel;
@@ -198,8 +197,7 @@ static inline void _conn_timeout_cb(void* param) {
 
     cdk_channel_error_t error = {
         .code = CHANNEL_ERROR_CONN_TIMEOUT,
-        .codestr = CHANNEL_ERROR_CONN_TIMEOUT_STR
-    };
+        .codestr = CHANNEL_ERROR_CONN_TIMEOUT_STR};
     channel_error_update(channel, error);
 
     channel_destroy(channel);
@@ -209,7 +207,7 @@ static void _async_dial(void* param) {
     socket_ctx_t* sctx = param;
     bool          connected = false;
 
-     cdk_sock_t sock = platform_socket_dial(
+    cdk_sock_t sock = platform_socket_dial(
         sctx->host, sctx->port, sctx->protocol, &connected, true);
 
     cdk_channel_t* channel = channel_create(
@@ -268,6 +266,7 @@ static void _async_dial(void* param) {
 
 static void _async_channel_explicit_send(void* param) {
     channel_send_ctx_t* ctx = param;
+
     channel_explicit_send(ctx->channel, ctx->data, ctx->size);
     free(ctx);
     ctx = NULL;
@@ -275,6 +274,12 @@ static void _async_channel_explicit_send(void* param) {
 
 static void _async_channel_destroy(void* param) {
     cdk_channel_t* channel = param;
+
+    cdk_channel_error_t error = {
+        .code = CHANNEL_ERROR_USER_CLOSE,
+        .codestr = CHANNEL_ERROR_USER_CLOSE_STR};
+    channel_error_update(channel, error);
+
     channel_destroy(channel);
 }
 
@@ -379,10 +384,10 @@ void cdk_net_concurrency_configure(int ncpus) {
 }
 
 void cdk_net_listen(
-    const char*     protocol,
-    const char*     host,
-    const char*     port,
-    cdk_handler_t*  handler) {
+    const char*    protocol,
+    const char*    host,
+    const char*    port,
+    cdk_handler_t* handler) {
 
     if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
         _net_engine_create();
@@ -408,10 +413,10 @@ void cdk_net_listen(
 }
 
 void cdk_net_dial(
-    const char*     protocol,
-    const char*     host,
-    const char*     port,
-    cdk_handler_t*  handler) {
+    const char*    protocol,
+    const char*    host,
+    const char*    port,
+    cdk_handler_t* handler) {
 
     if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
         _net_engine_create();
@@ -426,23 +431,12 @@ void cdk_net_dial(
 }
 
 bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
+    if (atomic_load(&channel->closing)) {
+        return false;
+    }
     if (thrd_equal(channel->poller->tid, thrd_current())) {
-        if (atomic_load(&channel->closing)) {
-            return false;
-        }
         channel_explicit_send(channel, data, size);
     } else {
-        if (need_inc_refcnt) {
-            atomic_fetch_add(&channel->refcnt, 1);
-            need_inc_refcnt = false;
-        }
-        if (atomic_load(&channel->closing)) {
-            if (atomic_load(&channel->refcnt)) {
-                cdk_net_post_event(
-                    channel->poller, _async_channel_destroy, channel, true);
-            }
-            return false;
-        }
         channel_send_ctx_t* ctx = malloc(sizeof(channel_send_ctx_t) + size);
         if (!ctx) {
             return false;
@@ -459,12 +453,19 @@ bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size) {
 }
 
 void cdk_net_close(cdk_channel_t* channel) {
-    cdk_channel_error_t error = {
-        .code = CHANNEL_ERROR_USER_CLOSE,
-        .codestr = CHANNEL_ERROR_USER_CLOSE_STR
-    };
-    channel_error_update(channel, error);
-    channel_destroy(channel);
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
+    if (thrd_equal(channel->poller->tid, thrd_current())) {
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_USER_CLOSE,
+            .codestr = CHANNEL_ERROR_USER_CLOSE_STR};
+        channel_error_update(channel, error);
+        channel_destroy(channel);
+    } else {
+        cdk_net_post_event(
+            channel->poller, _async_channel_destroy, channel, true);
+    }
 }
 
 void cdk_net_post_event(
@@ -492,12 +493,7 @@ void cdk_net_timer_create(
     if (!poller) {
         return;
     }
-    cdk_timer_add(
-        poller->timermgr,
-        routine,
-        param,
-        expire,
-        repeat);
+    cdk_timer_add(poller->timermgr, routine, param, expire, repeat);
 }
 
 void cdk_net_exit(void) {
