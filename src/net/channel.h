@@ -36,8 +36,10 @@ _Pragma("once")
     "Channel destroyed due to connection establishment timeout"
 #define CHANNEL_ERROR_POLLER_SHUTDOWN_STR                                     \
     "Channel destroyed due to poller shutdown"
+#define CHANNEL_ERROR_BUFFER_OVERFLOW_STR                                     \
+    "Channel destroyed due to buffer overflow"
 
-extern cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_channel_mode_t mode, cdk_side_t side, cdk_handler_t* handler, cdk_tls_ctx_t* tls_ctx);
+    extern cdk_channel_t* channel_create(cdk_poller_t* poller, cdk_sock_t sock, cdk_channel_mode_t mode, cdk_side_t side, cdk_handler_t* handler, cdk_tls_ctx_t* tls_ctx);
 extern void channel_destroy(cdk_channel_t* channel);
 extern void channel_recv(cdk_channel_t* channel);
 extern void channel_send(cdk_channel_t* channel);

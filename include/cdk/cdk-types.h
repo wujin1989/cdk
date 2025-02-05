@@ -262,7 +262,7 @@ struct cdk_unpacker_s {
         } lengthfield;
 
         struct {
-            void (*unpack)(cdk_channel_t* channel);
+            bool (*unpack)(cdk_channel_t* channel);
         } userdefined;
     };
 };
@@ -363,6 +363,7 @@ struct cdk_channel_error_s {
         CHANNEL_ERROR_POLLER_SHUTDOWN,
         CHANNEL_ERROR_SYSCALL_FAIL,
         CHANNEL_ERROR_TLS_FAIL,
+        CHANNEL_ERROR_BUFFER_OVERFLOW,
         CHANNEL_ERROR_END,
     } code;
     char* codestr;

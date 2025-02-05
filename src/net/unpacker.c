@@ -23,7 +23,7 @@
 #include "cdk/cdk-utils.h"
 #include "cdk/encoding/cdk-varint.h"
 
-static inline void _fixedlen_unpack(cdk_channel_t* channel) {
+static inline bool _fixedlen_unpack(cdk_channel_t* channel) {
 	char* head = channel->rxbuf.buf;
 	char* tail = (char*)channel->rxbuf.buf + channel->rxbuf.off;
 	char* tmp = head;
@@ -33,6 +33,9 @@ static inline void _fixedlen_unpack(cdk_channel_t* channel) {
 		if (accumulated < channel->handler->unpacker->fixedlen.len) {
 			break;
 		}
+        if (channel->handler->unpacker->fixedlen.len > channel->rxbuf.len) {
+            return false;
+		}
 		if (channel->handler->on_read) {
 			channel->handler->on_read(channel, tmp, channel->handler->unpacker->fixedlen.len);
 		}
@@ -40,15 +43,16 @@ static inline void _fixedlen_unpack(cdk_channel_t* channel) {
 		accumulated -= channel->handler->unpacker->fixedlen.len;
 	}
 	if (tmp == head) {
-		return;
+		return true;
 	}
 	channel->rxbuf.off = accumulated;
 	if (accumulated) {
 		memmove(channel->rxbuf.buf, tmp, accumulated);
 	}
+    return true;
 }
 
-static inline void _delimiter_unpack(cdk_channel_t* channel) {
+static inline bool _delimiter_unpack(cdk_channel_t* channel) {
 	char* head = channel->rxbuf.buf;
 	char* tail = (char*)channel->rxbuf.buf + channel->rxbuf.off;
 	char* tmp = head;
@@ -57,7 +61,7 @@ static inline void _delimiter_unpack(cdk_channel_t* channel) {
 
 	uint32_t accumulated = (uint32_t)(tail - head);
 	if (accumulated < dlen) {
-		return;
+		return true;
 	}
 	/**
 	 * for performance, thus split buffer by KMP.
@@ -84,6 +88,9 @@ static inline void _delimiter_unpack(cdk_channel_t* channel) {
 			j++;
 		}
 		if (j == dlen) {
+            if (((i - dlen + 1) + dlen) > channel->rxbuf.len) {
+                return false;
+            }
 			if (channel->handler->on_read) {
 				channel->handler->on_read(channel, tmp, ((i - dlen + 1) + dlen));
 			}
@@ -97,16 +104,16 @@ static inline void _delimiter_unpack(cdk_channel_t* channel) {
 	free(next);
 	next = NULL;
 	if (tmp == head) {
-		return;
+		return true;
 	}
 	channel->rxbuf.off = accumulated;
 	if (accumulated) {
 		memmove(channel->rxbuf.buf, tmp, accumulated);
 	}
-	return;
+	return true;
 }
 
-static inline void _lengthfield_unpack(cdk_channel_t* channel) {
+static inline bool _lengthfield_unpack(cdk_channel_t* channel) {
 	uint32_t fs; /* frame size   */
 	uint32_t hs; /* header size  */
 	uint32_t ps; /* payload size */
@@ -144,7 +151,7 @@ static inline void _lengthfield_unpack(cdk_channel_t* channel) {
 		fs = hs + ps + channel->handler->unpacker->lengthfield.adj;
 
 		if (fs > channel->rxbuf.len) {
-			abort();
+            return false;
 		}
 		if (accumulated < fs) {
 			break;
@@ -156,40 +163,35 @@ static inline void _lengthfield_unpack(cdk_channel_t* channel) {
 		accumulated -= fs;
 	}
 	if (tmp == head) {
-		return;
+		return true;
 	}
 	channel->rxbuf.off = accumulated;
 	if (accumulated) {
 		memmove(channel->rxbuf.buf, tmp, accumulated);
 	}
-	return;
+	return true;
 }
 
-static void _userdefined_unpack(cdk_channel_t* channel) {
-	channel->handler->unpacker->userdefined.unpack(channel);
+static bool _userdefined_unpack(cdk_channel_t* channel) {
+	return channel->handler->unpacker->userdefined.unpack(channel);
 }
 
-void unpacker_unpack(cdk_channel_t* channel) {
+bool unpacker_unpack(cdk_channel_t* channel) {
 	switch (channel->handler->unpacker->type)
 	{
     case UNPACKER_TYPE_FIXEDLEN: {
-		_fixedlen_unpack(channel);
-		break;
+		return _fixedlen_unpack(channel);
 	}
     case UNPACKER_TYPE_DELIMITER: {
-		_delimiter_unpack(channel);
-		break;
+        return _delimiter_unpack(channel);
 	}
     case UNPACKER_TYPE_LENGTHFIELD: {
-		_lengthfield_unpack(channel);
-		break;
+        return _lengthfield_unpack(channel);
 	}
     case UNPACKER_TYPE_USERDEFINED: {
-		_userdefined_unpack(channel);
-		break;
+        return _userdefined_unpack(channel);
 	}
 	default:
-		abort();
+        return false;
 	}
-	return;
 }

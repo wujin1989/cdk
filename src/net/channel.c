@@ -284,10 +284,15 @@ static void _tls_recv(cdk_channel_t* channel) {
     }
     channel->latest_rd_time = cdk_time_now();
     channel->rxbuf.off += n;
-    if (channel->rxbuf.off > MAX_TCP_RECVBUF_SIZE) {
-        abort();
+
+    if (!unpacker_unpack(channel)) {
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_BUFFER_OVERFLOW,
+            .codestr = CHANNEL_ERROR_BUFFER_OVERFLOW_STR};
+        channel_error_update(channel, error);
+        channel_destroy(channel);
+        return;
     }
-    unpacker_unpack(channel);
 }
 
 static void _tcp_recv(cdk_channel_t* channel) {
@@ -320,7 +325,23 @@ static void _tcp_recv(cdk_channel_t* channel) {
     }
     channel->latest_rd_time = cdk_time_now();
     channel->rxbuf.off += n;
-    unpacker_unpack(channel);
+
+    if (channel->rxbuf.off > MAX_TCP_RECVBUF_SIZE) {
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_BUFFER_OVERFLOW,
+            .codestr = CHANNEL_ERROR_BUFFER_OVERFLOW_STR};
+        channel_error_update(channel, error);
+        channel_destroy(channel);
+        return;
+    }
+    if (!unpacker_unpack(channel)) {
+        cdk_channel_error_t error = {
+            .code = CHANNEL_ERROR_BUFFER_OVERFLOW,
+            .codestr = CHANNEL_ERROR_BUFFER_OVERFLOW_STR};
+        channel_error_update(channel, error);
+        channel_destroy(channel);
+        return;
+    }
 }
 
 static void _udp_recv(cdk_channel_t* channel) {
