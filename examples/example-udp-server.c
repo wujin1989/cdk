@@ -21,6 +21,7 @@ int main(void) {
         .on_read  = _read_cb,
         .on_close = _close_cb,
     };
+    cdk_net_concurrency_configure(4);
     cdk_net_listen("udp", "0.0.0.0", "9999", &handler);
 
     getchar();

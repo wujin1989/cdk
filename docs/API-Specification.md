@@ -836,20 +836,25 @@ extern void cdk_net_dial(const char* protocol, const char* host, const char* por
 ```
 ```c
 /**
- * @brief Send a buffer through the specified network channel
+ * @brief Send data through the specified network channel.
  *
- * This function is used in the context of creating asynchronous network programs
- * to send a buffer through the specified network channel.
+ * This function is used to send data through the specified network channel. It attempts
+ * to send the given data buffer of the specified size. The function is designed to be
+ * thread-safe, allowing multiple threads to safely invoke it simultaneously when sending
+ * data through the given channel.
  *
- * The function is designed to be thread-safe, allowing multiple threads to safely
- * invoke it simultaneously when sending data through the given channel.
+ * The return value indicates the status of the channel:
+ * - `true` indicates that the channel is functioning normally, and the data has been
+ *   successfully queued for sending.
+ * - `false` indicates that the channel has been closed and can no longer be used
+ *   for sending data.
  *
  * @param channel Pointer to the network channel.
- * @param data    Pointer to the data to be sent.
- * @param size    Size of the data to be sent.
- * @return N/A
+ * @param data Pointer to the data to be sent.
+ * @param size Size of the data to be sent.
+ * @return `true` if the channel is functioning normally, `false` if the channel has been closed.
  */
-extern void cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
+extern bool cdk_net_send(cdk_channel_t* channel, void* data, size_t size);
 ```
 ```c
 /**

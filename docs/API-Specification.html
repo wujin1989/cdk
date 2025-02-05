@@ -732,20 +732,25 @@ Copyright©2025 jin.wu. All rights reserved.
  */</span>
 <span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_dial</span><span class="token punctuation">(</span><span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> protocol<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> host<span class="token punctuation">,</span> <span class="token keyword keyword-const">const</span> <span class="token keyword keyword-char">char</span><span class="token operator">*</span> port<span class="token punctuation">,</span> <span class="token class-name">cdk_handler_t</span><span class="token operator">*</span> handler<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
- * @brief Send a buffer through the specified network channel
+ * @brief Send data through the specified network channel.
  *
- * This function is used in the context of creating asynchronous network programs
- * to send a buffer through the specified network channel.
+ * This function is used to send data through the specified network channel. It attempts
+ * to send the given data buffer of the specified size. The function is designed to be
+ * thread-safe, allowing multiple threads to safely invoke it simultaneously when sending
+ * data through the given channel.
  *
- * The function is designed to be thread-safe, allowing multiple threads to safely
- * invoke it simultaneously when sending data through the given channel.
+ * The return value indicates the status of the channel:
+ * - `true` indicates that the channel is functioning normally, and the data has been
+ *   successfully queued for sending.
+ * - `false` indicates that the channel has been closed and can no longer be used
+ *   for sending data.
  *
  * @param channel Pointer to the network channel.
- * @param data    Pointer to the data to be sent.
- * @param size    Size of the data to be sent.
- * @return N/A
+ * @param data Pointer to the data to be sent.
+ * @param size Size of the data to be sent.
+ * @return `true` if the channel is functioning normally, `false` if the channel has been closed.
  */</span>
-<span class="token keyword keyword-extern">extern</span> <span class="token keyword keyword-void">void</span> <span class="token function">cdk_net_send</span><span class="token punctuation">(</span><span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> channel<span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> data<span class="token punctuation">,</span> <span class="token class-name">size_t</span> size<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword keyword-extern">extern</span> bool <span class="token function">cdk_net_send</span><span class="token punctuation">(</span><span class="token class-name">cdk_channel_t</span><span class="token operator">*</span> channel<span class="token punctuation">,</span> <span class="token keyword keyword-void">void</span><span class="token operator">*</span> data<span class="token punctuation">,</span> <span class="token class-name">size_t</span> size<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre><pre data-role="codeBlock" data-info="c" class="language-c c"><code><span class="token comment">/**
  * @brief Post an event to the specified network poller.
  *
