@@ -461,6 +461,11 @@ void channel_timers_create(cdk_channel_t* channel) {
 }
 
 void channel_connected(cdk_channel_t* channel) {
+    channel_disable_all(channel);
+
+    if (channel->handler->conn_timeout) {
+        cdk_timer_del(channel->poller->timermgr, channel->tcp.conn_timer);
+    }
     if (channel->handler->on_connect) {
         channel->handler->on_connect(channel);
     }
@@ -669,13 +674,8 @@ void channel_connecting(cdk_channel_t* channel) {
         }
         return;
     }
-    int       err = 0;
+    int err = 0;
     socklen_t len = sizeof(int);
-
-    channel_disable_all(channel);
-    if (channel->handler->conn_timeout) {
-        cdk_timer_del(channel->poller->timermgr, channel->tcp.conn_timer);
-    }
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
         cdk_channel_error_t error = {

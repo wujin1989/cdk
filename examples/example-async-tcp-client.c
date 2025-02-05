@@ -99,6 +99,7 @@ int main(void) {
         .async = false,
     };
     cdk_logger_create(&config);
+    cdk_logi("start connection establishment.\n");
     cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 
     getchar();
