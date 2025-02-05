@@ -161,28 +161,31 @@ void poller_destroy(cdk_poller_t* poller) {
     platform_socket_pollfd_destroy(poller->pfd);
     platform_socket_close(poller->evfds[0]);
 
-    while (!cdk_list_empty(&poller->evlist)) {
-        cdk_async_event_t* async_event = cdk_list_data(
-            cdk_list_head(&poller->evlist), cdk_async_event_t, node);
-        cdk_list_remove(&async_event->node);
-
-        free(async_event);
-        async_event = NULL;
-    }
-    while (!cdk_timer_empty(poller->timermgr)) {
-        cdk_timer_t* timer = cdk_timer_min(poller->timermgr);
-        cdk_timer_del(poller->timermgr, timer);
-    }
     while (!cdk_list_empty(&poller->chlist)) {
         cdk_channel_t* channel =
             cdk_list_data(cdk_list_head(&poller->chlist), cdk_channel_t, node);
 
         cdk_channel_error_t error = {
             .code = CHANNEL_ERROR_POLLER_SHUTDOWN,
-            .codestr = CHANNEL_ERROR_POLLER_SHUTDOWN_STR
-        };
+            .codestr = CHANNEL_ERROR_POLLER_SHUTDOWN_STR};
         channel_error_update(channel, error);
         channel_destroy(channel);
+    }
+    while (!cdk_list_empty(&poller->evlist)) {
+        cdk_async_event_t* async_event = cdk_list_data(
+            cdk_list_head(&poller->evlist), cdk_async_event_t, node);
+        cdk_list_remove(&async_event->node);
+
+        if (async_event) {
+            async_event->task(async_event->arg);
+            free(async_event);
+            async_event = NULL;
+        }
+    }
+    while (!cdk_timer_empty(poller->timermgr)) {
+        cdk_timer_t* timer = cdk_timer_min(poller->timermgr);
+        timer->routine(timer->param);
+        cdk_timer_del(poller->timermgr, timer);
     }
     mtx_destroy(&poller->evmtx);
     cdk_timer_manager_destroy(poller->timermgr);

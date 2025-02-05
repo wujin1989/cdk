@@ -32,7 +32,7 @@
 #include "unpacker.h"
 #include "cdk/cdk-logger.h"
 
-#define CHANNEL_DELAYED_DESTROY_TIME 10000
+#define CHANNEL_DELAYED_DESTROY_TIME 60000
 
 extern cdk_net_engine_t global_net_engine;
 
