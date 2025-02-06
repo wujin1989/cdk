@@ -54,7 +54,7 @@ void cdk_waitgroup_done(cdk_waitgroup_t* wg) {
     mtx_lock(&wg->mtx);
     wg->cnt--;
     if (wg->cnt == 0) {
-        cnd_signal(&wg->cnd);
+        cnd_broadcast(&wg->cnd);
     }
     mtx_unlock(&wg->mtx);
 }
