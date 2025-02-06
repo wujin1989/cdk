@@ -1046,9 +1046,7 @@ extern void cdk_spinlock_lock(cdk_spinlock_t* lock);
  */
 extern void cdk_spinlock_unlock(cdk_spinlock_t* lock);
 ```
-
-
-
+### cdk-waitgroup
 ```c
 /**
  * @brief Creates a WaitGroup.
