@@ -501,6 +501,9 @@ void channel_tls_cli_handshake(void* param) {
     int            err = 0;
     cdk_channel_t* channel = param;
 
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
     int n = tls_connect(channel->tcp.tls_ssl, channel->fd, &err);
     if (n <= 0) {
         if (n == 0) {
@@ -526,7 +529,11 @@ void channel_error_update(cdk_channel_t* channel, cdk_channel_error_t error) {
 void channel_tls_srv_handshake(void* param) {
     int            err = 0;
     cdk_channel_t* channel = param;
-    int            n = tls_accept(channel->tcp.tls_ssl, channel->fd, &err);
+
+    if (atomic_load(&channel->closing)) {
+        return;
+    }
+    int n = tls_accept(channel->tcp.tls_ssl, channel->fd, &err);
     if (n <= 0) {
         if (n == 0) {
             cdk_net_post_event(

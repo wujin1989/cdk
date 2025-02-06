@@ -203,7 +203,6 @@ static inline void _conn_timeout_cb(void* param) {
         .code = CHANNEL_ERROR_CONN_TIMEOUT,
         .codestr = CHANNEL_ERROR_CONN_TIMEOUT_STR};
     channel_error_update(channel, error);
-
     channel_destroy(channel);
 }
 

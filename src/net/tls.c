@@ -202,11 +202,6 @@ void tls_ssl_destroy(cdk_tls_ssl_t* ssl) {
 }
 
 int tls_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
-    /**
-     * For the client, since we use already connected sockets for both TLS and
-     * DTLS, we should use the TLS method SSL_set_fd instead of the
-     * DTLS-specific SSL_set_bio((SSL*)ssl, BIO_new_dgram(fd, 0), bio)
-     */
     SSL_set_fd((SSL*)ssl, fd);
 
     int ret = SSL_connect((SSL*)ssl);
