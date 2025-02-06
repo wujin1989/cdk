@@ -11,7 +11,8 @@ atomic_int    total_readcnt;
 atomic_size_t total_readbytes;
 
 static void _finished(void* param) {
-    cdk_net_exit();
+    cdk_channel_t* channel = param;
+    cdk_net_close(channel);
 }
 
 static void _statistic_info_printf() {
@@ -22,6 +23,9 @@ static void _statistic_info_printf() {
 }
 
 static void _connect_cb(cdk_channel_t* channel) {
+    cdk_timer_add(
+        channel->poller->timermgr, _finished, channel, 1000 * RUNTIME, false);
+
     atomic_fetch_add(&connected_clients, 1);
     if (atomic_load(&connected_clients) == total_clients) {
         cdk_logi("%d clients has connected.\n", total_clients);
@@ -68,9 +72,8 @@ int main(void) {
     for (int i = 0; i < total_clients; i++) {
         cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
     }
-    cdk_net_timer_create(_finished, NULL, 10000, false);
-
     getchar();
+    cdk_net_exit();
     cdk_logger_destroy();
     return 0;
 }

@@ -103,11 +103,11 @@ typedef struct cdk_sha256_s        cdk_sha256_t;
 typedef struct cdk_sha1_s          cdk_sha1_t;
 typedef struct cdk_rwlock_s        cdk_rwlock_t;
 typedef struct cdk_spinlock_s      cdk_spinlock_t;
+typedef struct cdk_waitgroup_s     cdk_waitgroup_t;
 typedef struct cdk_logger_config_s cdk_logger_config_t;
 typedef enum cdk_logger_level_e    cdk_logger_level_t;
 typedef struct cdk_channel_error_s cdk_channel_error_t;
-typedef void (*cdk_logger_cb_t)(
-        cdk_logger_level_t level, char* msg);
+typedef void (*cdk_logger_cb_t)(cdk_logger_level_t level, char* msg);
 
 #if defined(__linux__) || defined(__APPLE__)
 
@@ -162,6 +162,12 @@ struct cdk_rwlock_s {
 
 struct cdk_spinlock_s {
     atomic_bool locked;
+};
+
+struct cdk_waitgroup_s {
+    int   cnt;
+    mtx_t mtx;
+    cnd_t cnd;
 };
 
 struct cdk_rbtree_s {
@@ -286,13 +292,14 @@ struct cdk_poller_s {
 };
 
 struct cdk_net_engine_s {
-    thrd_t*       thrdids;
-    atomic_int    thrdcnt;
-    atomic_flag   initialized;
-    cdk_list_t    poller_lst;
-    mtx_t         poller_mtx;
-    cnd_t         poller_cnd;
-    cdk_poller_t* (*poller_roundrobin)(void);
+    thrd_t*          thrdids;
+    atomic_int       thrdcnt;
+    atomic_flag      initialized;
+    cdk_waitgroup_t* wg;
+    cdk_list_t       poller_lst;
+    mtx_t            poller_mtx;
+    cnd_t            poller_cnd;
+    cdk_poller_t*    (*poller_roundrobin)(void);
 };
 
 struct cdk_async_event_s {
@@ -370,15 +377,15 @@ struct cdk_channel_error_s {
 };
 
 struct cdk_channel_s {
-    cdk_poller_t*      poller;
-    cdk_sock_t         fd;
-    int                events;
-    cdk_handler_t*     handler;
-    int                type;
-    atomic_bool        closing;
-    cdk_list_t         txlist;
-    cdk_channel_mode_t mode;
-    cdk_side_t         side;
+    cdk_poller_t*       poller;
+    cdk_sock_t          fd;
+    int                 events;
+    cdk_handler_t*      handler;
+    int                 type;
+    atomic_bool         closing;
+    cdk_list_t          txlist;
+    cdk_channel_mode_t  mode;
+    cdk_side_t          side;
     cdk_channel_error_t error;
     cdk_timer_t*        wr_timer;
     cdk_timer_t*        rd_timer;
@@ -414,14 +421,14 @@ struct cdk_handler_s {
     void (*on_write)(cdk_channel_t* channel);
     void (*on_close)(cdk_channel_t* channel, cdk_channel_error_t error);
     void (*on_heartbeat)(cdk_channel_t* channel);
-    int wr_timeout;
-    int rd_timeout;
-    int hb_interval;
+    int  wr_timeout;
+    int  rd_timeout;
+    int  hb_interval;
     /**
      * Below are TCP-specific.
      */
-    void (*on_accept)(cdk_channel_t* channel);
-    int  conn_timeout;
+    void            (*on_accept)(cdk_channel_t* channel);
+    int             conn_timeout;
     cdk_unpacker_t* unpacker;
     cdk_tls_conf_t* tlsconfig;
 };

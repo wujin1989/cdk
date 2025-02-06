@@ -65,6 +65,7 @@ _Pragma("once")
 #include "cdk/cdk-loader.h"
 #include "cdk/sync/cdk-rwlock.h"
 #include "cdk/sync/cdk-spinlock.h"
+#include "cdk/sync/cdk-waitgroup.h"
 #include "cdk/container/cdk-queue.h"
 #include "cdk/container/cdk-stack.h"
 #include "cdk/container/cdk-list.h"

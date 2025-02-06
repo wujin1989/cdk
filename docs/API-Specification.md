@@ -904,6 +904,8 @@ extern void cdk_net_close(cdk_channel_t* channel);
  * @brief Stops network engine.
  *
  * This function is responsible for terminating the event loop.
+ * It must not be called from the poller thread as it could lead to 
+ * undefined behavior or a deadlock.
  * 
  * @param N/A
  * @return N/A
@@ -1043,6 +1045,74 @@ extern void cdk_spinlock_lock(cdk_spinlock_t* lock);
  * @return N/A
  */
 extern void cdk_spinlock_unlock(cdk_spinlock_t* lock);
+```
+
+
+
+```c
+/**
+ * @brief Creates a WaitGroup.
+ *
+ * This function initializes a WaitGroup structure and returns a pointer to it.
+ * The created WaitGroup can be used to wait for multiple concurrent operations
+ * to complete.
+ *
+ * @param N/A
+ * @return Pointer to the created WaitGroup.
+ */
+extern cdk_waitgroup_t* cdk_waitgroup_create(void);
+```
+```c
+/**
+ * @brief Destroys a WaitGroup.
+ *
+ * This function destroys the WaitGroup and releases any resources associated
+ * with it. It must be called after all operations involving the WaitGroup are
+ * complete.
+ *
+ * @param wg Pointer to the WaitGroup to be destroyed.
+ * @return N/A
+ */
+extern void cdk_waitgroup_destroy(cdk_waitgroup_t* wg);
+```
+```c
+/**
+ * @brief Adds a delta to the WaitGroup counter.
+ *
+ * This function increments or decrements the WaitGroup counter by the specified delta.
+ * Positive values increase the counter, indicating more operations to wait for,
+ * while negative values decrease the counter.
+ *
+ * @param wg Pointer to the WaitGroup.
+ * @param delta The value to add to the counter.
+ * @return N/A
+ */
+extern void cdk_waitgroup_add(cdk_waitgroup_t* wg, int delta)
+```
+```c
+/**
+ * @brief Marks one operation as complete.
+ *
+ * This function decrements the WaitGroup counter by one, indicating that a
+ * specific operation has completed. If the counter reaches zero, any threads
+ * waiting on this WaitGroup will be unblocked.
+ *
+ * @param wg Pointer to the WaitGroup.
+ * @return N/A
+ */
+extern void cdk_waitgroup_done(cdk_waitgroup_t* wg);
+```
+```c
+/**
+ * @brief Waits for the WaitGroup counter to reach zero.
+ *
+ * This function blocks until the WaitGroup counter reaches zero, indicating
+ * that all operations have completed.
+ *
+ * @param wg Pointer to the WaitGroup.
+ * @return N/A
+ */
+extern void cdk_waitgroup_wait(cdk_waitgroup_t* wg);
 ```
 ## Others
 ### cdk-loader

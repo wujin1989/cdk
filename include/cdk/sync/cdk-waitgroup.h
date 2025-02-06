@@ -23,19 +23,8 @@ _Pragma("once")
 
 #include "cdk/cdk-types.h"
 
-extern cdk_tls_ctx_t* tls_ctx_create(cdk_tls_conf_t* conf);
-extern cdk_tls_ssl_t* tls_ssl_create(cdk_tls_ctx_t* ctx);
-extern void           tls_ctx_destroy(cdk_tls_ctx_t* ctx);
-extern void           tls_ssl_destroy(cdk_tls_ssl_t* ssl);
-extern char*    tls_error2string(int err);
-extern int            tls_connect(cdk_tls_ssl_t* ssl, int fd, int* error);
-extern int            tls_accept(cdk_tls_ssl_t* ssl, int fd, int* error);
-extern int  tls_ssl_read(cdk_tls_ssl_t* ssl, void* buf, int size, int* error);
-extern int  tls_ssl_write(cdk_tls_ssl_t* ssl, void* buf, int size, int* error);
-extern void tls_ssl_sni_set(cdk_tls_ssl_t* ssl, const char* sni);
-extern void tls_ctx_sni_set(cdk_tls_ctx_t* ctx);
-extern void tls_ctx_alpn_set(
-    cdk_tls_ctx_t*       ctx,
-    const unsigned char* protos,
-    unsigned int         protos_len,
-    cdk_side_t   side);
+extern cdk_waitgroup_t* cdk_waitgroup_create(void);
+extern void cdk_waitgroup_destroy(cdk_waitgroup_t* wg);
+extern void cdk_waitgroup_add(cdk_waitgroup_t* wg, int delta);
+extern void cdk_waitgroup_done(cdk_waitgroup_t* wg);
+extern void cdk_waitgroup_wait(cdk_waitgroup_t* wg);

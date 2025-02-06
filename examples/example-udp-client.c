@@ -39,5 +39,6 @@ int main(void) {
     cdk_net_dial("udp", "127.0.0.1", "9999", &handler);
 
     getchar();
+    cdk_net_exit();
     return 0;
 }

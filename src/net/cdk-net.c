@@ -25,6 +25,7 @@
 #include "cdk/cdk-timer.h"
 #include "cdk/cdk-utils.h"
 #include "cdk/container/cdk-list.h"
+#include "cdk/sync/cdk-waitgroup.h"
 #include "channel.h"
 #include "platform/platform-event.h"
 #include "platform/platform-socket.h"
@@ -96,6 +97,7 @@ static void _net_engine_destroy(void) {
 
     mtx_destroy(&global_net_engine.poller_mtx);
     cnd_destroy(&global_net_engine.poller_cnd);
+    cdk_waitgroup_destroy(global_net_engine.wg);
     platform_socket_cleanup();
 }
 
@@ -109,10 +111,8 @@ static int _poll(void* param) {
     _net_engine_del_poller(poller);
     poller_destroy(poller);
 
+    cdk_waitgroup_done(global_net_engine.wg);
     atomic_fetch_sub(&global_net_engine.thrdcnt, 1);
-    if (!atomic_load(&global_net_engine.thrdcnt)) {
-        _net_engine_destroy();
-    }
     return 0;
 }
 
@@ -124,6 +124,10 @@ static void _net_engine_create(void) {
     cdk_list_init(&global_net_engine.poller_lst);
     mtx_init(&global_net_engine.poller_mtx, mtx_plain);
     cnd_init(&global_net_engine.poller_cnd);
+
+    global_net_engine.wg = cdk_waitgroup_create();
+    cdk_waitgroup_add(
+        global_net_engine.wg, atomic_load(&global_net_engine.thrdcnt));
 
     global_net_engine.poller_roundrobin = _roundrobin;
     global_net_engine.thrdids =
@@ -497,6 +501,11 @@ void cdk_net_timer_create(
 }
 
 void cdk_net_exit(void) {
+    if (!atomic_flag_test_and_set(&global_net_engine.initialized)) {
+        return;
+    }
+    atomic_flag_clear(&global_net_engine.initialized);
+
     mtx_lock(&global_net_engine.poller_mtx);
     for (cdk_list_node_t* n = cdk_list_head(&global_net_engine.poller_lst);
          n != cdk_list_sentinel(&global_net_engine.poller_lst);
@@ -505,4 +514,9 @@ void cdk_net_exit(void) {
         cdk_net_post_event(poller, _async_poller_exit, poller, true);
     }
     mtx_unlock(&global_net_engine.poller_mtx);
+    cdk_waitgroup_wait(global_net_engine.wg);
+
+    if (!atomic_load(&global_net_engine.thrdcnt)) {
+        _net_engine_destroy();
+    }
 }

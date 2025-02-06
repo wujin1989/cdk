@@ -25,5 +25,6 @@ int main(void) {
     cdk_net_listen("udp", "0.0.0.0", "9999", &handler);
 
     getchar();
+    cdk_net_exit();
     return 0;
 }

@@ -103,6 +103,7 @@ int main(void) {
     cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
 
     getchar();
+    cdk_net_exit();
     cdk_logger_destroy();
     return 0;
 }

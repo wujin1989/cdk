@@ -38,6 +38,7 @@ set(SRCS
 	src/container/cdk-ringbuffer.c
 	src/sync/cdk-rwlock.c
 	src/sync/cdk-spinlock.c
+	src/sync/cdk-waitgroup.c
 	src/net/cdk-net.c
 	src/net/poller.c
 	src/net/channel.c

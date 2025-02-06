@@ -221,10 +221,9 @@ int tls_connect(cdk_tls_ssl_t* ssl, int fd, int* error) {
     return ret;
 }
 
-int tls_accept(cdk_tls_ssl_t* ssl, int fd, bool tcp, int* error) {
-    if (tcp) {
-        SSL_set_fd((SSL*)ssl, fd);
-    }
+int tls_accept(cdk_tls_ssl_t* ssl, int fd, int* error) {
+    SSL_set_fd((SSL*)ssl, fd);
+
     int ret = SSL_accept((SSL*)ssl);
     if (ret <= 0) {
         int err = SSL_get_error((SSL*)ssl, ret);

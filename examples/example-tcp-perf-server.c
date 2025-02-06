@@ -39,6 +39,7 @@ int main(void) {
     cdk_logger_create(&config);
     cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
     getchar();
+    cdk_net_exit();
     cdk_logger_destroy();
     return 0;
 }

@@ -20,6 +20,7 @@
  */
 
 #include "channel.h"
+#include "cdk/cdk-logger.h"
 #include "cdk/cdk-time.h"
 #include "cdk/cdk-timer.h"
 #include "cdk/container/cdk-list.h"
@@ -30,7 +31,6 @@
 #include "tls.h"
 #include "txlist.h"
 #include "unpacker.h"
-#include "cdk/cdk-logger.h"
 
 #define CHANNEL_DELAYED_DESTROY_TIME 60000
 
@@ -60,8 +60,7 @@ static void _tcp_send(cdk_channel_t* channel) {
         cdk_channel_error_t error = {
             .code = CHANNEL_ERROR_SYSCALL_FAIL,
             .codestr =
-                platform_socket_error2string(platform_socket_lasterror())
-        };
+                platform_socket_error2string(platform_socket_lasterror())};
         channel_error_update(channel, error);
         channel_destroy(channel);
         return;
@@ -135,9 +134,7 @@ static void _tls_send(cdk_channel_t* channel) {
             return;
         }
         cdk_channel_error_t error = {
-            .code = CHANNEL_ERROR_TLS_FAIL, 
-            .codestr = tls_error2string(err)
-        };
+            .code = CHANNEL_ERROR_TLS_FAIL, .codestr = tls_error2string(err)};
         channel_error_update(channel, error);
         channel_destroy(channel);
         return;
@@ -206,8 +203,7 @@ _tcp_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
             cdk_channel_error_t error = {
                 .code = CHANNEL_ERROR_SYSCALL_FAIL,
                 .codestr =
-                    platform_socket_error2string(platform_socket_lasterror())
-            };
+                    platform_socket_error2string(platform_socket_lasterror())};
             channel_error_update(channel, error);
             channel_destroy(channel);
             return;
@@ -376,12 +372,12 @@ static inline void _rd_timeout_cb(void* param) {
     if (elapsed_time > channel->handler->rd_timeout) {
         cdk_channel_error_t error = {
             .code = CHANNEL_ERROR_RD_TIMEOUT,
-            .codestr = CHANNEL_ERROR_RD_TIMEOUT_STR
-        };
+            .codestr = CHANNEL_ERROR_RD_TIMEOUT_STR};
         channel_error_update(channel, error);
         channel_destroy(channel);
     } else {
-        channel->rd_timer->expire = (channel->handler->rd_timeout - elapsed_time);
+        channel->rd_timer->expire =
+            (channel->handler->rd_timeout - elapsed_time);
     }
 }
 
@@ -396,7 +392,8 @@ static inline void _wr_timeout_cb(void* param) {
         channel_error_update(channel, error);
         channel_destroy(channel);
     } else {
-        channel->wr_timer->expire = (channel->handler->wr_timeout - elapsed_time);
+        channel->wr_timer->expire =
+            (channel->handler->wr_timeout - elapsed_time);
     }
 }
 
@@ -422,28 +419,15 @@ void channel_timers_destroy(cdk_channel_t* channel) {
 static inline void _channel_destroy_cb(void* param) {
     cdk_channel_t* channel = param;
 
-    txlist_destroy(&channel->txlist);
-
-    free(channel->rxbuf.buf);
-    channel->rxbuf.buf = NULL;
-    channel->rxbuf.len = 0;
-    channel->rxbuf.off = 0;
-
-    if (channel->type == SOCK_STREAM) {
-        if (channel->mode == CHANNEL_MODE_ACCEPT ||
-            channel->mode == CHANNEL_MODE_CONNECT) {
-            tls_ctx_destroy(channel->tcp.tls_ctx);
-        }
-        if (channel->mode == CHANNEL_MODE_CONNECT ||
-            channel->mode == CHANNEL_MODE_NORMAL) {
-            tls_ssl_destroy(channel->tcp.tls_ssl);
-        }
-    }
-    channel_timers_destroy(channel);
     if (channel) {
         free(channel);
         channel = NULL;
     }
+}
+
+static inline void _async_channel_timers_destroy_cb(void* param) {
+    cdk_channel_t* channel = param;
+    channel_timers_destroy(channel);
 }
 
 void channel_timers_create(cdk_channel_t* channel) {
@@ -525,9 +509,7 @@ void channel_tls_cli_handshake(void* param) {
             return;
         }
         cdk_channel_error_t error = {
-            .code = CHANNEL_ERROR_TLS_FAIL, 
-            .codestr = tls_error2string(err)
-        };
+            .code = CHANNEL_ERROR_TLS_FAIL, .codestr = tls_error2string(err)};
         channel_error_update(channel, error);
 
         channel_destroy(channel);
@@ -544,7 +526,7 @@ void channel_error_update(cdk_channel_t* channel, cdk_channel_error_t error) {
 void channel_tls_srv_handshake(void* param) {
     int            err = 0;
     cdk_channel_t* channel = param;
-    int n = tls_accept(channel->tcp.tls_ssl, channel->fd, true, &err);
+    int            n = tls_accept(channel->tcp.tls_ssl, channel->fd, &err);
     if (n <= 0) {
         if (n == 0) {
             cdk_net_post_event(
@@ -552,9 +534,7 @@ void channel_tls_srv_handshake(void* param) {
             return;
         }
         cdk_channel_error_t error = {
-            .code = CHANNEL_ERROR_TLS_FAIL, 
-            .codestr = tls_error2string(err)
-        };
+            .code = CHANNEL_ERROR_TLS_FAIL, .codestr = tls_error2string(err)};
         channel_error_update(channel, error);
         channel_destroy(channel);
         return;
@@ -616,8 +596,36 @@ void channel_destroy(cdk_channel_t* channel) {
     }
     atomic_store(&channel->closing, true);
     channel_disable_all(channel);
+    /**
+     * Note: The SSL connection must be closed before the socket file descriptor
+     * is closed. This is because when SSL_shutdown is called, it relies on the
+     * underlying socket for communication to send and receive the "close
+     * notify" shutdown alerts. If the socket is closed first, SSL_shutdown
+     * cannot complete the shutdown process properly. This might lead the peer
+     * to believe that the SSL connection is still active, when in fact it has
+     * already been closed, potentially resulting in a "Broken pipe" error.
+     */
+    if (channel->type == SOCK_STREAM) {
+        if (channel->mode == CHANNEL_MODE_CONNECT ||
+            channel->mode == CHANNEL_MODE_NORMAL) {
+            tls_ssl_destroy(channel->tcp.tls_ssl);
+        }
+        if (channel->mode == CHANNEL_MODE_ACCEPT ||
+            channel->mode == CHANNEL_MODE_CONNECT) {
+            tls_ctx_destroy(channel->tcp.tls_ctx);
+        }
+    }
     platform_socket_close(channel->fd);
     cdk_list_remove(&channel->node);
+    txlist_destroy(&channel->txlist);
+
+    free(channel->rxbuf.buf);
+    channel->rxbuf.buf = NULL;
+    channel->rxbuf.len = 0;
+    channel->rxbuf.off = 0;
+
+    cdk_net_post_event(
+        channel->poller, _async_channel_timers_destroy_cb, channel, true);
 
     if (channel->handler->on_close) {
         channel->handler->on_close(channel, channel->error);
@@ -658,8 +666,7 @@ void channel_accepting(cdk_channel_t* channel) {
         cdk_channel_error_t error = {
             .code = CHANNEL_ERROR_SYSCALL_FAIL,
             .codestr =
-                platform_socket_error2string(platform_socket_lasterror())
-        };
+                platform_socket_error2string(platform_socket_lasterror())};
         channel_error_update(channel, error);
         channel_destroy(channel);
         return;
@@ -687,7 +694,7 @@ void channel_connecting(cdk_channel_t* channel) {
         }
         return;
     }
-    int err = 0;
+    int       err = 0;
     socklen_t len = sizeof(int);
     getsockopt(channel->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
     if (err) {
