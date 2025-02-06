@@ -500,7 +500,12 @@ void channel_accepted(cdk_channel_t* channel) {
 void channel_tls_cli_handshake(void* param) {
     int            err = 0;
     cdk_channel_t* channel = param;
-
+    /**
+     * If the TLS connection times out, the connection timer will destroy the
+     * channel and release the SSL. If we don't check whether the channel is
+     * already closing, it may lead to reading or writing on an already closed
+     * SSL. This could potentially cause a crash.
+     */
     if (atomic_load(&channel->closing)) {
         return;
     }
