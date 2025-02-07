@@ -496,6 +496,9 @@ void cdk_net_timer_create(
     if (!poller) {
         return;
     }
+    if (!poller->active) {
+        return;
+    }
     cdk_timer_add(poller->timermgr, routine, param, expire, repeat);
 }
 
@@ -510,7 +513,7 @@ void cdk_net_exit(void) {
          n != cdk_list_sentinel(&global_net_engine.poller_lst);
          n = cdk_list_next(n)) {
         cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
-        cdk_net_post_event(poller, _async_poller_exit, poller, true);
+        cdk_net_post_event(poller, _async_poller_exit, poller, false);
     }
     mtx_unlock(&global_net_engine.poller_mtx);
     cdk_waitgroup_wait(global_net_engine.wg);
