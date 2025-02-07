@@ -16,20 +16,13 @@ typedef struct msg_s {
     char      data[];
 } msg_t;
 
-char PING[16] = "PING";
+char PONG[16] = "PONG";
 char KEEPALIVE[16] = "KEEPALIVE";
 
-static void _connect_cb(cdk_channel_t* channel) {
-    cdk_logi("[%d]has connected to remote...\n", (int)channel->fd);
-    msg_t* smsg = malloc(sizeof(msg_t) + sizeof(PING));
-    if (smsg) {
-        smsg->hdr.size = htonl((uint32_t)(sizeof(PING)));
-        smsg->hdr.type = htonl(TYPE_PING);
-        memcpy(smsg->data, PING, sizeof(PING));
-        cdk_net_send(channel, smsg, sizeof(msg_t) + sizeof(PING));
-        free(smsg);
-        smsg = NULL;
-    }
+static void _accept_cb(cdk_channel_t* channel) {
+    cdk_logi(
+        "tid[%d], [%d]new connection coming...\n", (int)cdk_utils_systemtid(),
+        (int)channel->fd);
 }
 
 static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
@@ -40,14 +33,16 @@ static void _read_cb(cdk_channel_t* channel, void* buf, size_t len) {
         "recv %s from %s:%d. type: %d, len: %d.\n", rmsg->data, addrinfo.addr,
         addrinfo.port, ntohl(rmsg->hdr.type), ntohl(rmsg->hdr.size));
 
-    msg_t* smsg = malloc(sizeof(msg_t) + sizeof(PING));
-    if (smsg) {
-        smsg->hdr.size = htonl((uint32_t)(sizeof(PING)));
-        smsg->hdr.type = htonl(TYPE_PING);
-        memcpy(smsg->data, PING, sizeof(PING));
-        cdk_net_send(channel, smsg, sizeof(msg_t) + sizeof(PING));
-        free(smsg);
-        smsg = NULL;
+    if (ntohl(rmsg->hdr.type) == TYPE_PING) {
+        msg_t* smsg = malloc(sizeof(msg_t) + sizeof(PONG));
+        if (smsg) {
+            smsg->hdr.size = htonl((uint32_t)(sizeof(PONG)));
+            smsg->hdr.type = htonl(TYPE_PONG);
+            memcpy(smsg->data, PONG, sizeof(PONG));
+            cdk_net_send(channel, smsg, sizeof(msg_t) + sizeof(PONG));
+            free(smsg);
+            smsg = NULL;
+        }
     }
 }
 
@@ -68,14 +63,6 @@ static void _heartbeat_cb(cdk_channel_t* channel) {
 }
 
 int main(void) {
-    cdk_tls_conf_t conf = {
-        .cafile = "certs/ca.crt",
-        .capath = NULL,
-        .crtfile = NULL,
-        .keyfile = NULL,
-        .verifypeer = true,
-        .side = SIDE_CLIENT};
-
     cdk_unpacker_t unpacker = {
         .type = UNPACKER_TYPE_LENGTHFIELD,
         .lengthfield.adj = 0,
@@ -83,24 +70,18 @@ int main(void) {
         .lengthfield.offset = 0,
         .lengthfield.payload = 8,
         .lengthfield.size = 4};
+
     cdk_handler_t handler = {
-        .on_connect = _connect_cb,
+        .on_accept = _accept_cb,
         .on_read = _read_cb,
         .on_close = _close_cb,
         .on_heartbeat = _heartbeat_cb,
-        .wr_timeout = 10000,
-        .conn_timeout = 5000,
+        .rd_timeout = 10000,
         .hb_interval = 5000,
         .unpacker = &unpacker,
-        .tlsconfig = &conf
     };
-
-    cdk_logger_config_t config = {
-        .async = false,
-    };
-    cdk_logger_create(&config);
-    cdk_logi("start connection establishment.\n");
-    cdk_net_dial("tcp", "127.0.0.1", "9999", &handler);
+    cdk_logger_create(NULL);
+    cdk_net_listen("tcp", "0.0.0.0", "9999", &handler);
 
     getchar();
     cdk_net_exit();

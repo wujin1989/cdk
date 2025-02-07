@@ -160,6 +160,13 @@ static inline void _cbbase(
 
 void cdk_logger_create(cdk_logger_config_t* config) {
     if (!atomic_flag_test_and_set(&global_logger.initialized)) {
+        if (!config) {
+            global_logger.level = LOGGER_LEVEL_DEBUG;
+            mtx_init(&global_logger.mtx, mtx_plain);
+            global_logger.out = stdout;
+            atomic_init(&global_logger.closing, false);
+            return;
+        }
         if (config->level == LOGGER_LEVEL_BGN ||
             config->level == LOGGER_LEVEL_END) {
             global_logger.level = LOGGER_LEVEL_DEBUG;
