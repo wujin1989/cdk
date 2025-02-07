@@ -67,6 +67,9 @@ static inline bool _delimiter_unpack(cdk_channel_t* channel) {
 	 * for performance, thus split buffer by KMP.
 	 */
 	int* next = malloc(dlen * sizeof(int));
+    if (!next) {
+        return false;
+	}
 	memset(next, 0, dlen * sizeof(int));
 	int j = 0;
 	for (int i = 1; i < dlen; i++) {
