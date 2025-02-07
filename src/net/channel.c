@@ -177,6 +177,9 @@ _tls_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
         if (!channel_is_writing(channel)) {
             channel_enable_write(channel);
         }
+        if (n == 0) {
+            return;
+        }
     }
     channel->latest_wr_time = cdk_time_now();
     if (n > 0 && channel->handler->on_write) {
@@ -214,9 +217,11 @@ _tcp_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
         if (!channel_is_writing(channel)) {
             channel_enable_write(channel);
         }
+        if (n == 0) {
+            return;
+        }
     }
     channel->latest_wr_time = cdk_time_now();
-
     if (n > 0 && channel->handler->on_write) {
         cdk_net_post_event(channel->poller, _write_complete_cb, channel, true);
     }
@@ -256,6 +261,16 @@ _udp_explicit_send(cdk_channel_t* channel, void* data, size_t size) {
             return;
         }
     }
+    if (n < size) {
+        txlist_insert(&channel->txlist, (char*)data + n, (size - n), true);
+        if (!channel_is_writing(channel)) {
+            channel_enable_write(channel);
+        }
+        if (n == 0) {
+            return;
+        }
+    }
+    channel->latest_wr_time = cdk_time_now();
     if (n > 0 && channel->handler->on_write) {
         cdk_net_post_event(channel->poller, _write_complete_cb, channel, true);
     }
