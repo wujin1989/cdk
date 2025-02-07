@@ -508,14 +508,20 @@ void cdk_net_exit(void) {
     }
     atomic_flag_clear(&global_net_engine.initialized);
 
+    cdk_list_node_t* node = NULL;
+
     mtx_lock(&global_net_engine.poller_mtx);
-    for (cdk_list_node_t* n = cdk_list_head(&global_net_engine.poller_lst);
-         n != cdk_list_sentinel(&global_net_engine.poller_lst);
-         n = cdk_list_next(n)) {
-        cdk_poller_t* poller = cdk_list_data(n, cdk_poller_t, node);
+    node = cdk_list_head(&global_net_engine.poller_lst);
+    mtx_unlock(&global_net_engine.poller_mtx);
+
+    while (node != cdk_list_sentinel(&global_net_engine.poller_lst)) {
+        mtx_lock(&global_net_engine.poller_mtx);
+        cdk_poller_t* poller = cdk_list_data(node, cdk_poller_t, node);
+        node = cdk_list_next(node);
+        mtx_unlock(&global_net_engine.poller_mtx);
+
         cdk_net_post_event(poller, _async_poller_exit, poller, false);
     }
-    mtx_unlock(&global_net_engine.poller_mtx);
     cdk_waitgroup_wait(global_net_engine.wg);
 
     if (!atomic_load(&global_net_engine.thrdcnt)) {
